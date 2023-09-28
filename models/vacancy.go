@@ -12,16 +12,16 @@ type Vacancy struct {
 
 type vacancies struct {
 	VacancyList []Vacancy
-	mu          *sync.Mutex
+	Mu          *sync.Mutex
 }
 
-var vac = vacancies{
+var Vac = vacancies{
 	VacancyList: make([]Vacancy, 5),
-	mu:          &sync.Mutex{},
+	Mu:          &sync.Mutex{},
 }
 
-func createVacancies() {
-	vac.VacancyList = append(vac.VacancyList,
+func CreateVacancies() {
+	Vac.VacancyList = append(Vac.VacancyList,
 		Vacancy{
 			ID:          1,
 			Name:        "C++ developer",
@@ -57,14 +57,4 @@ func createVacancies() {
 			Description: "Experienced specialist in IT-management",
 			Salary:      2000,
 		})
-}
-
-func GetVacancies() []Vacancy {
-	defer vac.mu.Unlock()
-
-	vac.mu.Lock()
-	listToReturn := vac.VacancyList
-	vac.mu.Unlock()
-
-	return listToReturn
 }
