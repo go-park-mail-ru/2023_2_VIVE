@@ -1,7 +1,7 @@
 package models
 
 import (
-	"fmt"
+	"models/statuses"
 	"net/http"
 	"sync"
 	"time"
@@ -42,16 +42,16 @@ func AddSession() http.Cookie {
 	return cookie
 }
 
-func ValidateSession(cookie *http.Cookie) error {
+func ValidateSession(cookie *http.Cookie) statuses.Status {
 	storedID, ok := sessions.Load(getNewRecord(cookie))
 
 	if !ok {
-		return fmt.Errorf("AUTHENTICATION_REQUIRED")
+		return statuses.UNAUTHORIZED
 	}
 
 	if cookie.Value != storedID {
-		return fmt.Errorf("INVALID_COOKIE")
+		return statuses.UNAUTHORIZED
 	}
 
-	return nil
+	return 0
 }

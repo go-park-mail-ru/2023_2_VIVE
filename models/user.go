@@ -3,7 +3,7 @@ package models
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"models/statuses"
 	"sync"
 )
 
@@ -25,7 +25,7 @@ type User struct {
 
 var users = &sync.Map{}
 
-func CheckPassword(user User) error {
+func CheckPassword(user User) statuses.Status {
 	hasher := sha256.New()
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
@@ -33,21 +33,21 @@ func CheckPassword(user User) error {
 	actualPass, ok := users.Load(user.Email)
 
 	if !ok {
-		return fmt.Errorf("User not found")
+		return statuses.NOT_FOUND
 	}
 
 	if hex.EncodeToString(hashedPass) != hex.EncodeToString(actualPass.([]byte)) {
-		return fmt.Errorf("Password is incorrect")
+		return statuses.UNAUTHORIZED
 	}
 
-	return nil
+	return 0
 }
 
-func AddUser(user User) error {
+func AddUser(user User) statuses.Status {
 	_, exist := users.Load(user.Email)
 
 	if exist {
-		return fmt.Errorf("Email already exists")
+		return statuses.CONFLICT
 	}
 
 	hasher := sha256.New()
@@ -56,5 +56,5 @@ func AddUser(user User) error {
 
 	users.Store(user.Email, hashedPass)
 
-	return nil
+	return 0
 }
