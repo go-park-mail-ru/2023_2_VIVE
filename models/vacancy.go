@@ -1,5 +1,7 @@
 package models
 
+import "sync"
+
 type Vacancy struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -8,10 +10,18 @@ type Vacancy struct {
 	Salary      int    `json:"salary,omitempty"`
 }
 
-var VacancyList = make([]Vacancy, 5)
+type vacancies struct {
+	VacancyList []Vacancy
+	mu          *sync.Mutex
+}
+
+var vac = vacancies{
+	VacancyList: make([]Vacancy, 5),
+	mu:          &sync.Mutex{},
+}
 
 func createVacancies() {
-	VacancyList = append(VacancyList,
+	vac.VacancyList = append(vac.VacancyList,
 		Vacancy{
 			ID:          1,
 			Name:        "C++ developer",
@@ -50,5 +60,11 @@ func createVacancies() {
 }
 
 func GetVacancies() []Vacancy {
-	return VacancyList
+	defer vac.mu.Unlock()
+
+	vac.mu.Lock()
+	listToReturn := vac.VacancyList
+	vac.mu.Unlock()
+
+	return listToReturn
 }
