@@ -42,6 +42,17 @@ func AddSession() http.Cookie {
 	return cookie
 }
 
+func DeleteSession(cookie *http.Cookie) statuses.Status {
+	_, exist := sessions.Load(getNewRecord(cookie))
+
+	if exist {
+		return statuses.UNAUTHORIZED
+	}
+
+	sessions.Delete(getNewRecord(cookie))
+	return statuses.OK
+}
+
 func ValidateSession(cookie *http.Cookie) statuses.Status {
 	storedID, ok := sessions.Load(getNewRecord(cookie))
 
