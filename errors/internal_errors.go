@@ -11,3 +11,5 @@ var INVALID_COOKIE error = fmt.Errorf("The cookie provided is invalid")
 var NO_COOKIE error = fmt.Errorf("No cookie provided")
 var AUTH_REQUIRED error = fmt.Errorf("You need to be authenticated")
 var INTERNAL_SERVER_ERROR error = fmt.Errorf("The server encountered a problem and could not process your request")
+
+var SERVER_IS_NOT_RUNNUNG error = fmt.Errorf("the server encountered a problem while starting")

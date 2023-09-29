@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"models/configs"
+	"models/errors"
 	"models/requestHandlers"
 	"net/http"
 
@@ -26,7 +27,7 @@ func main() {
 	err := http.ListenAndServe(configs.PORT, nil)
 
 	if err != nil {
-		fmt.Println("err: the server encountered a problem while starting")
+		fmt.Printf("err: %v\n", errors.SERVER_IS_NOT_RUNNUNG)
 		return
 	}
 }
