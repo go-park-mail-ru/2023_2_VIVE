@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func AddSession(user models.User) http.Cookie {
+func AddSession(user *models.User) http.Cookie {
 	uniqueID := uuid.NewString()
 
 	cookie := http.Cookie{

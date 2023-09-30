@@ -20,12 +20,12 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addStatus := modelHandlers.AddUser(*newUser)
+	addStatus := modelHandlers.AddUser(newUser)
 	if addStatus != nil {
 		http.Error(w, addStatus.Error(), http.StatusConflict)
 	}
 
-	cookie := modelHandlers.AddSession(*newUser)
+	cookie := modelHandlers.AddSession(newUser)
 	http.SetCookie(w, &cookie)
 	w.WriteHeader(http.StatusOK)
 }
@@ -46,7 +46,7 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 
 	user := modelHandlers.GetUserInfo(session)
 
-	js, err := json.Marshal(user)
+	js, err := json.Marshal(*user)
 	if err != nil {
 		http.Error(w, serverErrors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
 		return

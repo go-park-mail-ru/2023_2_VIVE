@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func CheckPassword(user models.User) error {
+func CheckPassword(user *models.User) error {
 	actualPass, ok := models.Users.Load(user.Email)
 	if !ok {
 		return serverErrors.NO_DATA_FOUND
@@ -25,7 +25,7 @@ func CheckPassword(user models.User) error {
 	return nil
 }
 
-func CheckUser(user models.User) error {
+func CheckUser(user *models.User) error {
 	if len(user.Email) == 0 || len(user.Password) == 0 {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
@@ -38,7 +38,7 @@ func CheckUser(user models.User) error {
 	return nil
 }
 
-func AddUser(user models.User) error {
+func AddUser(user *models.User) error {
 	_, exist := models.Users.Load(user.Email)
 
 	if exist {
@@ -58,9 +58,9 @@ func AddUser(user models.User) error {
 	return nil
 }
 
-func GetUserInfo(cookie *http.Cookie) models.User {
+func GetUserInfo(cookie *http.Cookie) *models.User {
 	uniqueID := cookie.Value
 
 	user, _ := models.Sessions.Load(uniqueID)
-	return user.(models.User)
+	return user.(*models.User)
 }

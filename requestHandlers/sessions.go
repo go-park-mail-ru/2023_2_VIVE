@@ -21,13 +21,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginErr := modelHandlers.CheckUser(*user)
+	loginErr := modelHandlers.CheckUser(user)
 	if loginErr != nil {
 		http.Error(w, loginErr.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	cookie := modelHandlers.AddSession(*user)
+	cookie := modelHandlers.AddSession(user)
 	http.SetCookie(w, &cookie)
 	w.WriteHeader(http.StatusOK)
 }
