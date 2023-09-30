@@ -28,8 +28,8 @@ func AddSession(user *models.User) http.Cookie {
 func DeleteSession(cookie *http.Cookie) error {
 	_, exist := models.Sessions.Load(cookie.Value)
 
-	if exist {
-		return serverErrors.SESSION_ALREADY_EXISTS
+	if !exist {
+		return serverErrors.AUTH_REQUIRED
 	}
 
 	models.Sessions.Delete(cookie.Value)

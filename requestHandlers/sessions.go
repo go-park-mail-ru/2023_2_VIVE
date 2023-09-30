@@ -40,7 +40,11 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	modelHandlers.DeleteSession(session)
+	deleteErr := modelHandlers.DeleteSession(session)
+	if deleteErr != nil {
+		http.Error(w, deleteErr.Error(), http.StatusUnauthorized)
+		return
+	}
 
 	session.Expires = time.Now().AddDate(0, 0, -1)
 	http.SetCookie(w, session)
