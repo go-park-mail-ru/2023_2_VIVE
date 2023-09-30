@@ -2,9 +2,10 @@ package requestHandlers
 
 import (
 	"encoding/json"
-	"models/errors"
+	"errors"
 	"models/modelHandlers"
 	"models/models"
+	"models/serverErrors"
 	"net/http"
 )
 
@@ -20,7 +21,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(newUser.Email) == 0 || len(newUser.Password) == 0 {
-		http.Error(w, errors.INCORRECT_CREDENTIALS.Error(), http.StatusUnauthorized)
+		http.Error(w, serverErrors.INCORRECT_CREDENTIALS.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -37,8 +38,8 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 func GetInfo(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
-	if err == http.ErrNoCookie {
-		http.Error(w, errors.NO_COOKIE.Error(), http.StatusUnauthorized)
+	if errors.Is(err, http.ErrNoCookie) {
+		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -52,7 +53,7 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.Marshal(user)
 	if err != nil {
-		http.Error(w, errors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
+		http.Error(w, serverErrors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
 		return
 	}
 

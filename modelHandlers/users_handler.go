@@ -3,15 +3,15 @@ package modelHandlers
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"models/errors"
 	"models/models"
+	"models/serverErrors"
 	"net/http"
 )
 
 func CheckPassword(user models.User) error {
 	actualPass, ok := models.Users.Load(user.Email)
 	if !ok {
-		return errors.NO_DATA_FOUND
+		return serverErrors.NO_DATA_FOUND
 	}
 
 	hasher := sha256.New()
@@ -19,7 +19,7 @@ func CheckPassword(user models.User) error {
 	hashedPass := hasher.Sum(nil)
 
 	if hex.EncodeToString(hashedPass) != hex.EncodeToString(actualPass.([]byte)) {
-		return errors.INCORRECT_CREDENTIALS
+		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
 	return nil
@@ -27,7 +27,7 @@ func CheckPassword(user models.User) error {
 
 func CheckUser(user models.User) error {
 	if len(user.Email) == 0 || len(user.Password) == 0 {
-		return errors.INCORRECT_CREDENTIALS
+		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
 	passwordStatus := CheckPassword(user)
@@ -42,7 +42,7 @@ func AddUser(user models.User) error {
 	_, exist := models.Users.Load(user.Email)
 
 	if exist {
-		return errors.ACCOUNT_ALREADY_EXISTS
+		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	}
 
 	hasher := sha256.New()

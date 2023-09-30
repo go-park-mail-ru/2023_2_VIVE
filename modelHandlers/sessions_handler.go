@@ -1,8 +1,8 @@
 package modelHandlers
 
 import (
-	"models/errors"
 	"models/models"
+	"models/serverErrors"
 	"net/http"
 	"time"
 
@@ -29,7 +29,7 @@ func DeleteSession(cookie *http.Cookie) error {
 	_, exist := models.Sessions.Load(cookie.Value)
 
 	if exist {
-		return errors.SESSION_ALREADY_EXISTS
+		return serverErrors.SESSION_ALREADY_EXISTS
 	}
 
 	models.Sessions.Delete(cookie.Value)
@@ -38,17 +38,17 @@ func DeleteSession(cookie *http.Cookie) error {
 
 func ValidateSession(cookie *http.Cookie) error {
 	if time.Now().After(cookie.Expires) {
-		return errors.COOKIE_HAS_EXPIRED
+		return serverErrors.COOKIE_HAS_EXPIRED
 	}
 
 	storedID, ok := models.Sessions.Load(cookie.Value)
 
 	if !ok {
-		return errors.AUTH_REQUIRED
+		return serverErrors.AUTH_REQUIRED
 	}
 
 	if cookie.Value != storedID {
-		return errors.INVALID_COOKIE
+		return serverErrors.INVALID_COOKIE
 	}
 
 	return nil

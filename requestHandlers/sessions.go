@@ -2,9 +2,10 @@ package requestHandlers
 
 import (
 	"encoding/json"
-	"models/errors"
+	"errors"
 	"models/modelHandlers"
 	"models/models"
+	"models/serverErrors"
 	"net/http"
 	"time"
 )
@@ -34,8 +35,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func Logout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
-	if err == http.ErrNoCookie {
-		http.Error(w, errors.NO_COOKIE.Error(), http.StatusUnauthorized)
+	if errors.Is(err, http.ErrNoCookie) {
+		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -49,8 +50,8 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 func CheckLogin(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
-	if err == http.ErrNoCookie {
-		http.Error(w, errors.NO_COOKIE.Error(), http.StatusUnauthorized)
+	if errors.Is(err, http.ErrNoCookie) {
+		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
 		return
 	}
 

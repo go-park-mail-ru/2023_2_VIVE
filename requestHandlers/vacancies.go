@@ -2,8 +2,8 @@ package requestHandlers
 
 import (
 	"encoding/json"
-	"models/errors"
 	"models/modelHandlers"
+	"models/serverErrors"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ func GetVacancies(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.Marshal(vacancies)
 	if err != nil {
-		http.Error(w, errors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
+		http.Error(w, serverErrors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
 		return
 	}
 
