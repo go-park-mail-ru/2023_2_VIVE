@@ -50,3 +50,20 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, session)
 	w.WriteHeader(http.StatusOK)
 }
+
+func CheckLogin(w http.ResponseWriter, r *http.Request) {
+	session, err := r.Cookie("session")
+
+	if err == http.ErrNoCookie {
+		http.Error(w, errors.NO_COOKIE.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	sessionErr := modelHandlers.ValidateSession(session)
+	if sessionErr != nil {
+		http.Error(w, sessionErr.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

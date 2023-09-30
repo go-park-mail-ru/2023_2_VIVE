@@ -13,6 +13,7 @@ func Run() error {
 
 	router.HandleFunc("/session", requestHandlers.Login).Methods("POST")
 	router.HandleFunc("/session", requestHandlers.Logout).Methods("DELETE")
+	router.HandleFunc("/session", requestHandlers.CheckLogin).Methods("GET")
 
 	router.HandleFunc("/users", requestHandlers.SignUp).Methods("POST")
 	router.HandleFunc("/current_user", requestHandlers.GetInfo).Methods("GET")
