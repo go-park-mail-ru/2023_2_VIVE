@@ -20,11 +20,6 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(newUser.Email) == 0 || len(newUser.Password) == 0 {
-		http.Error(w, serverErrors.INCORRECT_CREDENTIALS.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	addStatus := modelHandlers.AddUser(*newUser)
 	if addStatus != nil {
 		http.Error(w, addStatus.Error(), http.StatusConflict)

@@ -45,6 +45,10 @@ func AddUser(user models.User) error {
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	}
 
+	if len(user.Email) == 0 || len(user.Password) == 0 {
+		return serverErrors.INCORRECT_CREDENTIALS
+	}
+
 	hasher := sha256.New()
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
