@@ -20,14 +20,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(user.Email) == 0 || len(user.Password) == 0 {
-		http.Error(w, errors.INCORRECT_CREDENTIALS.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	passwordStatus := modelHandlers.CheckPassword(*user)
-	if passwordStatus != nil {
-		http.Error(w, errors.INCORRECT_CREDENTIALS.Error(), http.StatusUnauthorized)
+	loginErr := modelHandlers.CheckUser(*user)
+	if loginErr != nil {
+		http.Error(w, loginErr.Error(), http.StatusUnauthorized)
 		return
 	}
 

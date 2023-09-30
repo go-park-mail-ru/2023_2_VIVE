@@ -25,6 +25,19 @@ func CheckPassword(user models.User) error {
 	return nil
 }
 
+func CheckUser(user models.User) error {
+	if len(user.Email) == 0 || len(user.Password) == 0 {
+		return errors.INCORRECT_CREDENTIALS
+	}
+
+	passwordStatus := CheckPassword(user)
+	if passwordStatus != nil {
+		return passwordStatus
+	}
+
+	return nil
+}
+
 func AddUser(user models.User) error {
 	_, exist := models.Users.Load(user.Email)
 
