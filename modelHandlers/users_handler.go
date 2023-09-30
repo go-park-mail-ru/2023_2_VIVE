@@ -53,6 +53,8 @@ func AddUser(user *models.User) error {
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
 
+	models.CurrentID++
+	user.ID = models.CurrentID
 	models.Users.Store(user.Email, hashedPass)
 
 	return nil

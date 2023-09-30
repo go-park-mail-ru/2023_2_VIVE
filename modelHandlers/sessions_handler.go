@@ -21,7 +21,7 @@ func AddSession(user *models.User) http.Cookie {
 		HttpOnly: true,
 	}
 
-	models.Sessions.Store(uniqueID, user)
+	models.Sessions.Store(uniqueID, user.ID)
 	return cookie
 }
 
@@ -41,13 +41,9 @@ func ValidateSession(cookie *http.Cookie) error {
 		return serverErrors.COOKIE_HAS_EXPIRED
 	}
 
-	storedID, ok := models.Sessions.Load(cookie.Value)
+	_, ok := models.Sessions.Load(cookie.Value)
 
 	if !ok {
-		return serverErrors.AUTH_REQUIRED
-	}
-
-	if cookie.Value != storedID {
 		return serverErrors.INVALID_COOKIE
 	}
 

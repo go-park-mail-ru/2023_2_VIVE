@@ -16,13 +16,24 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errResp := serverErrors.ServerError{Message: err.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errJs)
 		return
 	}
 
 	addStatus := modelHandlers.AddUser(newUser)
 	if addStatus != nil {
-		http.Error(w, addStatus.Error(), http.StatusConflict)
+		errResp := serverErrors.ServerError{Message: addStatus.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		w.Write(errJs)
+		return
 	}
 
 	cookie := modelHandlers.AddSession(newUser)
@@ -34,13 +45,23 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
 	validStatus := modelHandlers.ValidateSession(session)
 	if validStatus != nil {
-		http.Error(w, validStatus.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: validStatus.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
@@ -48,7 +69,12 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.Marshal(*user)
 	if err != nil {
-		http.Error(w, serverErrors.INTERNAL_SERVER_ERROR.Error(), http.StatusInternalServerError)
+		errResp := serverErrors.ServerError{Message: serverErrors.INTERNAL_SERVER_ERROR.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errJs)
 		return
 	}
 

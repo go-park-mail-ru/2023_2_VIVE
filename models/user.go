@@ -2,6 +2,8 @@ package models
 
 import "sync"
 
+var CurrentID = 0
+
 type Role string
 
 const (

@@ -17,13 +17,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errResp := serverErrors.ServerError{Message: err.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errJs)
 		return
 	}
 
 	loginErr := modelHandlers.CheckUser(user)
 	if loginErr != nil {
-		http.Error(w, loginErr.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: loginErr.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
@@ -36,13 +46,23 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
 	deleteErr := modelHandlers.DeleteSession(session)
 	if deleteErr != nil {
-		http.Error(w, deleteErr.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: deleteErr.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
@@ -55,13 +75,23 @@ func CheckLogin(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		http.Error(w, serverErrors.NO_COOKIE.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
 	sessionErr := modelHandlers.ValidateSession(session)
 	if sessionErr != nil {
-		http.Error(w, sessionErr.Error(), http.StatusUnauthorized)
+		errResp := serverErrors.ServerError{Message: sessionErr.Error()}
+		errJs, _ := json.Marshal(errResp)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(errJs)
 		return
 	}
 
