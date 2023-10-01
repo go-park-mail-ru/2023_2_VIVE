@@ -12,7 +12,7 @@ type Vacancy struct {
 
 type vacancies struct {
 	VacancyList []Vacancy
-	Mu          *sync.Mutex
+	Mu          *sync.RWMutex
 }
 
 var VacancyDB = vacancies{
@@ -53,5 +53,5 @@ var VacancyDB = vacancies{
 			Salary:      2000,
 		}},
 
-	Mu: &sync.Mutex{},
+	Mu: &sync.RWMutex{},
 }

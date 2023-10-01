@@ -53,9 +53,9 @@ func AddUser(user *models.User) error {
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
 
-	defer models.UserDB.Mu.Unlock()
-
 	models.UserDB.Mu.Lock()
+
+	defer models.UserDB.Mu.Unlock()
 
 	models.UserDB.CurrentID++
 	user.ID = models.UserDB.CurrentID

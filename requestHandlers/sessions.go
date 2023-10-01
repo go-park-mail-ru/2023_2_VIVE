@@ -28,7 +28,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie := modelHandlers.AddSession(user)
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
 
