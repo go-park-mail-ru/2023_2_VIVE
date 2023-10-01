@@ -9,16 +9,19 @@ import (
 )
 
 func CheckPassword(user *models.User) error {
-	actualUser, ok := models.EmailToUser.Load(user.Email)
+	actualUserIndex, ok := models.EmailToUser.Load(user.Email)
+
 	if !ok {
 		return serverErrors.NO_DATA_FOUND
 	}
+
+	actualUser := models.UserDB.UsersList[actualUserIndex.(int)]
 
 	hasher := sha256.New()
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
 
-	if hex.EncodeToString(hashedPass) != actualUser.(*models.User).Password {
+	if hex.EncodeToString(hashedPass) != actualUser.Password {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
@@ -73,7 +76,8 @@ func GetUserInfo(cookie *http.Cookie) *models.User {
 	uniqueID := cookie.Value
 
 	userID, _ := models.Sessions.Load(uniqueID)
-	user, _ := models.IdToUser.Load(userID.(int))
+	userIndex, _ := models.IdToUser.Load(userID.(int))
+	user := models.UserDB.UsersList[userIndex.(int)]
 
-	return user.(*models.User)
+	return user
 }

@@ -21,7 +21,10 @@ func AddSession(user *models.User) *http.Cookie {
 		HttpOnly: true,
 	}
 
-	models.Sessions.Store(uniqueID, user.ID)
+	userIndex, _ := models.EmailToUser.Load(user.Email)
+	userToAdd := models.UserDB.UsersList[userIndex.(int)]
+
+	models.Sessions.Store(uniqueID, userToAdd.ID)
 	return cookie
 }
 
