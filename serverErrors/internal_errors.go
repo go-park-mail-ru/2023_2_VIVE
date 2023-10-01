@@ -7,7 +7,6 @@ var (
 	NO_DATA_FOUND          = fmt.Errorf("Account data not found")
 	ACCOUNT_ALREADY_EXISTS = fmt.Errorf("An account with given email already exists")
 	SESSION_ALREADY_EXISTS = fmt.Errorf("Session has already started")
-	COOKIE_HAS_EXPIRED     = fmt.Errorf("The cookie provided has expired")
 	INVALID_COOKIE         = fmt.Errorf("The cookie provided is invalid")
 	NO_COOKIE              = fmt.Errorf("No cookie provided")
 	AUTH_REQUIRED          = fmt.Errorf("You need to be authenticated")

@@ -1,5 +1,5 @@
 package configs
 
 const (
-	PORT = ":8080"
+	PORT = ":8081"
 )

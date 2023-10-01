@@ -40,10 +40,6 @@ func DeleteSession(cookie *http.Cookie) error {
 }
 
 func ValidateSession(cookie *http.Cookie) error {
-	if time.Now().After(cookie.Expires) {
-		return serverErrors.COOKIE_HAS_EXPIRED
-	}
-
 	_, ok := models.Sessions.Load(cookie.Value)
 
 	if !ok {
