@@ -17,23 +17,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
-		errResp := serverErrors.ServerError{Message: err.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errJs)
+		sendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	loginErr := modelHandlers.CheckUser(user)
 	if loginErr != nil {
-		errResp := serverErrors.ServerError{Message: loginErr.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, loginErr, http.StatusUnauthorized)
 		return
 	}
 
@@ -46,23 +36,13 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
 		return
 	}
 
 	deleteErr := modelHandlers.DeleteSession(session)
 	if deleteErr != nil {
-		errResp := serverErrors.ServerError{Message: deleteErr.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, deleteErr, http.StatusUnauthorized)
 		return
 	}
 
@@ -75,23 +55,12 @@ func CheckLogin(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
-		return
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
 	}
 
 	sessionErr := modelHandlers.ValidateSession(session)
 	if sessionErr != nil {
-		errResp := serverErrors.ServerError{Message: sessionErr.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, sessionErr, http.StatusUnauthorized)
 		return
 	}
 

@@ -2,10 +2,6 @@ package serverErrors
 
 import "fmt"
 
-type ServerError struct {
-	Message string `json:"message"`
-}
-
 var (
 	INCORRECT_CREDENTIALS  = fmt.Errorf("Incorrect credentials")
 	NO_DATA_FOUND          = fmt.Errorf("Account data not found")

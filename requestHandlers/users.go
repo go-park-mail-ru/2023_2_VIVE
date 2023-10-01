@@ -16,23 +16,13 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
-		errResp := serverErrors.ServerError{Message: err.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errJs)
+		sendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	addStatus := modelHandlers.AddUser(newUser)
 	if addStatus != nil {
-		errResp := serverErrors.ServerError{Message: addStatus.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		w.Write(errJs)
+		sendErrorMessage(w, addStatus, http.StatusConflict)
 		return
 	}
 
@@ -45,23 +35,13 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 
 	if errors.Is(err, http.ErrNoCookie) {
-		errResp := serverErrors.ServerError{Message: serverErrors.NO_COOKIE.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
 		return
 	}
 
 	validStatus := modelHandlers.ValidateSession(session)
 	if validStatus != nil {
-		errResp := serverErrors.ServerError{Message: validStatus.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(errJs)
+		sendErrorMessage(w, validStatus, http.StatusUnauthorized)
 		return
 	}
 
@@ -69,12 +49,7 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.Marshal(*user)
 	if err != nil {
-		errResp := serverErrors.ServerError{Message: serverErrors.INTERNAL_SERVER_ERROR.Error()}
-		errJs, _ := json.Marshal(errResp)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(errJs)
+		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
 		return
 	}
 
