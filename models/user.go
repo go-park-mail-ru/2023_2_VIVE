@@ -2,8 +2,6 @@ package models
 
 import "sync"
 
-var CurrentID = 0
-
 type Role string
 
 const (
@@ -11,7 +9,20 @@ const (
 	Employer  Role = "employer"
 )
 
-var Users = sync.Map{}
+type Users struct {
+	UsersList []*User
+	CurrentID int
+	Mu        *sync.Mutex
+}
+
+var IdToUser = sync.Map{}
+var EmailToUser = sync.Map{}
+
+var UserDB = Users{
+	UsersList: make([]*User, 0),
+	CurrentID: 0,
+	Mu:        &sync.Mutex{},
+}
 
 type User struct {
 	ID        int    `json:"id,omitempty"`

@@ -15,7 +15,7 @@ type vacancies struct {
 	Mu          *sync.Mutex
 }
 
-var Vac = vacancies{
+var VacancyDB = vacancies{
 	VacancyList: []Vacancy{
 		{
 			ID:          1,

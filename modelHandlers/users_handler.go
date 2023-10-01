@@ -9,7 +9,7 @@ import (
 )
 
 func CheckPassword(user *models.User) error {
-	actualPass, ok := models.Users.Load(user.Email)
+	actualUser, ok := models.EmailToUser.Load(user.Email)
 	if !ok {
 		return serverErrors.NO_DATA_FOUND
 	}
@@ -18,7 +18,7 @@ func CheckPassword(user *models.User) error {
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
 
-	if hex.EncodeToString(hashedPass) != hex.EncodeToString(actualPass.([]byte)) {
+	if hex.EncodeToString(hashedPass) != actualUser.(*models.User).Password {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
@@ -39,7 +39,7 @@ func CheckUser(user *models.User) error {
 }
 
 func AddUser(user *models.User) error {
-	_, exist := models.Users.Load(user.Email)
+	_, exist := models.EmailToUser.Load(user.Email)
 
 	if exist {
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
@@ -53,9 +53,18 @@ func AddUser(user *models.User) error {
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
 
-	models.CurrentID++
-	user.ID = models.CurrentID
-	models.Users.Store(user.Email, hashedPass)
+	defer models.UserDB.Mu.Unlock()
+
+	models.UserDB.Mu.Lock()
+
+	models.UserDB.CurrentID++
+	user.ID = models.UserDB.CurrentID
+	user.Password = hex.EncodeToString(hashedPass)
+
+	models.UserDB.UsersList = append(models.UserDB.UsersList, user)
+
+	models.EmailToUser.Store(user.Email, len(models.UserDB.UsersList)-1)
+	models.IdToUser.Store(user.ID, len(models.UserDB.UsersList)-1)
 
 	return nil
 }
@@ -63,6 +72,8 @@ func AddUser(user *models.User) error {
 func GetUserInfo(cookie *http.Cookie) *models.User {
 	uniqueID := cookie.Value
 
-	user, _ := models.Sessions.Load(uniqueID)
+	userID, _ := models.Sessions.Load(uniqueID)
+	user, _ := models.IdToUser.Load(userID.(int))
+
 	return user.(*models.User)
 }

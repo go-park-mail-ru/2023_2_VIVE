@@ -3,11 +3,11 @@ package modelHandlers
 import "models/models"
 
 func GetVacancies() []models.Vacancy {
-	defer models.Vac.Mu.Unlock()
+	defer models.VacancyDB.Mu.Unlock()
 
-	models.Vac.Mu.Lock()
-	listToReturn := models.Vac.VacancyList
-	models.Vac.Mu.Unlock()
+	models.VacancyDB.Mu.Lock()
+	listToReturn := models.VacancyDB.VacancyList
+	models.VacancyDB.Mu.Unlock()
 
 	return listToReturn
 }
