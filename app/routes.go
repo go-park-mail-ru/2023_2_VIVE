@@ -3,6 +3,7 @@ package app
 import (
 	"HnH/configs"
 	"HnH/requestHandlers"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -22,6 +23,7 @@ func Run() error {
 
 	http.Handle("/", router)
 
+	fmt.Printf("\tstarting server at %s\n", configs.PORT)
 	err := http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
 		return err
