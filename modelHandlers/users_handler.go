@@ -79,5 +79,7 @@ func GetUserInfo(cookie *http.Cookie) *models.User {
 	userIndex, _ := models.IdToUser.Load(userID.(int))
 	user := models.UserDB.UsersList[userIndex.(int)]
 
+	user.Password = ""
+
 	return user
 }
