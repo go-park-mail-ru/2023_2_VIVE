@@ -1,8 +1,8 @@
 package requestHandlers
 
 import (
+	"HnH/modelHandlers"
 	"encoding/json"
-	"models/modelHandlers"
 	"net/http"
 )
 

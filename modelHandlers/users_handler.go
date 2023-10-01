@@ -1,10 +1,10 @@
 package modelHandlers
 
 import (
+	"HnH/models"
+	"HnH/serverErrors"
 	"crypto/sha256"
 	"encoding/hex"
-	"models/models"
-	"models/serverErrors"
 	"net/http"
 )
 

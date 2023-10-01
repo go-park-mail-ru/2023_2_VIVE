@@ -1,11 +1,11 @@
 package requestHandlers
 
 import (
+	"HnH/modelHandlers"
+	"HnH/models"
+	"HnH/serverErrors"
 	"encoding/json"
 	"errors"
-	"models/modelHandlers"
-	"models/models"
-	"models/serverErrors"
 	"net/http"
 	"time"
 )

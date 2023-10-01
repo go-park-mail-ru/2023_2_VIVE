@@ -1,8 +1,8 @@
 package modelHandlers
 
 import (
-	"models/models"
-	"models/serverErrors"
+	"HnH/models"
+	"HnH/serverErrors"
 	"net/http"
 	"time"
 

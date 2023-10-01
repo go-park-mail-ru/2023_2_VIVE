@@ -1,6 +1,6 @@
 package modelHandlers
 
-import "models/models"
+import "HnH/models"
 
 func GetVacancies() []models.Vacancy {
 	models.VacancyDB.Mu.RLock()

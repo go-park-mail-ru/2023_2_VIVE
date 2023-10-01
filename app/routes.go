@@ -1,8 +1,8 @@
 package app
 
 import (
-	"models/configs"
-	"models/requestHandlers"
+	"HnH/configs"
+	"HnH/requestHandlers"
 	"net/http"
 
 	"github.com/gorilla/mux"

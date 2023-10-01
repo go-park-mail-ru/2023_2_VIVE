@@ -1,4 +1,4 @@
-module models
+module HnH
 
 go 1.18
 

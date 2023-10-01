@@ -1,9 +1,9 @@
 package main
 
 import (
+	"HnH/app"
+	"HnH/serverErrors"
 	"fmt"
-	"models/app"
-	"models/serverErrors"
 )
 
 func main() {
