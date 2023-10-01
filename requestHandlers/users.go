@@ -22,12 +22,12 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	addStatus := modelHandlers.AddUser(newUser)
 	if addStatus != nil {
-		sendErrorMessage(w, addStatus, http.StatusConflict)
+		sendErrorMessage(w, addStatus, http.StatusUnauthorized)
 		return
 	}
 
 	cookie := modelHandlers.AddSession(newUser)
-	http.SetCookie(w, &cookie)
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
 
