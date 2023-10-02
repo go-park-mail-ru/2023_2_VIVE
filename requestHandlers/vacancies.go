@@ -11,7 +11,7 @@ func GetVacancies(w http.ResponseWriter, r *http.Request) {
 
 	js, err := json.Marshal(vacancies)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		sendErrorMessage(w, err, http.StatusInternalServerError)
 		return
 	}
 
