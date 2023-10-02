@@ -98,7 +98,7 @@ var SignupIncorrectCases = []JsonTestCase{
 		responseBody: INVALID_ROLE,
 	},
 	{
-		requestBody:  `{:"tech@gmail.com", "password":"hiTech", "first_name":"Pasha", "last_name":"Techniл", "role":"applicant"}`,
+		requestBody:  `{:"tech@gmail.com", "password":"hiTech", "first_name":"Pasha", "last_name":"Technik", "role":"applicant"}`,
 		statusCode:   http.StatusBadRequest,
 		responseBody: MISSED_FIELD_JSON,
 	},
