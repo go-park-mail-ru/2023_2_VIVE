@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"net/mail"
 )
 
 func CheckPassword(user *models.User) error {
@@ -46,6 +47,11 @@ func AddUser(user *models.User) error {
 
 	if exist {
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
+	}
+
+	_, err := mail.ParseAddress(user.Email)
+	if err != nil {
+		return serverErrors.INVALID_EMAIL
 	}
 
 	if len(user.Email) == 0 || len(user.Password) == 0 {
