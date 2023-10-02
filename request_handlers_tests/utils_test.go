@@ -16,6 +16,7 @@ const (
 	NO_DATA_FOUND          = `{"message":"Account data not found"}`
 	ACCOUNT_ALREADY_EXISTS = `{"message":"An account with given email already exists"}`
 	INVALID_ROLE           = `{"message":"The entered role does not exist"}`
+	INVALID_EMAIL          = `{"message":"The entered email-address is not a real one"}`
 
 	INVALID_COOKIE = `{"message":"The cookie provided is invalid"}`
 	NO_COOKIE      = `{"message":"No cookie provided"}`

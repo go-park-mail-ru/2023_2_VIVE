@@ -152,6 +152,7 @@ import (
         "crypto/sha256"
         "encoding/hex"
         "net/http"
+        "net/mail"
 )
 
 func CheckPassword(user *models.User) error <span class="cov9" title="10">{
@@ -187,18 +188,23 @@ func CheckUser(user *models.User) error <span class="cov10" title="12">{
         <span class="cov8" title="8">return nil</span>
 }
 
-func AddUser(user *models.User) error <span class="cov9" title="10">{
+func AddUser(user *models.User) error <span class="cov10" title="12">{
         _, exist := models.EmailToUser.Load(user.Email)
 
         if exist </span><span class="cov1" title="1">{
                 return serverErrors.ACCOUNT_ALREADY_EXISTS
         }</span>
 
-        <span class="cov8" title="9">if len(user.Email) == 0 || len(user.Password) == 0 </span><span class="cov1" title="1">{
+        <span class="cov9" title="11">_, err := mail.ParseAddress(user.Email)
+        if err != nil </span><span class="cov1" title="1">{
+                return serverErrors.INVALID_EMAIL
+        }</span>
+
+        <span class="cov9" title="10">if len(user.Email) == 0 || len(user.Password) == 0 </span><span class="cov1" title="1">{
                 return serverErrors.INCORRECT_CREDENTIALS
         }</span>
 
-        <span class="cov8" title="8">if !user.Type.IsRole() </span><span class="cov1" title="1">{
+        <span class="cov8" title="9">if !user.Type.IsRole() </span><span class="cov3" title="2">{
                 return serverErrors.INVALID_ROLE
         }</span>
 
@@ -261,7 +267,7 @@ const (
         Employer  Role = "employer"
 )
 
-func (r Role) IsRole() bool <span class="cov10" title="8">{
+func (r Role) IsRole() bool <span class="cov10" title="9">{
         return r == Applicant || r == Employer
 }</span>
 
@@ -301,7 +307,7 @@ type serverErrorToSend struct {
         Message string `json:"message"`
 }
 
-func sendErrorMessage(w http.ResponseWriter, err error, statusCode int) <span class="cov10" title="18">{
+func sendErrorMessage(w http.ResponseWriter, err error, statusCode int) <span class="cov10" title="20">{
         errResp := serverErrorToSend{Message: err.Error()}
         errJs, _ := json.Marshal(errResp)
 
@@ -393,7 +399,7 @@ import (
         "net/http"
 )
 
-func SignUp(w http.ResponseWriter, r *http.Request) <span class="cov10" title="11">{
+func SignUp(w http.ResponseWriter, r *http.Request) <span class="cov10" title="13">{
         defer r.Body.Close()
 
         newUser := new(models.User)
@@ -404,13 +410,13 @@ func SignUp(w http.ResponseWriter, r *http.Request) <span class="cov10" title="1
                 return
         }</span>
 
-        <span class="cov9" title="10">addStatus := modelHandlers.AddUser(newUser)
-        if addStatus != nil </span><span class="cov5" title="3">{
+        <span class="cov9" title="12">addStatus := modelHandlers.AddUser(newUser)
+        if addStatus != nil </span><span class="cov6" title="5">{
                 sendErrorMessage(w, addStatus, http.StatusUnauthorized)
                 return
         }</span>
 
-        <span class="cov8" title="7">cookie := modelHandlers.AddSession(newUser)
+        <span class="cov7" title="7">cookie := modelHandlers.AddSession(newUser)
         http.SetCookie(w, cookie)
         w.WriteHeader(http.StatusOK)</span>
 }
@@ -423,13 +429,13 @@ func GetInfo(w http.ResponseWriter, r *http.Request) <span class="cov7" title="6
                 return
         }</span>
 
-        <span class="cov6" title="4">validStatus := modelHandlers.ValidateSession(session)
+        <span class="cov5" title="4">validStatus := modelHandlers.ValidateSession(session)
         if validStatus != nil </span><span class="cov1" title="1">{
                 sendErrorMessage(w, validStatus, http.StatusUnauthorized)
                 return
         }</span>
 
-        <span class="cov5" title="3">user := modelHandlers.GetUserInfo(session)
+        <span class="cov4" title="3">user := modelHandlers.GetUserInfo(session)
 
         js, err := json.Marshal(*user)
         if err != nil </span><span class="cov0" title="0">{
@@ -437,7 +443,7 @@ func GetInfo(w http.ResponseWriter, r *http.Request) <span class="cov7" title="6
                 return
         }</span>
 
-        <span class="cov5" title="3">w.WriteHeader(http.StatusOK)
+        <span class="cov4" title="3">w.WriteHeader(http.StatusOK)
         w.Header().Set("Content-Type", "application/json")
         w.Write(js)</span>
 }

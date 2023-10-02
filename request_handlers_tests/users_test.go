@@ -88,7 +88,7 @@ var SignupIncorrectCases = []JsonTestCase{
 		responseBody: ACCOUNT_ALREADY_EXISTS,
 	},
 	{
-		requestBody:  `{"email":"", "password":"CeoOfGoole", "first_name":"Pichai", "last_name":"Sundararajan", "role":"employer"}`,
+		requestBody:  `{"email":"someMail@mail.ru", "password":"", "first_name":"Pichai", "last_name":"Sundararajan", "role":"employer"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INCORRECT_CREDENTIALS,
 	},
@@ -101,6 +101,16 @@ var SignupIncorrectCases = []JsonTestCase{
 		requestBody:  `{:"tech@gmail.com", "password":"hiTech", "first_name":"Pasha", "last_name":"Techniл", "role":"applicant"}`,
 		statusCode:   http.StatusBadRequest,
 		responseBody: MISSED_FIELD_JSON,
+	},
+	{
+		requestBody:  `{"email":"vk.com", "password":"mailrugroup", "first_name":"Alexey", "last_name":"Loginov", "role":"employer"}`,
+		statusCode:   http.StatusUnauthorized,
+		responseBody: INVALID_EMAIL,
+	},
+	{
+		requestBody:  `{"email":"andrey02@mail.ru", "password":"znatok2002", "first_name":"Andrey", "last_name":"Dolgikh", "role":""}`,
+		statusCode:   http.StatusUnauthorized,
+		responseBody: INVALID_ROLE,
 	},
 }
 
