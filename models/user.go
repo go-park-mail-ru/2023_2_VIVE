@@ -9,6 +9,10 @@ const (
 	Employer  Role = "employer"
 )
 
+func (r Role) IsRole() bool {
+	return r == Applicant || r == Employer
+}
+
 type Users struct {
 	UsersList []*User
 	CurrentID int

@@ -52,6 +52,10 @@ func AddUser(user *models.User) error {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
+	if !user.Type.IsRole() {
+		return serverErrors.INVALID_ROLE
+	}
+
 	hasher := sha256.New()
 	hasher.Write([]byte(user.Password))
 	hashedPass := hasher.Sum(nil)
