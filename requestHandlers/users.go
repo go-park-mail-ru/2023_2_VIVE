@@ -6,21 +6,24 @@ import (
 	"HnH/serverErrors"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
 func SignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-
+	fmt.Printf("Signing Up\n\n")
 	newUser := new(models.User)
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
+	fmt.Printf("%v\n\n", *newUser)
 	if err != nil {
 		sendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	addStatus := modelHandlers.AddUser(newUser)
+	fmt.Printf("Status: %v\n\n", addStatus)
 	if addStatus != nil {
 		sendErrorMessage(w, addStatus, http.StatusUnauthorized)
 		return
