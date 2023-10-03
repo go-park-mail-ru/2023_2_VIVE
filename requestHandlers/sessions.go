@@ -56,6 +56,7 @@ func CheckLogin(w http.ResponseWriter, r *http.Request) {
 
 	if errors.Is(err, http.ErrNoCookie) {
 		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+		return
 	}
 
 	sessionErr := modelHandlers.ValidateSession(session)

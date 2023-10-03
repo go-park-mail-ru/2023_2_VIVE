@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
+	"net/mail"
 )
 
 func CheckPassword(user *models.User) error {
@@ -48,8 +49,17 @@ func AddUser(user *models.User) error {
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	}
 
+	_, err := mail.ParseAddress(user.Email)
+	if err != nil {
+		return serverErrors.INVALID_EMAIL
+	}
+
 	if len(user.Email) == 0 || len(user.Password) == 0 {
 		return serverErrors.INCORRECT_CREDENTIALS
+	}
+
+	if !user.Type.IsRole() {
+		return serverErrors.INVALID_ROLE
 	}
 
 	hasher := sha256.New()
