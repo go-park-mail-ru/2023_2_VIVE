@@ -21,7 +21,8 @@ func Run() error {
 
 	router.HandleFunc("/vacancies", requestHandlers.GetVacancies).Methods("GET")
 
-	http.Handle("/", router)
+	corsRouter := configs.CORS.Handler(router)
+	http.Handle("/", corsRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
 	err := http.ListenAndServe(configs.PORT, nil)
