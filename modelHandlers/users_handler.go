@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/mail"
+	"unicode"
 )
 
 func CheckPassword(user *models.User) error {
@@ -24,6 +25,42 @@ func CheckPassword(user *models.User) error {
 
 	if hex.EncodeToString(hashedPass) != actualUser.Password {
 		return serverErrors.INCORRECT_CREDENTIALS
+	}
+
+	return nil
+}
+
+func ValidatePassword(password string) error {
+	if len(password) < 8 || len(password) > 128 {
+		return serverErrors.INVALID_PASSWORD
+	}
+
+	hasDigit := false
+	hasCapital := false
+	hasSpecialChar := false
+
+	for _, char := range password {
+		if !hasDigit {
+			hasDigit = unicode.IsDigit(char)
+		}
+
+		if !hasCapital {
+			hasCapital = unicode.Is(unicode.Latin, char) && unicode.IsUpper(char)
+		}
+
+		if !hasSpecialChar {
+			for _, specCh := range models.SpecialChars {
+				hasSpecialChar = (char == specCh)
+
+				if hasSpecialChar {
+					break
+				}
+			}
+		}
+	}
+
+	if !(hasDigit && hasCapital && hasSpecialChar) {
+		return serverErrors.INVALID_PASSWORD
 	}
 
 	return nil
@@ -56,6 +93,11 @@ func AddUser(user *models.User) error {
 
 	if len(user.Email) == 0 || len(user.Password) == 0 {
 		return serverErrors.INCORRECT_CREDENTIALS
+	}
+
+	validPassStatus := ValidatePassword(user.Password)
+	if validPassStatus != nil {
+		return validPassStatus
 	}
 
 	if !user.Type.IsRole() {

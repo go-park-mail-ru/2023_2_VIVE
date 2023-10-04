@@ -2,6 +2,8 @@ package models
 
 import "sync"
 
+const SpecialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
+
 type Role string
 
 const (
