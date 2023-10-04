@@ -5,6 +5,7 @@ import "fmt"
 var (
 	INCORRECT_CREDENTIALS  = fmt.Errorf("Incorrect credentials")
 	INVALID_EMAIL          = fmt.Errorf("The entered email-address is not a real one")
+	INVALID_PASSWORD       = fmt.Errorf("The entered password does not meet the requirements")
 	INVALID_ROLE           = fmt.Errorf("The entered role does not exist")
 	NO_DATA_FOUND          = fmt.Errorf("Account data not found")
 	ACCOUNT_ALREADY_EXISTS = fmt.Errorf("An account with given email already exists")
