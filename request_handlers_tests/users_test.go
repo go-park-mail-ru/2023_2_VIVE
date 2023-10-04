@@ -14,27 +14,27 @@ import (
 
 var SignupCorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"vive@mail.ru", "password":"vive2023top", "first_name":"Vladimir", "last_name":"Borozenets", "role":"applicant"}`,
+		requestBody:  `{"email":"vive@mail.ru", "password":"Vive2023top~", "first_name":"Vladimir", "last_name":"Borozenets", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"vk_ed@mail.ru", "password":"technopark", "first_name":"Ivan", "last_name":"Pupkin", "role":"applicant"}`,
+		requestBody:  `{"email":"vk_ed@mail.ru", "password":"Technopark2023!", "first_name":"Ivan", "last_name":"Pupkin", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"petr98@mail.ru", "password":"petyamolodec", "first_name":"Petr", "last_name":"Ivanov", "role":"employer"}`,
+		requestBody:  `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!", "first_name":"Petr", "last_name":"Ivanov", "role":"employer"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"golang@gmail.com", "password":"golangenjoyer", "first_name":"Sergey", "last_name":"Alekseev", "role":"applicant"}`,
+		requestBody:  `{"email":"golang@gmail.com", "password":"GolangEnjoyer2002?", "first_name":"Sergey", "last_name":"Alekseev", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"katya1729@empire.ru", "password":"theempress", "first_name":"Ekaterina", "last_name":"Vtoraya", "role":"employer"}`,
+		requestBody:  `{"email":"katya1729@empire.ru", "password":"TheEmpress29#", "first_name":"Ekaterina", "last_name":"Vtoraya", "role":"employer"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
@@ -53,12 +53,12 @@ func TestMain(m *testing.M) {
 
 var NewSignupCorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"fn11_73b@bmstu.ru", "password":"Moskva", "first_name":"Ruslan", "last_name":"Novikov", "role":"applicant"}`,
+		requestBody:  `{"email":"fn11_73b@bmstu.ru", "password":"Moskva^22", "first_name":"Ruslan", "last_name":"Novikov", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"government@nsk.ru", "password":"NSK_TOP", "first_name":"Anatoliy", "last_name":"Lokot", "role":"employer"}`,
+		requestBody:  `{"email":"government@nsk.ru", "password":"NSK154_top%", "first_name":"Anatoliy", "last_name":"Lokot", "role":"employer"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
@@ -83,7 +83,7 @@ func TestSignupCorrectInput(t *testing.T) {
 
 var SignupIncorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"vive@mail.ru", "password":"new_password", "first_name":"Vladimir", "last_name":"Borozenets", "role":"applicant"}`,
+		requestBody:  `{"email":"vive@mail.ru", "password":"New_password2", "first_name":"Vladimir", "last_name":"Borozenets", "role":"applicant"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: ACCOUNT_ALREADY_EXISTS,
 	},
@@ -93,24 +93,34 @@ var SignupIncorrectCases = []JsonTestCase{
 		responseBody: INCORRECT_CREDENTIALS,
 	},
 	{
-		requestBody:  `{"email":"specialist@mail.ru", "password":"masterOfScience", "first_name":"Anton", "last_name":"Umnov", "role":"genius"}`,
+		requestBody:  `{"email":"specialist@mail.ru", "password":"masterOfScience@man11", "first_name":"Anton", "last_name":"Umnov", "role":"genius"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INVALID_ROLE,
 	},
 	{
-		requestBody:  `{:"tech@gmail.com", "password":"hiTech", "first_name":"Pasha", "last_name":"Technik", "role":"applicant"}`,
+		requestBody:  `{:"tech@gmail.com", "password":"hiTech_69", "first_name":"Pasha", "last_name":"Technik", "role":"applicant"}`,
 		statusCode:   http.StatusBadRequest,
 		responseBody: MISSED_FIELD_JSON,
 	},
 	{
-		requestBody:  `{"email":"vk.com", "password":"mailrugroup", "first_name":"Alexey", "last_name":"Loginov", "role":"employer"}`,
+		requestBody:  `{"email":"vk.com", "password":"!mailRuGroup2011", "first_name":"Alexey", "last_name":"Loginov", "role":"employer"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INVALID_EMAIL,
 	},
 	{
-		requestBody:  `{"email":"andrey02@mail.ru", "password":"znatok2002", "first_name":"Andrey", "last_name":"Dolgikh", "role":""}`,
+		requestBody:  `{"email":"andrey02@mail.ru", "password":"Znatok_2002", "first_name":"Andrey", "last_name":"Dolgikh", "role":""}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INVALID_ROLE,
+	},
+	{
+		requestBody:  `{"email":"hardwork@mail.ru", "password":"Trudogolik74", "first_name":"Nikolay", "last_name":"Belaz", "role":"employer"}`,
+		statusCode:   http.StatusUnauthorized,
+		responseBody: INVALID_PASSWORD,
+	},
+	{
+		requestBody:  `{"email":"novichok@gmail.com", "password":"short", "first_name":"Evgeniy", "last_name":"Novikov", "role":"applicant"}`,
+		statusCode:   http.StatusUnauthorized,
+		responseBody: INVALID_PASSWORD,
 	},
 }
 
@@ -133,17 +143,17 @@ func TestSignupIncorrectInput(t *testing.T) {
 
 var GetInfoCorrectCases = []GetUserTestCase{
 	{
-		authData:           `{"email":"vive@mail.ru", "password":"vive2023top"}`,
+		authData:           `{"email":"vive@mail.ru", "password":"Vive2023top~"}`,
 		expectedMessage:    `{"id":1,"email":"vive@mail.ru","first_name":"Vladimir","last_name":"Borozenets","role":"applicant"}`,
 		expectedStatusCode: http.StatusOK,
 	},
 	{
-		authData:           `{"email":"petr98@mail.ru", "password":"petyamolodec"}`,
+		authData:           `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!"}`,
 		expectedMessage:    `{"id":3,"email":"petr98@mail.ru","first_name":"Petr","last_name":"Ivanov","role":"employer"}`,
 		expectedStatusCode: http.StatusOK,
 	},
 	{
-		authData:           `{"email":"katya1729@empire.ru", "password":"theempress"}`,
+		authData:           `{"email":"katya1729@empire.ru", "password":"TheEmpress29#"}`,
 		expectedMessage:    `{"id":5,"email":"katya1729@empire.ru","first_name":"Ekaterina","last_name":"Vtoraya","role":"employer"}`,
 		expectedStatusCode: http.StatusOK,
 	},

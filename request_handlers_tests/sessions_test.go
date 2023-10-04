@@ -14,27 +14,27 @@ import (
 
 var LoginCorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"vive@mail.ru", "password":"vive2023top"}`,
+		requestBody:  `{"email":"vive@mail.ru", "password":"Vive2023top~"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"vk_ed@mail.ru", "password":"technopark"}`,
+		requestBody:  `{"email":"vk_ed@mail.ru", "password":"Technopark2023!"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"petr98@mail.ru", "password":"petyamolodec"}`,
+		requestBody:  `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"golang@gmail.com", "password":"golangenjoyer"}`,
+		requestBody:  `{"email":"golang@gmail.com", "password":"GolangEnjoyer2002?"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"katya1729@empire.ru", "password":"theempress"}`,
+		requestBody:  `{"email":"katya1729@empire.ru", "password":"TheEmpress29#"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
