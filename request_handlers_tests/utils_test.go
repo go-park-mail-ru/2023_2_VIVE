@@ -18,6 +18,7 @@ const (
 	INVALID_ROLE           = `{"message":"The entered role does not exist"}`
 	INVALID_EMAIL          = `{"message":"The entered email-address is not a real one"}`
 	INVALID_PASSWORD       = `{"message":"The entered password does not meet the requirements"}`
+	INCORRECT_ROLE         = `{"message":"An account with chosen role does not exist"}`
 
 	INVALID_COOKIE = `{"message":"The cookie provided is invalid"}`
 	NO_COOKIE      = `{"message":"No cookie provided"}`

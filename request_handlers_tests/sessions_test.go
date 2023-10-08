@@ -14,27 +14,27 @@ import (
 
 var LoginCorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"vive@mail.ru", "password":"Vive2023top~"}`,
+		requestBody:  `{"email":"vive@mail.ru", "password":"Vive2023top~", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"vk_ed@mail.ru", "password":"Technopark2023!"}`,
+		requestBody:  `{"email":"vk_ed@mail.ru", "password":"Technopark2023!", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!"}`,
+		requestBody:  `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!", "role":"employer"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"golang@gmail.com", "password":"GolangEnjoyer2002?"}`,
+		requestBody:  `{"email":"golang@gmail.com", "password":"GolangEnjoyer2002?", "role":"applicant"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
 	{
-		requestBody:  `{"email":"katya1729@empire.ru", "password":"TheEmpress29#"}`,
+		requestBody:  `{"email":"katya1729@empire.ru", "password":"TheEmpress29#", "role":"employer"}`,
 		statusCode:   http.StatusOK,
 		responseBody: "",
 	},
@@ -89,29 +89,34 @@ func TestLoginLogoutCorrectInput(t *testing.T) {
 
 var LoginIncorrectCases = []JsonTestCase{
 	{
-		requestBody:  `{"email":"unknown@mail.ru", "password":"vive2023top"}`,
+		requestBody:  `{"email":"unknown@mail.ru", "password":"vive2023top", "role":"applicant"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: NO_DATA_FOUND,
 	},
 	{
-		requestBody:  `{"email":"vk_ed@mail.ru", "password":"itIsNotTheTechnoparkAnymore"}`,
+		requestBody:  `{"email":"vk_ed@mail.ru", "password":"itIsNotTheTechnoparkAnymore", "role":"employer"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INCORRECT_CREDENTIALS,
 	},
 	{
-		requestBody:  `{"email":"", "password":"petyamolodec"}`,
+		requestBody:  `{"email":"", "password":"petyamolodec", "role":"employer"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INCORRECT_CREDENTIALS,
 	},
 	{
-		requestBody:  `{"email":"golang@gmail.com", "password":""}`,
+		requestBody:  `{"email":"golang@gmail.com", "password":"", "role":"employer"}`,
 		statusCode:   http.StatusUnauthorized,
 		responseBody: INCORRECT_CREDENTIALS,
 	},
 	{
-		requestBody:  `{:"katya1729@empire.ru", "password":"theempress"}`,
+		requestBody:  `{:"katya1729@empire.ru", "password":"theempress", "role":"employer"}`,
 		statusCode:   http.StatusBadRequest,
 		responseBody: MISSED_FIELD_JSON,
+	},
+	{
+		requestBody:  `{"email":"golang@gmail.com", "password":"GolangEnjoyer2002?", "role":"employer"}`,
+		statusCode:   http.StatusUnauthorized,
+		responseBody: INCORRECT_ROLE,
 	},
 }
 

@@ -30,6 +30,22 @@ func CheckPassword(user *models.User) error {
 	return nil
 }
 
+func CheckRole(user *models.User) error {
+	actualUserIndex, ok := models.EmailToUser.Load(user.Email)
+
+	if !ok {
+		return serverErrors.NO_DATA_FOUND
+	}
+
+	actualUser := models.UserDB.UsersList[actualUserIndex.(int)]
+
+	if user.Type != actualUser.Type {
+		return serverErrors.INCORRECT_ROLE
+	}
+
+	return nil
+}
+
 func ValidatePassword(password string) error {
 	if len(password) < 8 || len(password) > 128 {
 		return serverErrors.INVALID_PASSWORD
@@ -74,6 +90,11 @@ func CheckUser(user *models.User) error {
 	passwordStatus := CheckPassword(user)
 	if passwordStatus != nil {
 		return passwordStatus
+	}
+
+	roleStatus := CheckRole(user)
+	if roleStatus != nil {
+		return roleStatus
 	}
 
 	return nil

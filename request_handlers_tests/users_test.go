@@ -143,17 +143,17 @@ func TestSignupIncorrectInput(t *testing.T) {
 
 var GetInfoCorrectCases = []GetUserTestCase{
 	{
-		authData:           `{"email":"vive@mail.ru", "password":"Vive2023top~"}`,
+		authData:           `{"email":"vive@mail.ru", "password":"Vive2023top~", "role":"applicant"}`,
 		expectedMessage:    `{"id":1,"email":"vive@mail.ru","first_name":"Vladimir","last_name":"Borozenets","role":"applicant"}`,
 		expectedStatusCode: http.StatusOK,
 	},
 	{
-		authData:           `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!"}`,
+		authData:           `{"email":"petr98@mail.ru", "password":"PetyaMolodec23!", "role":"employer"}`,
 		expectedMessage:    `{"id":3,"email":"petr98@mail.ru","first_name":"Petr","last_name":"Ivanov","role":"employer"}`,
 		expectedStatusCode: http.StatusOK,
 	},
 	{
-		authData:           `{"email":"katya1729@empire.ru", "password":"TheEmpress29#"}`,
+		authData:           `{"email":"katya1729@empire.ru", "password":"TheEmpress29#", "role":"employer"}`,
 		expectedMessage:    `{"id":5,"email":"katya1729@empire.ru","first_name":"Ekaterina","last_name":"Vtoraya","role":"employer"}`,
 		expectedStatusCode: http.StatusOK,
 	},
