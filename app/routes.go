@@ -2,7 +2,7 @@ package app
 
 import (
 	"HnH/configs"
-	"HnH/requestHandlers"
+	"HnH/internal/requestHandlers"
 	"fmt"
 	"net/http"
 

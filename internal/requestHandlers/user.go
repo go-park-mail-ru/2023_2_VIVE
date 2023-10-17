@@ -1,9 +1,9 @@
 package requestHandlers
 
 import (
-	"HnH/modelHandlers"
-	"HnH/models"
-	"HnH/serverErrors"
+	"HnH/internal/modelHandlers"
+	"HnH/internal/models"
+	"HnH/internal/serverErrors"
 	"encoding/json"
 	"errors"
 	"net/http"
