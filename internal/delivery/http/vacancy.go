@@ -1,13 +1,18 @@
-package requestHandlers
+package http
 
 import (
-	"HnH/internal/modelHandlers"
+	"HnH/internal/usecase"
+
 	"encoding/json"
 	"net/http"
 )
 
 func GetVacancies(w http.ResponseWriter, r *http.Request) {
-	vacancies := modelHandlers.GetVacancies()
+	vacancies, getErr := usecase.GetVacancies()
+	if getErr != nil {
+		sendErrorMessage(w, getErr, http.StatusBadRequest)
+		return
+	}
 
 	js, err := json.Marshal(vacancies)
 	if err != nil {

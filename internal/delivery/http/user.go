@@ -1,9 +1,10 @@
-package requestHandlers
+package http
 
 import (
-	"HnH/internal/modelHandlers"
-	"HnH/internal/models"
-	"HnH/internal/serverErrors"
+	"HnH/internal/domain"
+	"HnH/internal/usecase"
+	"HnH/pkg/serverErrors"
+
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 func SignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	newUser := new(models.User)
+	newUser := new(domain.User)
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
@@ -20,13 +21,12 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	addStatus := modelHandlers.AddUser(newUser)
-	if addStatus != nil {
-		sendErrorMessage(w, addStatus, http.StatusUnauthorized)
+	cookie, err := usecase.SignUp(newUser)
+	if err != nil {
+		sendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	cookie := modelHandlers.AddSession(newUser)
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
@@ -39,13 +39,11 @@ func GetInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validStatus := modelHandlers.ValidateSession(session)
-	if validStatus != nil {
-		sendErrorMessage(w, validStatus, http.StatusUnauthorized)
+	user, err := usecase.GetInfo(session)
+	if err != nil {
+		sendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
 		return
 	}
-
-	user := modelHandlers.GetUserInfo(session)
 
 	js, err := json.Marshal(*user)
 	if err != nil {

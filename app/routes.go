@@ -2,7 +2,8 @@ package app
 
 import (
 	"HnH/configs"
-	"HnH/internal/requestHandlers"
+	deliveryHTTP "HnH/internal/delivery/http"
+
 	"fmt"
 	"net/http"
 
@@ -12,14 +13,14 @@ import (
 func Run() error {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/session", requestHandlers.Login).Methods("POST")
-	router.HandleFunc("/session", requestHandlers.Logout).Methods("DELETE")
-	router.HandleFunc("/session", requestHandlers.CheckLogin).Methods("GET")
+	router.HandleFunc("/session", deliveryHTTP.Login).Methods("POST")
+	router.HandleFunc("/session", deliveryHTTP.Logout).Methods("DELETE")
+	router.HandleFunc("/session", deliveryHTTP.CheckLogin).Methods("GET")
 
-	router.HandleFunc("/users", requestHandlers.SignUp).Methods("POST")
-	router.HandleFunc("/current_user", requestHandlers.GetInfo).Methods("GET")
+	router.HandleFunc("/users", deliveryHTTP.SignUp).Methods("POST")
+	router.HandleFunc("/current_user", deliveryHTTP.GetInfo).Methods("GET")
 
-	router.HandleFunc("/vacancies", requestHandlers.GetVacancies).Methods("GET")
+	router.HandleFunc("/vacancies", deliveryHTTP.GetVacancies).Methods("GET")
 
 	corsRouter := configs.CORS.Handler(router)
 	http.Handle("/", corsRouter)

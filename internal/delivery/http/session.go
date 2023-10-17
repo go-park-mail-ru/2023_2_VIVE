@@ -1,19 +1,19 @@
-package requestHandlers
+package http
 
 import (
-	"HnH/internal/modelHandlers"
-	"HnH/internal/models"
-	"HnH/internal/serverErrors"
+	"HnH/internal/domain"
+	"HnH/internal/usecase"
+	"HnH/pkg/serverErrors"
+
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	user := new(models.User)
+	user := new(domain.User)
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
@@ -21,13 +21,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginErr := modelHandlers.CheckUser(user)
+	cookie, loginErr := usecase.Login(user)
 	if loginErr != nil {
-		sendErrorMessage(w, loginErr, http.StatusUnauthorized)
+		sendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	cookie := modelHandlers.AddSession(user)
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
@@ -40,13 +39,12 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleteErr := modelHandlers.DeleteSession(session)
+	deleteErr := usecase.Logout(session)
 	if deleteErr != nil {
 		sendErrorMessage(w, deleteErr, http.StatusUnauthorized)
 		return
 	}
 
-	session.Expires = time.Now().AddDate(0, 0, -1)
 	http.SetCookie(w, session)
 	w.WriteHeader(http.StatusOK)
 }
@@ -59,7 +57,7 @@ func CheckLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionErr := modelHandlers.ValidateSession(session)
+	sessionErr := usecase.CheckLogin(session)
 	if sessionErr != nil {
 		sendErrorMessage(w, sessionErr, http.StatusUnauthorized)
 		return

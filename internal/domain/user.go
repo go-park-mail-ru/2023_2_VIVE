@@ -1,6 +1,6 @@
-package models
+package domain
 
-import "sync"
+import "net/http"
 
 const SpecialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
 
@@ -15,21 +15,6 @@ func (r Role) IsRole() bool {
 	return r == Applicant || r == Employer
 }
 
-type Users struct {
-	UsersList []*User
-	CurrentID int
-	Mu        *sync.Mutex
-}
-
-var IdToUser = sync.Map{}
-var EmailToUser = sync.Map{}
-
-var UserDB = Users{
-	UsersList: make([]*User, 0),
-	CurrentID: 0,
-	Mu:        &sync.Mutex{},
-}
-
 type User struct {
 	ID        int    `json:"id,omitempty"`
 	Email     string `json:"email"`
@@ -37,4 +22,13 @@ type User struct {
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	Type      Role   `json:"role,omitempty"`
+}
+
+type UserRepository interface {
+	CheckPassword(user *User) error
+	CheckRole(user *User) error
+	ValidatePassword(password string) error
+	CheckUser(user *User) error
+	AddUser(user *User) error
+	GetUserInfo(cookie *http.Cookie) (*User, error)
 }
