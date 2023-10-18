@@ -5,12 +5,22 @@ import (
 	"HnH/internal/repository/mock"
 )
 
-func GetVacancies() ([]domain.Vacancy, error) {
-	mock.VacancyDB.Mu.RLock()
+type psqlVacancyRepository struct {
+	vacancyStorage *mock.Vacancies
+}
 
-	defer mock.VacancyDB.Mu.RUnlock()
+func NewPsqlVacancyRepository(vacancies *mock.Vacancies) *psqlVacancyRepository {
+	return &psqlVacancyRepository{
+		vacancyStorage: vacancies,
+	}
+}
 
-	listToReturn := mock.VacancyDB.VacancyList
+func (p *psqlVacancyRepository) GetVacancies() ([]domain.Vacancy, error) {
+	p.vacancyStorage.Mu.RLock()
+
+	defer p.vacancyStorage.Mu.RUnlock()
+
+	listToReturn := p.vacancyStorage.VacancyList
 
 	return listToReturn, nil
 }

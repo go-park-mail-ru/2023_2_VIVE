@@ -3,6 +3,9 @@ package app
 import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
+	"HnH/internal/repository"
+	"HnH/internal/repository/mock"
+	"HnH/internal/usecase"
 
 	"fmt"
 	"net/http"
@@ -11,16 +14,19 @@ import (
 )
 
 func Run() error {
+	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
+	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
+	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
+
+	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo)
+
 	router := mux.NewRouter()
 
-	router.HandleFunc("/session", deliveryHTTP.Login).Methods("POST")
-	router.HandleFunc("/session", deliveryHTTP.Logout).Methods("DELETE")
-	router.HandleFunc("/session", deliveryHTTP.CheckLogin).Methods("GET")
-
-	router.HandleFunc("/users", deliveryHTTP.SignUp).Methods("POST")
-	router.HandleFunc("/current_user", deliveryHTTP.GetInfo).Methods("GET")
-
-	router.HandleFunc("/vacancies", deliveryHTTP.GetVacancies).Methods("GET")
+	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
+	deliveryHTTP.NewUserHandler(router, userUsecase)
+	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
 	http.Handle("/", corsRouter)

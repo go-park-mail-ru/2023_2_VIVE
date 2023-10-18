@@ -7,7 +7,3 @@ type Vacancy struct {
 	Description string `json:"description,omitempty"`
 	Salary      int    `json:"salary,omitempty"`
 }
-
-type VacancyRepository interface {
-	GetVacancies() ([]Vacancy, error)
-}

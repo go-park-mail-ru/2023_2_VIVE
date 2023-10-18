@@ -1,14 +1,26 @@
 package http
 
 import (
-	"HnH/internal/usecase"
-
 	"encoding/json"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func GetVacancies(w http.ResponseWriter, r *http.Request) {
-	vacancies, getErr := usecase.GetVacancies()
+type VacancyHandler struct {
+	vacancyUsecase VacancyUsecase
+}
+
+func NewVacancyHandler(router *mux.Router, vacancyUCase VacancyUsecase) {
+	handler := &VacancyHandler{
+		vacancyUsecase: vacancyUCase,
+	}
+
+	router.HandleFunc("/vacancies", handler.GetVacancies).Methods("GET")
+}
+
+func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
+	vacancies, getErr := vacancyHandler.vacancyUsecase.GetVacancies()
 	if getErr != nil {
 		sendErrorMessage(w, getErr, http.StatusBadRequest)
 		return

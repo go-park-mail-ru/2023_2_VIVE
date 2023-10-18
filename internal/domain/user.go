@@ -1,9 +1,5 @@
 package domain
 
-import "net/http"
-
-const SpecialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
-
 type Role string
 
 const (
@@ -22,13 +18,4 @@ type User struct {
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	Type      Role   `json:"role,omitempty"`
-}
-
-type UserRepository interface {
-	CheckPassword(user *User) error
-	CheckRole(user *User) error
-	ValidatePassword(password string) error
-	CheckUser(user *User) error
-	AddUser(user *User) error
-	GetUserInfo(cookie *http.Cookie) (*User, error)
 }

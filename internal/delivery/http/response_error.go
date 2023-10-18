@@ -5,12 +5,12 @@ import (
 	"net/http"
 )
 
-type serverErrorToSend struct {
+type errorToSend struct {
 	Message string `json:"message"`
 }
 
 func sendErrorMessage(w http.ResponseWriter, err error, statusCode int) {
-	errResp := serverErrorToSend{Message: err.Error()}
+	errResp := errorToSend{Message: err.Error()}
 	errJs, _ := json.Marshal(errResp)
 
 	w.Header().Set("Content-Type", "application/json")
