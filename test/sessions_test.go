@@ -1,7 +1,7 @@
 package requestHandlers_test
 
 import (
-	"HnH/requestHandlers"
+	"HnH/internal/requestHandlers"
 	"io"
 	"net/http"
 	"net/http/httptest"

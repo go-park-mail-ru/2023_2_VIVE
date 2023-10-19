@@ -2,7 +2,7 @@ package main
 
 import (
 	"HnH/app"
-	"HnH/serverErrors"
+	"HnH/pkg/serverErrors"
 	"fmt"
 )
 

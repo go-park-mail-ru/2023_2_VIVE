@@ -1,8 +1,4 @@
-package models
-
-import "sync"
-
-const SpecialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
+package domain
 
 type Role string
 
@@ -13,21 +9,6 @@ const (
 
 func (r Role) IsRole() bool {
 	return r == Applicant || r == Employer
-}
-
-type Users struct {
-	UsersList []*User
-	CurrentID int
-	Mu        *sync.Mutex
-}
-
-var IdToUser = sync.Map{}
-var EmailToUser = sync.Map{}
-
-var UserDB = Users{
-	UsersList: make([]*User, 0),
-	CurrentID: 0,
-	Mu:        &sync.Mutex{},
 }
 
 type User struct {

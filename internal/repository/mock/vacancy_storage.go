@@ -1,22 +1,17 @@
-package models
+package mock
 
-import "sync"
+import (
+	"HnH/internal/domain"
+	"sync"
+)
 
-type Vacancy struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	CompanyName string `json:"company_name"`
-	Description string `json:"description,omitempty"`
-	Salary      int    `json:"salary,omitempty"`
-}
-
-type vacancies struct {
-	VacancyList []Vacancy
+type Vacancies struct {
+	VacancyList []domain.Vacancy
 	Mu          *sync.RWMutex
 }
 
-var VacancyDB = vacancies{
-	VacancyList: []Vacancy{
+var VacancyDB = Vacancies{
+	VacancyList: []domain.Vacancy{
 		{
 			ID:          1,
 			Name:        "C++ developer",
