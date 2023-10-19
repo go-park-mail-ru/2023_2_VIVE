@@ -1,7 +1,7 @@
 package http
 
 import (
-	"HnH/internal/domain"
+	"HnH/internal/usecase"
 
 	"encoding/json"
 	"net/http"
@@ -9,15 +9,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type VacancyUsecase interface {
-	GetVacancies() ([]domain.Vacancy, error)
-}
-
 type VacancyHandler struct {
-	vacancyUsecase VacancyUsecase
+	vacancyUsecase usecase.IVacancyUsecase
 }
 
-func NewVacancyHandler(router *mux.Router, vacancyUCase VacancyUsecase) {
+func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase) {
 	handler := &VacancyHandler{
 		vacancyUsecase: vacancyUCase,
 	}

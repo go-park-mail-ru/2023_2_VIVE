@@ -2,18 +2,24 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
 
 	"github.com/google/uuid"
 )
 
-type UserUsecase struct {
-	userRepo    UserRepository
-	sessionRepo SessionRepository
+type IUserUsecase interface {
+	SignUp(user *domain.User) (string, error)
+	GetInfo(sessionID string) (*domain.User, error)
 }
 
-func NewUserUsecase(userRepository UserRepository, sessionRepository SessionRepository) *UserUsecase {
+type UserUsecase struct {
+	userRepo    repository.IUserRepository
+	sessionRepo repository.ISessionRepository
+}
+
+func NewUserUsecase(userRepository repository.IUserRepository, sessionRepository repository.ISessionRepository) IUserUsecase {
 	return &UserUsecase{
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,

@@ -2,17 +2,18 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository"
 )
 
-type VacancyRepository interface {
+type IVacancyUsecase interface {
 	GetVacancies() ([]domain.Vacancy, error)
 }
 
 type VacancyUsecase struct {
-	vacancyRepo VacancyRepository
+	vacancyRepo repository.IVacancyRepository
 }
 
-func NewVacancyUsecase(vacancyRepository VacancyRepository) *VacancyUsecase {
+func NewVacancyUsecase(vacancyRepository repository.IVacancyRepository) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo: vacancyRepository,
 	}

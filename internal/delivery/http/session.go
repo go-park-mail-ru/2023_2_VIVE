@@ -2,6 +2,7 @@ package http
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/usecase"
 	"HnH/pkg/serverErrors"
 
 	"encoding/json"
@@ -12,17 +13,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type SessionUsecase interface {
-	Login(user *domain.User) (string, error)
-	Logout(sessionID string) error
-	CheckLogin(sessionID string) error
-}
-
 type SessionHandler struct {
-	sessionUsecase SessionUsecase
+	sessionUsecase usecase.ISessionUsecase
 }
 
-func NewSessionHandler(router *mux.Router, sessionUCase SessionUsecase) {
+func NewSessionHandler(router *mux.Router, sessionUCase usecase.ISessionUsecase) {
 	handler := &SessionHandler{
 		sessionUsecase: sessionUCase,
 	}

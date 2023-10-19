@@ -7,6 +7,13 @@ import (
 	"HnH/pkg/serverErrors"
 )
 
+type IUserRepository interface {
+	CheckUser(user *domain.User) error
+	AddUser(user *domain.User) error
+	GetUserInfo(userID int) (*domain.User, error)
+	GetUserIdByEmail(email string) (int, error)
+}
+
 type psqlUserRepository struct {
 	userStorage *mock.Users
 }

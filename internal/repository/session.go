@@ -5,6 +5,13 @@ import (
 	"HnH/pkg/serverErrors"
 )
 
+type ISessionRepository interface {
+	AddSession(sessionID string, userID int) error
+	DeleteSession(sessionID string) error
+	ValidateSession(sessionID string) error
+	GetUserIdBySession(sessionID string) (int, error)
+}
+
 type psqlSessionRepository struct {
 	sessionStorage *mock.Sessions
 }

@@ -5,6 +5,10 @@ import (
 	"HnH/internal/repository/mock"
 )
 
+type IVacancyRepository interface {
+	GetVacancies() ([]domain.Vacancy, error)
+}
+
 type psqlVacancyRepository struct {
 	vacancyStorage *mock.Vacancies
 }
