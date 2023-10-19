@@ -12,6 +12,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type UserUsecase interface {
+	SignUp(user *domain.User) (string, error)
+	GetInfo(sessionID string) (*domain.User, error)
+}
+
 type UserHandler struct {
 	userUsecase UserUsecase
 }

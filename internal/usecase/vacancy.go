@@ -4,6 +4,10 @@ import (
 	"HnH/internal/domain"
 )
 
+type VacancyRepository interface {
+	GetVacancies() ([]domain.Vacancy, error)
+}
+
 type VacancyUsecase struct {
 	vacancyRepo VacancyRepository
 }

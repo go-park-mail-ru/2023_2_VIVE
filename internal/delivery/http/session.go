@@ -12,6 +12,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type SessionUsecase interface {
+	Login(user *domain.User) (string, error)
+	Logout(sessionID string) error
+	CheckLogin(sessionID string) error
+}
+
 type SessionHandler struct {
 	sessionUsecase SessionUsecase
 }

@@ -1,11 +1,17 @@
 package http
 
 import (
+	"HnH/internal/domain"
+
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
+
+type VacancyUsecase interface {
+	GetVacancies() ([]domain.Vacancy, error)
+}
 
 type VacancyHandler struct {
 	vacancyUsecase VacancyUsecase
