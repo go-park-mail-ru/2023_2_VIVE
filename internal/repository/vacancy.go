@@ -13,7 +13,7 @@ type psqlVacancyRepository struct {
 	vacancyStorage *mock.Vacancies
 }
 
-func NewPsqlVacancyRepository(vacancies *mock.Vacancies) *psqlVacancyRepository {
+func NewPsqlVacancyRepository(vacancies *mock.Vacancies) IVacancyRepository {
 	return &psqlVacancyRepository{
 		vacancyStorage: vacancies,
 	}

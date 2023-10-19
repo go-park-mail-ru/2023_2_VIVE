@@ -16,7 +16,7 @@ type psqlSessionRepository struct {
 	sessionStorage *mock.Sessions
 }
 
-func NewPsqlSessionRepository(sessions *mock.Sessions) *psqlSessionRepository {
+func NewPsqlSessionRepository(sessions *mock.Sessions) ISessionRepository {
 	return &psqlSessionRepository{
 		sessionStorage: sessions,
 	}

@@ -18,7 +18,7 @@ type psqlUserRepository struct {
 	userStorage *mock.Users
 }
 
-func NewPsqlUserRepository(users *mock.Users) *psqlUserRepository {
+func NewPsqlUserRepository(users *mock.Users) IUserRepository {
 	return &psqlUserRepository{
 		userStorage: users,
 	}
