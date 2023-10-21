@@ -12,6 +12,7 @@ type IUserRepository interface {
 	AddUser(user *domain.User) error
 	GetUserInfo(userID int) (*domain.User, error)
 	GetUserIdByEmail(email string) (int, error)
+	GetRoleById(userID int) (domain.Role, error)
 }
 
 type psqlUserRepository struct {
@@ -119,4 +120,15 @@ func (p *psqlUserRepository) GetUserIdByEmail(email string) (int, error) {
 	user := p.userStorage.UsersList[userIndex.(int)]
 
 	return user.ID, nil
+}
+
+func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
+	userIndex, exist := p.userStorage.IdToUser.Load(userID)
+	if !exist {
+		return "", serverErrors.INVALID_EMAIL
+	}
+
+	user := p.userStorage.UsersList[userIndex.(int)]
+
+	return user.Type, nil
 }

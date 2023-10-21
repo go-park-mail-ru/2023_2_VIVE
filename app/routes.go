@@ -17,16 +17,19 @@ func Run() error {
 	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
 	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
 	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
+	cvRepo := repository.NewPsqlCVRepository()
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, sessionRepo, userRepo)
 
 	router := mux.NewRouter()
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
 	deliveryHTTP.NewUserHandler(router, userUsecase)
 	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase)
+	deliveryHTTP.NewCVHandler(router, cvUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
 	http.Handle("/", corsRouter)
