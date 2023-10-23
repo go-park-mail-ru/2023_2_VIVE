@@ -4,6 +4,7 @@ type Vacancy struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
 	CompanyName   string `json:"company_name"`
+	CompanyID     int    `json:"company_id,omitempty"`
 	Description   string `json:"description,omitempty"`
 	Salary        int    `json:"salary,omitempty"`
 	Employment    string `json:"employment,omitempty"`

@@ -8,6 +8,7 @@ import (
 type Vacancies struct {
 	VacancyList []domain.Vacancy
 	Mu          *sync.RWMutex
+	CurrentID   int
 }
 
 var VacancyDB = Vacancies{
@@ -47,6 +48,8 @@ var VacancyDB = Vacancies{
 			Description: "Experienced specialist in IT-management",
 			Salary:      200000,
 		}},
+
+	CurrentID: 5,
 
 	Mu: &sync.RWMutex{},
 }

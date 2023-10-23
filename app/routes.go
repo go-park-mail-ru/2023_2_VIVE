@@ -21,7 +21,7 @@ func Run() error {
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
-	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, sessionRepo, userRepo)
 
 	router := mux.NewRouter()
