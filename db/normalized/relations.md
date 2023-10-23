@@ -75,8 +75,7 @@ erDiagram
 
     EDUCATION {
         int cv_id
-        int institution_id
-        int education_major_id
+        int institution_major_id
         string graduation_year
     }
 
@@ -88,11 +87,11 @@ erDiagram
 
     MAJOR_FIELD {
         int id
-        int institution_id
         string name
     }
 
-    INSTITUTION_FIELD_ASSIGN {
+    INSTITUTION_MAJOR_ASSIGN {
+        int id
         int institution_id
         int major_field_id
     }
@@ -102,7 +101,8 @@ erDiagram
         int employer_id
         string name
         string description
-        int salary
+        int salary_lower_bound
+        int salary_upper_bound
         string employment
         string experience
         string education_type
@@ -115,6 +115,8 @@ erDiagram
         int id
         int vacancy_id
         int cv_id
+        date created_at
+        date updated_at
     }
 
     ORGANIZATION{
@@ -150,10 +152,9 @@ erDiagram
 
     EMPLOYER ||--o{ VACANCY : ""
 
-    EDUCATION }o--|| EDUCATION_INSTITUTION : ""
-    EDUCATION }o--|| MAJOR_FIELD : ""
-    INSTITUTION_FIELD_ASSIGN ||--|{ EDUCATION_INSTITUTION : ""
-    MAJOR_FIELD }|--|| INSTITUTION_FIELD_ASSIGN : ""
+    INSTITUTION_MAJOR_ASSIGN ||--|{ EDUCATION_INSTITUTION : ""
+    EDUCATION ||--|| INSTITUTION_MAJOR_ASSIGN : ""
+    INSTITUTION_MAJOR_ASSIGN }|--|| MAJOR_FIELD : ""
 
 ```
 
@@ -245,14 +246,14 @@ Relation ORGANIZATION:
 
 ```
 Relation VACANCY:
-    {id} -> employer_id, education_type_id, name, description, salary, employment, experience, education_type, location, created_at, updated_at
+    {id} -> employer_id, education_type_id, name, description, salary_lower_bound, salary_upper_bound, employment, experience, education_type, location, created_at, updated_at
 ```
 
 В отношении `VACANCY` выполняются следующие нормальные формы:
 
-- **1 НФ** - значения атрибутов `employer_id`, `name`, `description`, `salary`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` являются атомарными
-- **2 НФ** - `employer_id`, `name`, `description`, `salary`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` функционально зависят полностью от первичного ключа `id`
-- **3 НФ** - среди неключевых атрибутов `employer_id`, `name`, `description`, `salary`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` нет функциональных зависимостей
+- **1 НФ** - значения атрибутов `employer_id`, `name`, `description`, `salary_lower_bound`, `salary_upper_bound`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` являются атомарными
+- **2 НФ** - `employer_id`, `name`, `description`, `salary_lower_bound`, `salary_upper_bound`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` функционально зависят полностью от первичного ключа `id`
+- **3 НФ** - среди неключевых атрибутов `employer_id`, `name`, `description`, `salary_lower_bound`, `salary_upper_bound`, `employment`, `experience`, `education_type`, `location`, `created_at`, `updated_at` нет функциональных зависимостей
 - **НФБК** - все детерминанты являются потенциальными ключами
 
 ---
@@ -347,19 +348,18 @@ Relation SKILL:
 Отношение `EDUCATION` содержит основную информацию об образовании. Имеет связи:
 
 - 1:1 с отношением `CV`
-- M:1 с отношением `MAJOR_FIELD`
-- M:1 с отношением `EDUCATION_INSTITUTION`
+- 1:1 с отношением `INSTITUTION_MAJOR_ASSIGN`
 
 ```
 Relation EDUCATION:
-    {cv_id} -> institution_id, education_major_id, graduation_year
+    {cv_id} -> institution_major_id, graduation_year
 ```
 
 В отношении `EDUCATION` выполняются следующие нормальные формы:
 
-- **1 НФ** - значения атрибутов `institution_id`, `education_major_id`, `graduation_year` являются атомарными
-- **2 НФ** - `institution_id`, `education_major_id`, `graduation_year` функционально зависят полностью от первичного ключа `cv_id`
-- **3 НФ** - среди неключевых атрибутов `institution_id`, `education_major_id`, `graduation_year` нет функциональных зависимостей
+- **1 НФ** - значения атрибутов `institution_major_id`, `graduation_year` являются атомарными
+- **2 НФ** - `institution_major_id`, `graduation_year` функционально зависят полностью от первичного ключа `cv_id`
+- **3 НФ** - среди неключевых атрибутов `institution_major_id`, `graduation_year` нет функциональных зависимостей
 - **НФБК** - все детерминанты являются потенциальными ключами
 
 ---
@@ -368,7 +368,6 @@ Relation EDUCATION:
 
 Отношение `EDUCATION_INSTITUTION` содержит основную информацию об учебном учереждении. Имеет связи:
 
-- 1:M с отношением `EDUCATION`
 - M:N с отношением `MAJOR_FIELD`
 
 ```
@@ -390,18 +389,17 @@ Relation EDUCATION_INSTITUTION:
 Отношение `MAJOR_FIELD` содержит основную информацию о специальности. Имеет связи:
 
 - M:N с отношением `EDUCATION_INSTITUTION`
-- 1:M с отношением `EDUCATION`
 
 ```
 Relation MAJOR_FIELD:
-    {id} -> institution_id, name
+    {id} -> name
 ```
 
 В отношении `MAJOR_FIELD` выполняются следующие нормальные формы:
 
-- **1 НФ** - значения атрибутов `institution_id`, `name` являются атомарными
-- **2 НФ** - `institution_id`, `name` функционально зависят полностью от первичного ключа `id`
-- **3 НФ** - среди неключевых атрибутов `institution_id`, `name` нет функциональных зависимостей
+- **1 НФ** - значения атрибутов `name` являются атомарными
+- **2 НФ** - `name` функционально зависят полностью от первичного ключа `id`
+- **3 НФ** - среди неключевых атрибутов `name` нет функциональных зависимостей
 - **НФБК** - все детерминанты являются потенциальными ключами
 
 ---
@@ -415,12 +413,12 @@ Relation MAJOR_FIELD:
 
 ```
 Relation RESPOND:
-    {id} -> vacancy_id, cv_id
+    {id} -> vacancy_id, cv_id, created_at, updated_at
 ```
 
 В отношении `RESPOND` выполняются следующие нормальные формы:
 
-- **1 НФ** - значения атрибутов `vacancy_id`, `cv_id` являются атомарными
-- **2 НФ** - `vacancy_id`, `cv_id` функционально зависят полностью от первичного ключа `id`
-- **3 НФ** - среди неключевых атрибутов `vacancy_id`, `cv_id` нет функциональных зависимостей
+- **1 НФ** - значения атрибутов `vacancy_id`, `cv_id`, `created_at`, `updated_at` являются атомарными
+- **2 НФ** - `vacancy_id`, `cv_id`, `created_at`, `updated_at` функционально зависят полностью от первичного ключа `id`
+- **3 НФ** - среди неключевых атрибутов `vacancy_id`, `cv_id`, `created_at`, `updated_at` нет функциональных зависимостей
 - **НФБК** - все детерминанты являются потенциальными ключами
