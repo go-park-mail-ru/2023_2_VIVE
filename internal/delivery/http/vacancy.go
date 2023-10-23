@@ -44,15 +44,7 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	js, err := json.Marshal(*vacancy)
-	if err != nil {
-		sendErrorMessage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, *vacancy)
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {
@@ -149,13 +141,5 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 		return
 	}
 
-	js, err := json.Marshal(vacancies)
-	if err != nil {
-		sendErrorMessage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, vacancies)
 }

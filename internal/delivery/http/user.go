@@ -71,15 +71,7 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	js, err := json.Marshal(*user)
-	if err != nil {
-		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, *user)
 }
 
 func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Request) {

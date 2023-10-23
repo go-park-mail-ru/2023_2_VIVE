@@ -4,7 +4,6 @@ import (
 	"HnH/internal/usecase"
 	"HnH/pkg/serverErrors"
 
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -78,13 +77,5 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 		return
 	}
 
-	js, err := json.Marshal(applicantsList)
-	if err != nil {
-		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, applicantsList)
 }

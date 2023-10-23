@@ -52,15 +52,7 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	js, err := json.Marshal(*cv)
-	if err != nil {
-		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, *cv)
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
@@ -77,15 +69,7 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	js, err := json.Marshal(cvs)
-	if err != nil {
-		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, cvs)
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
@@ -138,15 +122,7 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	js, err := json.Marshal(*cv)
-	if err != nil {
-		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	marshalAndSend(w, *cv)
 }
 
 func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Request) {
