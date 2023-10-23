@@ -18,11 +18,13 @@ func Run() error {
 	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
 	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
 	cvRepo := repository.NewPsqlCVRepository()
+	responseRepo := repository.NewPsqlResponseRepository()
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, sessionRepo, userRepo)
+	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo)
 
 	router := mux.NewRouter()
 
@@ -30,6 +32,7 @@ func Run() error {
 	deliveryHTTP.NewUserHandler(router, userUsecase)
 	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase)
 	deliveryHTTP.NewCVHandler(router, cvUsecase)
+	deliveryHTTP.NewResponseHandler(router, responseUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
 	http.Handle("/", corsRouter)

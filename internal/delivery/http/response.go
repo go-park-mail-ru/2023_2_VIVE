@@ -1,0 +1,55 @@
+package http
+
+import (
+	"HnH/internal/usecase"
+	"HnH/pkg/serverErrors"
+	"strconv"
+
+	"errors"
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
+
+type ResponseHandler struct {
+	responseUsecase usecase.IResponseUsecase
+}
+
+func NewResponseHandler(router *mux.Router, responseUCase usecase.IResponseUsecase) {
+	handler := &ResponseHandler{
+		responseUsecase: responseUCase,
+	}
+
+	router.HandleFunc("/vacancies/{vacancyID}/respond/{cvID}", handler.CreateResponse).Methods("POST")
+}
+
+func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+
+	if errors.Is(err, http.ErrNoCookie) {
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+
+	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
+	if convErr != nil {
+		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	cvID, convErr := strconv.Atoi(vars["cvID"])
+	if convErr != nil {
+		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	createStatus := responseHandler.responseUsecase.RespondToVacancy(cookie.Value, vacancyID, cvID)
+	if createStatus != nil {
+		sendErrorMessage(w, createStatus, http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
