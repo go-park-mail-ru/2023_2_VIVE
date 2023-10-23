@@ -32,7 +32,35 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase) {
 }
 
 func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
 
+	if errors.Is(err, http.ErrNoCookie) {
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+	cvID, convErr := strconv.Atoi(vars["cvID"])
+	if convErr != nil {
+		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	cv, err := cvHandler.cvUsecase.GetCVById(cookie.Value, cvID)
+	if err != nil {
+		sendErrorMessage(w, err, http.StatusForbidden)
+		return
+	}
+
+	js, err := json.Marshal(*cv)
+	if err != nil {
+		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {

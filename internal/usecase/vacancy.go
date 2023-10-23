@@ -7,7 +7,8 @@ import (
 )
 
 type IVacancyUsecase interface {
-	GetVacancies() ([]domain.Vacancy, error)
+	GetAllVacancies() ([]domain.Vacancy, error)
+
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error)
 	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error
@@ -58,8 +59,8 @@ func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancy
 	return nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetVacancies() ([]domain.Vacancy, error) {
-	vacancies, getErr := vacancyUsecase.vacancyRepo.GetVacancies()
+func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.Vacancy, error) {
+	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies()
 	if getErr != nil {
 		return nil, getErr
 	}

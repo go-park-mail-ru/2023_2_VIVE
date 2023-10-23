@@ -6,7 +6,8 @@ import (
 )
 
 type IVacancyRepository interface {
-	GetVacancies() ([]domain.Vacancy, error)
+	GetAllVacancies() ([]domain.Vacancy, error)
+	GetVacanciesByIds(idList []int) ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
 	AddVacancy(vacancy *domain.Vacancy) (int, error)
@@ -24,12 +25,30 @@ func NewPsqlVacancyRepository(vacancies *mock.Vacancies) IVacancyRepository {
 	}
 }
 
-func (p *psqlVacancyRepository) GetVacancies() ([]domain.Vacancy, error) {
+func (p *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 	p.vacancyStorage.Mu.RLock()
 
 	defer p.vacancyStorage.Mu.RUnlock()
 
 	listToReturn := p.vacancyStorage.VacancyList
+
+	return listToReturn, nil
+}
+
+func (p *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vacancy, error) {
+	p.vacancyStorage.Mu.RLock()
+
+	defer p.vacancyStorage.Mu.RUnlock()
+
+	listToReturn := make([]domain.Vacancy, 0, len(idList))
+	for _, idToFind := range idList {
+		for _, vac := range p.vacancyStorage.VacancyList {
+			if vac.ID == idToFind {
+				listToReturn = append(listToReturn, vac)
+				break
+			}
+		}
+	}
 
 	return listToReturn, nil
 }

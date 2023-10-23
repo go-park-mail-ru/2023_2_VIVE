@@ -3,6 +3,7 @@ package usecase
 import (
 	"HnH/internal/domain"
 	"HnH/internal/repository"
+	"HnH/pkg/serverErrors"
 )
 
 type ICVUsecase interface {
@@ -15,21 +16,78 @@ type ICVUsecase interface {
 }
 
 type CVUsecase struct {
-	cvRepo      repository.ICVRepository
-	sessionRepo repository.ISessionRepository
-	userRepo    repository.IUserRepository
+	cvRepo       repository.ICVRepository
+	sessionRepo  repository.ISessionRepository
+	userRepo     repository.IUserRepository
+	responseRepo repository.IResponseRepository
+	vacancyRepo  repository.IVacancyRepository
 }
 
-func NewCVUsecase(cvRepository repository.ICVRepository, sessionRepository repository.ISessionRepository, userRepository repository.IUserRepository) ICVUsecase {
+func NewCVUsecase(cvRepository repository.ICVRepository,
+	sessionRepository repository.ISessionRepository,
+	userRepository repository.IUserRepository,
+	responseRepository repository.IResponseRepository,
+	vacancyRepository repository.IVacancyRepository) ICVUsecase {
 	return &CVUsecase{
-		cvRepo:      cvRepository,
-		sessionRepo: sessionRepository,
-		userRepo:    userRepository,
+		cvRepo:       cvRepository,
+		sessionRepo:  sessionRepository,
+		userRepo:     userRepository,
+		responseRepo: responseRepository,
+		vacancyRepo:  vacancyRepository,
 	}
 }
 
 func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, error) {
-	return nil, nil
+	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	if validStatus != nil {
+		return nil, validStatus
+	}
+
+	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	userRole, err := cvUsecase.userRepo.GetRoleById(userID)
+	if err != nil {
+		return nil, err
+	} else if userRole != domain.Employer {
+		return nil, INAPPROPRIATE_ROLE
+	}
+
+	vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	userOrgID, err := cvUsecase.userRepo.GetUserOrgId(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	vacList, err := cvUsecase.vacancyRepo.GetVacanciesByIds(vacIdsList)
+	if err != nil {
+		return nil, err
+	}
+
+	found := false
+	for _, vac := range vacList {
+		if vac.CompanyID == userOrgID {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return nil, serverErrors.FORBIDDEN
+	}
+
+	cv, err := cvUsecase.cvRepo.GetCVById(cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	return cv, nil
 }
 
 func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
@@ -50,7 +108,7 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
 		return nil, INAPPROPRIATE_ROLE
 	}
 
-	cvs, err := cvUsecase.cvRepo.GetByUserId(userID)
+	cvs, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
 	if err != nil {
 		return nil, err
 	}

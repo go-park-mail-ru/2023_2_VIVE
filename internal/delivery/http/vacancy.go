@@ -143,7 +143,7 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
-	vacancies, getErr := vacancyHandler.vacancyUsecase.GetVacancies()
+	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies()
 	if getErr != nil {
 		sendErrorMessage(w, getErr, http.StatusBadRequest)
 		return

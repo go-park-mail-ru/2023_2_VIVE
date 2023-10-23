@@ -5,8 +5,9 @@ import (
 )
 
 type ICVRepository interface {
-	GetById(cvID int) (*domain.CV, error)
-	GetByUserId(userID int) ([]domain.CV, error)
+	GetCVById(cvID int) (*domain.CV, error)
+	GetCVsByIds(idList []int) ([]domain.CV, error)
+	GetCVsByUserId(userID int) ([]domain.CV, error)
 	AddCV(cv *domain.CV) (int, error)
 	GetOneOfUsersCV(userID, cvID int) (*domain.CV, error)
 	UpdateOneOfUsersCV(userID, cvID int) error
@@ -20,11 +21,15 @@ func NewPsqlCVRepository() ICVRepository {
 	return &psqlCVRepository{}
 }
 
-func (p *psqlCVRepository) GetById(cvID int) (*domain.CV, error) {
+func (p *psqlCVRepository) GetCVById(cvID int) (*domain.CV, error) {
 	return nil, nil
 }
 
-func (p *psqlCVRepository) GetByUserId(userID int) ([]domain.CV, error) {
+func (p *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
+	return nil, nil
+}
+
+func (p *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
 	return nil, nil
 }
 
