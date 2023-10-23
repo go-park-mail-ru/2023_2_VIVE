@@ -110,7 +110,7 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	js, err := json.Marshal(cv)
+	js, err := json.Marshal(*cv)
 	if err != nil {
 		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
 		return

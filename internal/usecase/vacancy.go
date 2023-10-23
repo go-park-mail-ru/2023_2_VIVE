@@ -9,7 +9,7 @@ import (
 type IVacancyUsecase interface {
 	GetVacancies() ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
-	AddVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error
+	AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error)
 	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error
 	DeleteVacancy(sessionID string, vacancyID int) error
 }
@@ -76,18 +76,32 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.Vacancy
 	return vacancy, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error {
-	validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
+func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error) {
+	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
 	if validStatus != nil {
-		return validStatus
+		return 0, validStatus
 	}
 
-	addStatus := vacancyUsecase.vacancyRepo.AddVacancy(vacancy)
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return 0, err
+	}
+
+	userOrgID, err := vacancyUsecase.userRepo.GetUserOrgId(userID)
+	if err != nil {
+		return 0, err
+	}
+
+	if userOrgID != vacancy.CompanyID {
+		return 0, serverErrors.FORBIDDEN
+	}
+
+	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(vacancy)
 	if addStatus != nil {
-		return addStatus
+		return 0, addStatus
 	}
 
-	return nil
+	return vacancyID, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error {

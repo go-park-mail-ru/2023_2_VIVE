@@ -9,7 +9,7 @@ type IVacancyRepository interface {
 	GetVacancies() ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
-	AddVacancy(vacancy *domain.Vacancy) error
+	AddVacancy(vacancy *domain.Vacancy) (int, error)
 	UpdateVacancy(vacancy *domain.Vacancy) error
 	DeleteVacancy(vacancyID int) error
 }
@@ -74,7 +74,7 @@ func (p *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 	return p.vacancyStorage.VacancyList[foundIndex].CompanyID, nil
 }
 
-func (p *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) error {
+func (p *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, error) {
 	p.vacancyStorage.Mu.Lock()
 
 	defer p.vacancyStorage.Mu.Unlock()
@@ -83,7 +83,7 @@ func (p *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) error {
 	vacancy.ID = p.vacancyStorage.CurrentID
 	p.vacancyStorage.VacancyList = append(p.vacancyStorage.VacancyList, *vacancy)
 
-	return nil
+	return vacancy.ID, nil
 }
 
 func (p *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) error {
