@@ -24,6 +24,7 @@ func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase) {
 
 	router.HandleFunc("/users", handler.SignUp).Methods("POST")
 	router.HandleFunc("/current_user", handler.GetInfo).Methods("GET")
+	router.HandleFunc("/current_user", handler.UpdateInfo).Methods("PUT")
 }
 
 func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -79,4 +80,31 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
+}
+
+func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+
+	if errors.Is(err, http.ErrNoCookie) {
+		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+		return
+	}
+
+	defer r.Body.Close()
+
+	updateInfo := new(domain.UserUpdate)
+
+	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
+	if err != nil {
+		sendErrorMessage(w, decodeErr, http.StatusBadRequest)
+		return
+	}
+
+	updStatus := userHandler.userUsecase.UpdateInfo(cookie.Value, updateInfo)
+	if updStatus != nil {
+		sendErrorMessage(w, updStatus, http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

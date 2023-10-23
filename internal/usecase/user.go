@@ -12,6 +12,7 @@ import (
 type IUserUsecase interface {
 	SignUp(user *domain.User) (string, error)
 	GetInfo(sessionID string) (*domain.User, error)
+	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 }
 
 type UserUsecase struct {
@@ -78,4 +79,28 @@ func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) 
 	}
 
 	return user, nil
+}
+
+func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUpdate) error {
+	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	if validStatus != nil {
+		return validStatus
+	}
+
+	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return err
+	}
+
+	validPassStatus := userUsecase.userRepo.CheckPasswordById(userID, user.Password)
+	if validPassStatus != nil {
+		return validPassStatus
+	}
+
+	updStatus := userUsecase.userRepo.UpdateUserInfo(user)
+	if updStatus != nil {
+		return updStatus
+	}
+
+	return nil
 }
