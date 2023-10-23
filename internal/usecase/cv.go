@@ -37,22 +37,40 @@ func NewCVUsecase(cvRepository repository.ICVRepository,
 	}
 }
 
-func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, error) {
+func (cvUsecase *CVUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
 	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
 	if validStatus != nil {
-		return nil, validStatus
+		return 0, validStatus
 	}
 
 	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
 	if err != nil {
-		return nil, err
+		return 0, err
+	}
+
+	return userID, nil
+}
+
+func (cvUsecase *CVUsecase) validateRoleAndGetUserId(sessionID string, requiredRole domain.Role) (int, error) {
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	if validStatus != nil {
+		return 0, validStatus
 	}
 
 	userRole, err := cvUsecase.userRepo.GetRoleById(userID)
 	if err != nil {
-		return nil, err
-	} else if userRole != domain.Employer {
-		return nil, INAPPROPRIATE_ROLE
+		return 0, err
+	} else if userRole != requiredRole {
+		return 0, INAPPROPRIATE_ROLE
+	}
+
+	return userID, nil
+}
+
+func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, error) {
+	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Employer)
+	if validStatus != nil {
+		return nil, validStatus
 	}
 
 	vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(cvID)
@@ -91,21 +109,9 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, e
 }
 
 func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
-	}
-
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return nil, err
-	}
-
-	userRole, err := cvUsecase.userRepo.GetRoleById(userID)
-	if err != nil {
-		return nil, err
-	} else if userRole != domain.Applicant {
-		return nil, INAPPROPRIATE_ROLE
 	}
 
 	cvs, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
@@ -117,14 +123,9 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
 }
 
 func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.CV) (int, error) {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return 0, validStatus
-	}
-
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return 0, err
 	}
 
 	cv.UserID = userID
@@ -138,14 +139,9 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.CV) (int, erro
 }
 
 func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.CV, error) {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
-	}
-
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return nil, err
 	}
 
 	cv, err := cvUsecase.cvRepo.GetOneOfUsersCV(userID, cvID)
@@ -157,14 +153,9 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain
 }
 
 func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int) error {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
-	}
-
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return err
 	}
 
 	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID)
@@ -176,14 +167,9 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int) error
 }
 
 func (cvUsecase *CVUsecase) DeleteCVOfUserById(sessionID string, cvID int) error {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
-	}
-
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return err
 	}
 
 	delStatus := cvUsecase.cvRepo.DeleteOneOfUsersCV(userID, cvID)

@@ -27,6 +27,20 @@ func NewUserUsecase(userRepository repository.IUserRepository, sessionRepository
 	}
 }
 
+func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
+	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	if validStatus != nil {
+		return 0, validStatus
+	}
+
+	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
+}
+
 func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
@@ -63,14 +77,9 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
 }
 
 func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) {
-	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
-	}
-
-	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return nil, err
 	}
 
 	user, getErr := userUsecase.userRepo.GetUserInfo(userID)
@@ -82,14 +91,9 @@ func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) 
 }
 
 func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUpdate) error {
-	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
-	}
-
-	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return err
 	}
 
 	validPassStatus := userUsecase.userRepo.CheckPasswordById(userID, user.Password)

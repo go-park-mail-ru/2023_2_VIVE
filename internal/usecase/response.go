@@ -33,15 +33,24 @@ func NewResponseUsecase(respondRepository repository.IResponseRepository,
 	}
 }
 
-func (responseUsecase *ResponseUsecase) RespondToVacancy(sessionID string, vacancyID, cvID int) error {
+func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
 	validStatus := responseUsecase.sessionRepo.ValidateSession(sessionID)
 	if validStatus != nil {
-		return validStatus
+		return 0, validStatus
 	}
 
 	userID, err := responseUsecase.sessionRepo.GetUserIdBySession(sessionID)
 	if err != nil {
-		return err
+		return 0, err
+	}
+
+	return userID, nil
+}
+
+func (responseUsecase *ResponseUsecase) RespondToVacancy(sessionID string, vacancyID, cvID int) error {
+	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
+	if validStatus != nil {
+		return validStatus
 	}
 
 	userRole, err := responseUsecase.userRepo.GetRoleById(userID)
@@ -56,14 +65,9 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(sessionID string, vacan
 }
 
 func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vacancyID int) ([]domain.ApplicantInfo, error) {
-	validStatus := responseUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
-	}
-
-	userID, err := responseUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return nil, err
 	}
 
 	userRole, err := responseUsecase.userRepo.GetRoleById(userID)

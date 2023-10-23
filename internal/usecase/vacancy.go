@@ -31,20 +31,36 @@ func NewVacancyUsecase(vacancyRepository repository.IVacancyRepository,
 	}
 }
 
-func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancyID int) error {
+func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetOrgId(sessionID string) (int, error) {
 	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
 	if validStatus != nil {
-		return validStatus
+		return 0, validStatus
 	}
 
 	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
 	if err != nil {
-		return err
+		return 0, err
+	}
+
+	userRole, err := vacancyUsecase.userRepo.GetRoleById(userID)
+	if err != nil {
+		return 0, err
+	} else if userRole != domain.Employer {
+		return 0, INAPPROPRIATE_ROLE
 	}
 
 	userOrgID, err := vacancyUsecase.userRepo.GetUserOrgId(userID)
 	if err != nil {
-		return err
+		return 0, err
+	}
+
+	return userOrgID, nil
+}
+
+func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancyID int) error {
+	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(sessionID)
+	if validStatus != nil {
+		return validStatus
 	}
 
 	orgID, err := vacancyUsecase.vacancyRepo.GetOrgId(vacancyID)
@@ -78,19 +94,9 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.Vacancy
 }
 
 func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error) {
-	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
+	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(sessionID)
 	if validStatus != nil {
 		return 0, validStatus
-	}
-
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return 0, err
-	}
-
-	userOrgID, err := vacancyUsecase.userRepo.GetUserOrgId(userID)
-	if err != nil {
-		return 0, err
 	}
 
 	if userOrgID != vacancy.CompanyID {
