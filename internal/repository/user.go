@@ -15,6 +15,7 @@ type IUserRepository interface {
 	GetRoleById(userID int) (domain.Role, error)
 	GetUserInfo(userID int) (*domain.User, error)
 	UpdateUserInfo(user *domain.UserUpdate) error
+	GetUserOrgId(userID int) (int, error)
 }
 
 type psqlUserRepository struct {
@@ -145,7 +146,7 @@ func (p *psqlUserRepository) GetUserIdByEmail(email string) (int, error) {
 func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
 	userIndex, exist := p.userStorage.IdToUser.Load(userID)
 	if !exist {
-		return "", serverErrors.INVALID_EMAIL
+		return "", serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	user := p.userStorage.UsersList[userIndex.(int)]
@@ -158,7 +159,7 @@ func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
 
 	userIndex, exist := p.userStorage.IdToUser.Load(userID)
 	if !exist {
-		return serverErrors.INVALID_EMAIL
+		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	if user.Email != "" {
@@ -175,4 +176,14 @@ func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
 	}
 
 	return nil
+}
+
+func (p *psqlUserRepository) GetUserOrgId(userID int) (int, error) {
+	userIndex, exist := p.userStorage.IdToUser.Load(userID)
+	if !exist {
+		return 0, serverErrors.INTERNAL_SERVER_ERROR
+	}
+
+	//data mock
+	return userIndex.(int), nil
 }
