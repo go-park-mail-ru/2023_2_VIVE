@@ -1,6 +1,6 @@
 -- DROP SCHEMA hnh_data;
 
-CREATE SCHEMA hnh_data AUTHORIZATION vive_user;
+CREATE SCHEMA hnh_data AUTHORIZATION vive_admin;
 
 -- DROP SEQUENCE hnh_data.applicant_id_seq;
 
