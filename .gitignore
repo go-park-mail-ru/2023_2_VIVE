@@ -1,2 +1,2 @@
 *.conf
-db_hnh_pswd.txt
+.env
