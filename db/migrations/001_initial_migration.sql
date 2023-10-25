@@ -18,18 +18,18 @@ CREATE TABLE user_profile (
 
 CREATE TABLE employer (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	user_id uuid REFERENCES user_profile
+	user_id uuid REFERENCES user_profile ON DELETE CASCADE 
 );
 
 CREATE TABLE applicant (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	user_id uuid REFERENCES user_profile,
+	user_id uuid REFERENCES user_profile ON DELETE CASCADE,
 	status TEXT NOT NULL DEFAULT 'serching'
 		CONSTRAINT status_is_not_empty CHECK (length(status) > 0)
 );
 
 CREATE TABLE organization (
-	employer_id uuid REFERENCES employer,
+	employer_id uuid REFERENCES employer ON DELETE CASCADE,
 	name TEXT UNIQUE NOT NULL
 		CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
 	LOCATION TEXT DEFAULT NULL
@@ -40,7 +40,7 @@ CREATE TABLE organization (
 
 CREATE TABLE vacancy (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	employer_id uuid REFERENCES employer,
+	employer_id uuid REFERENCES employer ON DELETE CASCADE,
 	name TEXT UNIQUE NOT NULL
 		CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
 	description TEXT NOT NULL
@@ -67,7 +67,7 @@ CREATE TABLE vacancy (
 
 CREATE TABLE cv (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	applicant_id uuid REFERENCES applicant,
+	applicant_id uuid REFERENCES applicant ON DELETE CASCADE,
 	status TEXT NOT NULL DEFAULT 'serching'
 		CONSTRAINT status_is_not_empty CHECK (length(status) > 0),
 	created_at timestamp DEFAULT now(),
@@ -76,15 +76,15 @@ CREATE TABLE cv (
 
 CREATE TABLE responce (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	vacancy_id uuid REFERENCES vacancy,
-	cv_id uuid REFERENCES cv,
+	vacancy_id uuid REFERENCES vacancy ON DELETE CASCADE,
+	cv_id uuid REFERENCES cv ON DELETE CASCADE,
 	created_at timestamp DEFAULT now(),
 	updated_at timestamp DEFAULT now()
 );
 
 CREATE TABLE experience (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	cv_id uuid REFERENCES cv,
+	cv_id uuid REFERENCES cv ON DELETE CASCADE,
 	organization_name TEXT NOT NULL
 		CONSTRAINT organization_name_is_not_empty CHECK (length(organization_name) > 0),
 	description TEXT NOT NULL
@@ -93,7 +93,7 @@ CREATE TABLE experience (
 	end_date date DEFAULT NULL
 );
 
-CREATE TABLE LANGUAGE (
+CREATE TABLE "language" (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	name TEXT NOT NULL
 		CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
@@ -103,8 +103,8 @@ CREATE TABLE LANGUAGE (
 );
 
 CREATE TABLE cv_language_assign (
-	cv_id uuid REFERENCES cv,
-	language_id uuid REFERENCES LANGUAGE,
+	cv_id uuid REFERENCES cv ON DELETE CASCADE,
+	language_id uuid REFERENCES "language" ON DELETE CASCADE,
 	UNIQUE (cv_id, language_id)
 );
 
@@ -125,14 +125,14 @@ CREATE TABLE major_field (
 
 CREATE TABLE institution_major_assign (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	institution_id uuid REFERENCES education_institution,
-	major_field_id uuid REFERENCES major_field,
+	institution_id uuid REFERENCES education_institution ON DELETE CASCADE,
+	major_field_id uuid REFERENCES major_field ON DELETE CASCADE,
 	UNIQUE (institution_id, major_field_id)
 );
 
 CREATE TABLE education (
-    cv_id uuid REFERENCES cv,
-    institution_major_id uuid REFERENCES institution_major_assign,
+    cv_id uuid REFERENCES cv ON DELETE CASCADE,
+    institution_major_id uuid REFERENCES institution_major_assign ON DELETE CASCADE,
     graduation_year CHARACTER(4) NOT NULL
         CONSTRAINT valid_graduation_year CHECK (length(graduation_year) = 4)
 );
@@ -144,13 +144,13 @@ CREATE TABLE skill (
 );
 
 CREATE TABLE cv_skill_assign (
-    cv_id uuid REFERENCES cv,
-    skill_id uuid REFERENCES skill,
+    cv_id uuid REFERENCES cv ON DELETE CASCADE,
+    skill_id uuid REFERENCES skill ON DELETE CASCADE,
     UNIQUE (cv_id, skill_id)
 );
 
 CREATE TABLE vacancy_skill_assign (
-    vacancy_id uuid REFERENCES vacancy,
-    skill_id uuid REFERENCES skill,
+    vacancy_id uuid REFERENCES vacancy ON DELETE CASCADE,
+    skill_id uuid REFERENCES skill ON DELETE CASCADE,
     UNIQUE (vacancy_id, skill_id)
 );
