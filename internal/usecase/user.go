@@ -12,6 +12,7 @@ import (
 type IUserUsecase interface {
 	SignUp(user *domain.User) (string, error)
 	GetInfo(sessionID string) (*domain.User, error)
+	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 }
 
 type UserUsecase struct {
@@ -24,6 +25,20 @@ func NewUserUsecase(userRepository repository.IUserRepository, sessionRepository
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,
 	}
+}
+
+func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
+	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	if validStatus != nil {
+		return 0, validStatus
+	}
+
+	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }
 
 func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
@@ -62,14 +77,9 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
 }
 
 func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) {
-	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
-	}
-
-	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
-	if err != nil {
-		return nil, err
 	}
 
 	user, getErr := userUsecase.userRepo.GetUserInfo(userID)
@@ -78,4 +88,23 @@ func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) 
 	}
 
 	return user, nil
+}
+
+func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUpdate) error {
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	if validStatus != nil {
+		return validStatus
+	}
+
+	validPassStatus := userUsecase.userRepo.CheckPasswordById(userID, user.Password)
+	if validPassStatus != nil {
+		return validPassStatus
+	}
+
+	updStatus := userUsecase.userRepo.UpdateUserInfo(user)
+	if updStatus != nil {
+		return updStatus
+	}
+
+	return nil
 }
