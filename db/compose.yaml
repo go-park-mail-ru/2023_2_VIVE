@@ -1,0 +1,19 @@
+services:
+
+  db:
+    container_name: db_hnh
+    image: postgres:16.0-alpine
+    environment:
+      POSTGRES_DB: "hnh"
+      POSTGRES_USER: "vive_user"
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_hnh_pswd
+    volumes:
+      - ./migrations/001_initial_migration.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "8054:5432"
+    secrets:
+      - db_hnh_pswd
+
+secrets:
+  db_hnh_pswd:
+    file: ./db_hnh_pswd.txt
