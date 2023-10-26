@@ -1,4 +1,4 @@
-CREATE SCHEMA hnh_data AUTHORIZATION vovchenskiy;
+CREATE SCHEMA hnh_data AUTHORIZATION vive_admin;
 
 CREATE TABLE user_profile (
     id serial PRIMARY KEY
