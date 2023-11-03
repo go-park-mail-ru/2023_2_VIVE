@@ -9,6 +9,6 @@ services:
       POSTGRES_USER: vive_admin
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
-      - ./migrations/001_initial_migration.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./migrations/:/docker-entrypoint-initdb.d/
     ports:
       - "8054:5432"

@@ -1,5 +1,7 @@
 CREATE SCHEMA hnh_data AUTHORIZATION vive_admin;
 
+SET search_path TO hnh_data;
+
 CREATE TABLE user_profile (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
