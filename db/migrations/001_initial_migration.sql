@@ -60,7 +60,7 @@ CREATE TABLE vacancy (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     employer_id int REFERENCES employer ON DELETE CASCADE,
-    name TEXT UNIQUE NOT NULL
+    name TEXT NOT NULL
         CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
     description TEXT NOT NULL
         CONSTRAINT description_is_not_empty CHECK (length(description) > 0),
