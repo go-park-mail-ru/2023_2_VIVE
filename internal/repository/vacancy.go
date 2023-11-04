@@ -2,7 +2,15 @@ package repository
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository/mock"
+	"HnH/pkg/queryUtils"
+	// "fmt"
+	// "strings"
+
+	// "context"
+	// "HnH/internal/repository/mock"
+	"database/sql"
+	// "github.com/jackc/pgx/stdlib"
+	// _ "github.com/jackc/pgx/stdlib"
 )
 
 type IVacancyRepository interface {
@@ -11,163 +19,322 @@ type IVacancyRepository interface {
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
 	AddVacancy(vacancy *domain.Vacancy) (int, error)
-	UpdateVacancy(vacancy *domain.Vacancy) error
-	DeleteVacancy(vacancyID int) error
+	UpdateVacancy(vacancy *domain.Vacancy) (int64, error)
+	DeleteVacancy(vacancyID int) (int64, error)
 }
 
 type psqlVacancyRepository struct {
-	vacancyStorage *mock.Vacancies
+	DB *sql.DB
 }
 
-func NewPsqlVacancyRepository(vacancies *mock.Vacancies) IVacancyRepository {
+func NewPsqlVacancyRepository(db *sql.DB) IVacancyRepository {
 	return &psqlVacancyRepository{
-		vacancyStorage: vacancies,
+		DB: db,
 	}
 }
 
-func (p *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
-	p.vacancyStorage.Mu.RLock()
+func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
+	query := `SELECT
+	    id,
+	    employer_id,
+	    "name",
+	    description,
+	    salary_lower_bound,
+	    salary_upper_bound,
+	    employment,
+	    experience_lower_bound,
+	    experience_upper_bound,
+	    education_type,
+	    "location",
+	    created_at,
+	    updated_at
+	FROM
+	    hnh_data.vacancy v`
 
-	defer p.vacancyStorage.Mu.RUnlock()
+	rows, err := repo.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	listToReturn := p.vacancyStorage.VacancyList
+	vacanciesToReturn := []domain.Vacancy{}
 
-	return listToReturn, nil
-}
-
-func (p *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vacancy, error) {
-	p.vacancyStorage.Mu.RLock()
-
-	defer p.vacancyStorage.Mu.RUnlock()
-
-	listToReturn := make([]domain.Vacancy, 0, len(idList))
-	for _, idToFind := range idList {
-		for _, vac := range p.vacancyStorage.VacancyList {
-			if vac.ID == idToFind {
-				listToReturn = append(listToReturn, vac)
-				break
-			}
+	for rows.Next() {
+		vacancy := domain.Vacancy{}
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.Employer_id,
+			&vacancy.Name,
+			&vacancy.Description,
+			&vacancy.Salary_lower_bound,
+			&vacancy.Salary_upper_bound,
+			&vacancy.Employment,
+			&vacancy.Experience_lower_bound,
+			&vacancy.Experience_upper_bound,
+			&vacancy.EducationType,
+			&vacancy.Location,
+			&vacancy.Created_at,
+			&vacancy.Updated_at,
+		)
+		if err != nil {
+			return nil, err
 		}
+		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
-
-	return listToReturn, nil
+	return vacanciesToReturn, nil
 }
 
-func (p *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, error) {
-	p.vacancyStorage.Mu.RLock()
+func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vacancy, error) {
+	placeHolderValues := *queryUtils.IntToAnySlice(idList)
+	placeHolderString := queryUtils.QueryPlaceHolders(placeHolderValues...)
 
-	defer p.vacancyStorage.Mu.RUnlock()
+	query := `SELECT
+		id,
+		employer_id,
+		"name",
+		description,
+		salary_lower_bound,
+		salary_upper_bound,
+		employment,
+		experience_lower_bound,
+		experience_upper_bound,
+		education_type,
+		"location",
+		created_at,
+		updated_at
+	FROM
+		hnh_data.vacancy v
+	WHERE
+		v.id IN (` + placeHolderString + `)`
 
-	indexToReturn := -1
-	for index, elem := range p.vacancyStorage.VacancyList {
-		if elem.ID == vacancyID {
-			indexToReturn = index
-			break
-		}
+	rows, err := repo.DB.Query(query, placeHolderValues...)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
 
-	if indexToReturn == -1 {
+	vacanciesToReturn := []domain.Vacancy{}
+
+	for rows.Next() {
+		vacancy := domain.Vacancy{}
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.Employer_id,
+			&vacancy.Name,
+			&vacancy.Description,
+			&vacancy.Salary_lower_bound,
+			&vacancy.Salary_upper_bound,
+			&vacancy.Employment,
+			&vacancy.Experience_lower_bound,
+			&vacancy.Experience_upper_bound,
+			&vacancy.EducationType,
+			&vacancy.Location,
+			&vacancy.Created_at,
+			&vacancy.Updated_at,
+		)
+		if err != nil {
+			return nil, err
+		}
+		vacanciesToReturn = append(vacanciesToReturn, vacancy)
+	}
+	return vacanciesToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, error) {
+	query := `SELECT
+		id,
+		employer_id,
+		"name",
+		description,
+		salary_lower_bound,
+		salary_upper_bound,
+		employment,
+		experience_lower_bound,
+		experience_upper_bound,
+		education_type,
+		"location",
+		created_at,
+		updated_at
+	FROM
+		hnh_data.vacancy v
+	WHERE
+		v.id = $1`
+
+	vacancyToReturn := domain.Vacancy{}
+
+	err := repo.DB.QueryRow(query, vacancyID).
+		Scan(
+			&vacancyToReturn.ID,
+			&vacancyToReturn.Employer_id,
+			&vacancyToReturn.Name,
+			&vacancyToReturn.Description,
+			&vacancyToReturn.Salary_lower_bound,
+			&vacancyToReturn.Salary_upper_bound,
+			&vacancyToReturn.Employment,
+			&vacancyToReturn.Experience_lower_bound,
+			&vacancyToReturn.Experience_upper_bound,
+			&vacancyToReturn.EducationType,
+			&vacancyToReturn.Location,
+			&vacancyToReturn.Created_at,
+			&vacancyToReturn.Updated_at,
+		)
+	if err == sql.ErrNoRows {
 		return nil, ENTITY_NOT_FOUND
 	}
-
-	return &p.vacancyStorage.VacancyList[indexToReturn], nil
-}
-
-func (p *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
-	p.vacancyStorage.Mu.RLock()
-
-	defer p.vacancyStorage.Mu.RUnlock()
-
-	foundIndex := -1
-	for index, elem := range p.vacancyStorage.VacancyList {
-		if elem.ID == vacancyID {
-			foundIndex = index
-			break
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	if foundIndex == -1 {
+	return &vacancyToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
+	query := `WITH w AS (
+		SELECT
+			e.organization_id,
+			v.id
+		FROM
+			hnh_data.employer e
+		LEFT JOIN hnh_data.vacancy v ON
+			e.id = v.employer_id
+		WHERE
+			v.id IS NOT NULL
+	) 
+	SELECT
+		organization_id
+	FROM
+		w
+	WHERE
+		id = $1`
+
+	var organizationIDToReturn int
+	err := repo.DB.QueryRow(query, vacancyID).
+		Scan(&organizationIDToReturn)
+
+	if err == sql.ErrNoRows {
 		return 0, ENTITY_NOT_FOUND
 	}
+	if err != nil {
+		return 0, err
+	}
 
-	return p.vacancyStorage.VacancyList[foundIndex].CompanyID, nil
+	return organizationIDToReturn, nil
 }
 
-func (p *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, error) {
-	p.vacancyStorage.Mu.Lock()
+// Add new vacancy and return new id if successful
+func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, error) {
+	query := `INSERT
+		INTO
+		hnh_data.vacancy (
+			employer_id,
+			"name",
+			description,
+			salary_lower_bound,
+			salary_upper_bound,
+			employment,
+			experience_lower_bound,
+			experience_upper_bound,
+			education_type,
+			"location"
+		)
+	VALUES ($1, $1, $1, $1, $1, $1, $1, $1, $1, $1)
+	RETURNING id`
 
-	defer p.vacancyStorage.Mu.Unlock()
+	var insertedVacancyID int
+	err := repo.DB.QueryRow(
+		query,
+		vacancy.Employer_id,
+		vacancy.Name,
+		vacancy.Description,
+		vacancy.Salary_lower_bound,
+		vacancy.Salary_upper_bound,
+		vacancy.Employment,
+		vacancy.Experience_lower_bound,
+		vacancy.Experience_upper_bound,
+		vacancy.EducationType,
+		vacancy.Location,
+	).
+		Scan(&insertedVacancyID)
 
-	p.vacancyStorage.CurrentID++
-	vacancy.ID = p.vacancyStorage.CurrentID
-	p.vacancyStorage.VacancyList = append(p.vacancyStorage.VacancyList, *vacancy)
+	if err == sql.ErrNoRows {
+		return 0, ENTITY_NOT_FOUND
+	}
+	if err != nil {
+		return 0, err
+	}
 
-	return vacancy.ID, nil
+	return insertedVacancyID, nil
 }
 
-func (p *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) error {
-	p.vacancyStorage.Mu.Lock()
+func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64, error) {
+	query := `UPDATE
+		hnh_data.vacancy
+	SET
+		employer_id = $1,
+		"name" = $2,
+		description = $3,
+		salary_lower_bound = $4,
+		salary_upper_bound = $5,
+		employment = $6,
+		experience_lower_bound = $7,
+		experience_upper_bound = $8,
+		education_type = $9,
+		"location" = $10,
+		updated_at = now()
+	WHERE
+		id = $11`
 
-	defer p.vacancyStorage.Mu.Unlock()
-
-	indexToUpdate := -1
-	for index, elem := range p.vacancyStorage.VacancyList {
-		if elem.ID == vacancy.ID {
-			indexToUpdate = index
-			break
-		}
-	}
-
-	if indexToUpdate == -1 {
-		return ENTITY_NOT_FOUND
-	}
-
-	if vacancy.Name != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].Name = vacancy.Name
-	}
-	if vacancy.CompanyName != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].CompanyName = vacancy.CompanyName
-	}
-	if vacancy.Description != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].Description = vacancy.Description
-	}
-	if vacancy.EducationType != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].EducationType = vacancy.EducationType
-	}
-	if vacancy.Employment != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].Employment = vacancy.Employment
-	}
-	if vacancy.Experience != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].Experience = vacancy.Experience
-	}
-	if vacancy.Salary != 0 {
-		p.vacancyStorage.VacancyList[indexToUpdate].Salary = vacancy.Salary
-	}
-	if vacancy.Location != "" {
-		p.vacancyStorage.VacancyList[indexToUpdate].Location = vacancy.Location
+	result, err := repo.DB.Exec(
+		query,
+		vacancy.Employer_id,
+		vacancy.Name,
+		vacancy.Description,
+		vacancy.Salary_lower_bound,
+		vacancy.Salary_upper_bound,
+		vacancy.Employment,
+		vacancy.Experience_lower_bound,
+		vacancy.Experience_upper_bound,
+		vacancy.EducationType,
+		vacancy.Location,
+		vacancy.ID,
+	)
+	if err != nil {
+		return 0, err
 	}
 
-	return nil
+	return result.RowsAffected()
 }
 
-func (p *psqlVacancyRepository) DeleteVacancy(vacancyID int) error {
-	p.vacancyStorage.Mu.Lock()
+func (repo *psqlVacancyRepository) DeleteVacancy(vacancyID int) (int64, error) {
+	query := `DELETE
+		FROM
+			hnh_data.vacancy
+		WHERE
+			id = $1;`
 
-	defer p.vacancyStorage.Mu.Unlock()
-
-	indexToDelete := -1
-	for index, elem := range p.vacancyStorage.VacancyList {
-		if elem.ID == vacancyID {
-			indexToDelete = index
-			break
-		}
+	result, err := repo.DB.Exec(query, vacancyID)
+	if err != nil {
+		return 0, err
 	}
 
-	if indexToDelete == -1 {
-		return ENTITY_NOT_FOUND
-	}
+	return result.RowsAffected()
+	// repo.DB.Mu.Lock()
 
-	p.vacancyStorage.VacancyList = append(p.vacancyStorage.VacancyList[:indexToDelete], p.vacancyStorage.VacancyList[indexToDelete+1:]...)
+	// defer repo.DB.Mu.Unlock()
 
-	return nil
+	// indexToDelete := -1
+	// for index, elem := range repo.DB.VacancyList {
+	// 	if elem.ID == vacancyID {
+	// 		indexToDelete = index
+	// 		break
+	// 	}
+	// }
+
+	// if indexToDelete == -1 {
+	// 	return ENTITY_NOT_FOUND
+	// }
+
+	// repo.DB.VacancyList = append(repo.DB.VacancyList[:indexToDelete], repo.DB.VacancyList[indexToDelete+1:]...)
+
+	// return nil
 }
