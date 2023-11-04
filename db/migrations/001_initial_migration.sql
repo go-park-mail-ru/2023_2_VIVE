@@ -90,7 +90,7 @@ CREATE TABLE cv (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     applicant_id int REFERENCES applicant ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'serching'
+    status TEXT NOT NULL DEFAULT 'searching'
         CONSTRAINT status_is_not_empty CHECK (length(status) > 0),
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
