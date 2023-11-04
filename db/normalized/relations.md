@@ -19,6 +19,7 @@ erDiagram
 
     EMPLOYER {
         int id
+        int organization_id
         int user_id
     }
 
@@ -120,13 +121,13 @@ erDiagram
     }
 
     ORGANIZATION{
-        int employer_id
+        int id
         string name
         string location
         string description
     }
 
-    EMPLOYER ||--|| ORGANIZATION : ""
+    EMPLOYER }|--|| ORGANIZATION : ""
     USER_PROFILE ||--o| APPLICANT : ""
     USER_PROFILE ||--o| EMPLOYER : ""
     APPLICANT ||--o{ CV : ""
