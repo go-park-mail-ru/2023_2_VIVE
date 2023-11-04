@@ -2,9 +2,13 @@ package repository
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository/mock"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+
+	"errors"
+
+	"database/sql"
+	//"github.com/jmoiron/sqlx"
 )
 
 type IUserRepository interface {
@@ -19,27 +23,39 @@ type IUserRepository interface {
 }
 
 type psqlUserRepository struct {
-	userStorage *mock.Users
+	userStorage *sql.DB
 }
 
-func NewPsqlUserRepository(users *mock.Users) IUserRepository {
+func NewPsqlUserRepository(db *sql.DB) IUserRepository {
 	return &psqlUserRepository{
-		userStorage: users,
+		userStorage: db,
 	}
 }
 
 func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string) error {
-	actualUserIndex, ok := p.userStorage.EmailToUser.Load(email)
+	var actualHash interface{}
+	var salt interface{}
 
-	if !ok {
+	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&actualHash, &salt)
+	if errors.Is(err, sql.ErrNoRows) {
 		return serverErrors.NO_DATA_FOUND
+	} else if err != nil {
+		return err
 	}
 
-	actualUser := p.userStorage.UsersList[actualUserIndex.(int)]
+	castedHash, ok := actualHash.([]byte)
+	if !ok {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
 
-	hashedPass := authUtils.GetHash(passwordToCheck)
+	castedSalt, ok := salt.([]byte)
+	if !ok {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
 
-	if hashedPass != actualUser.Password {
+	isEqual := authUtils.ComparePasswordAndHash(passwordToCheck, castedSalt, castedHash)
+
+	if !isEqual {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
@@ -47,16 +63,30 @@ func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string)
 }
 
 func (p *psqlUserRepository) checkRole(user *domain.User) error {
-	actualUserIndex, ok := p.userStorage.EmailToUser.Load(user.Email)
+	if user.Type == domain.Employer {
+		var isEmployer bool
 
-	if !ok {
-		return serverErrors.NO_DATA_FOUND
-	}
+		empErr := p.userStorage.QueryRow(`SELECT EXISTS
+										(SELECT id FROM hnh_data.employer
+										WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isEmployer)
+		if !isEmployer {
+			return serverErrors.INCORRECT_ROLE
+		} else if empErr != nil {
+			return empErr
+		}
+	} else if user.Type == domain.Applicant {
+		var isApplicant bool
 
-	actualUser := p.userStorage.UsersList[actualUserIndex.(int)]
-
-	if user.Type != actualUser.Type {
-		return serverErrors.INCORRECT_ROLE
+		appErr := p.userStorage.QueryRow(`SELECT EXISTS
+										(SELECT id FROM hnh_data.applicant
+										WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isApplicant)
+		if !isApplicant {
+			return serverErrors.INCORRECT_ROLE
+		} else if appErr != nil {
+			return appErr
+		}
+	} else {
+		return serverErrors.INVALID_ROLE
 	}
 
 	return nil
@@ -77,17 +107,29 @@ func (p *psqlUserRepository) CheckUser(user *domain.User) error {
 }
 
 func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) error {
-	actualUserIndex, ok := p.userStorage.IdToUser.Load(id)
+	var actualHash interface{}
+	var salt interface{}
 
-	if !ok {
+	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE id = $1`, id).Scan(&actualHash, &salt)
+	if errors.Is(err, sql.ErrNoRows) {
 		return serverErrors.NO_DATA_FOUND
+	} else if err != nil {
+		return err
 	}
 
-	actualUser := p.userStorage.UsersList[actualUserIndex.(int)]
+	castedHash, ok := actualHash.([]byte)
+	if !ok {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
 
-	hashedPass := authUtils.GetHash(passwordToCheck)
+	castedSalt, ok := salt.([]byte)
+	if !ok {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
 
-	if hashedPass != actualUser.Password {
+	isEqual := authUtils.ComparePasswordAndHash(passwordToCheck, castedSalt, castedHash)
+
+	if !isEqual {
 		return serverErrors.INCORRECT_CREDENTIALS
 	}
 
@@ -95,95 +137,129 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 }
 
 func (p *psqlUserRepository) AddUser(user *domain.User) error {
-	_, exist := p.userStorage.EmailToUser.Load(user.Email)
+	var exists bool
 
-	if exist {
+	err := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
+	if exists {
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
+	} else if err != nil {
+		return err
 	}
 
-	hashedPass := authUtils.GetHash(user.Password)
+	hashedPass, salt, err := authUtils.GenerateHash(user.Password)
+	if err != nil {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
 
-	p.userStorage.Mu.Lock()
+	var userID int
+	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile 
+									("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") 
+									VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).Scan(&userID)
+	if addErr != nil {
+		return addErr
+	}
 
-	defer p.userStorage.Mu.Unlock()
-
-	p.userStorage.CurrentID++
-	user.ID = p.userStorage.CurrentID
-	user.Password = hashedPass
-
-	p.userStorage.UsersList = append(mock.UserDB.UsersList, user)
-
-	p.userStorage.EmailToUser.Store(user.Email, len(mock.UserDB.UsersList)-1)
-	p.userStorage.IdToUser.Store(user.ID, len(mock.UserDB.UsersList)-1)
+	if user.Type == domain.Applicant {
+		_, roleErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
+		if roleErr != nil {
+			return roleErr
+		}
+	} else if user.Type == domain.Employer {
+		_, empErr := p.userStorage.Exec(`INSERT INTO hnh_data.employer ("user_id") VALUES ($1)`, userID)
+		if empErr != nil {
+			return empErr
+		}
+	} else {
+		return serverErrors.INVALID_ROLE
+	}
 
 	return nil
 }
 
 func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
-	userIndex, exist := p.userStorage.IdToUser.Load(userID)
-	if !exist {
+	user := &domain.User{}
+
+	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location 
+								  FROM hnh_data.user_profile WHERE id = $1`, userID).
+		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, serverErrors.NO_DATA_FOUND
+	} else if err != nil {
+		return nil, err
 	}
-
-	user := p.userStorage.UsersList[userIndex.(int)]
-
-	user.Password = ""
 
 	return user, nil
 }
 
 func (p *psqlUserRepository) GetUserIdByEmail(email string) (int, error) {
-	userIndex, exist := p.userStorage.EmailToUser.Load(email)
-	if !exist {
-		return 0, serverErrors.INVALID_EMAIL
+	var userID int
+
+	err := p.userStorage.QueryRow(`SELECT id FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, serverErrors.NO_DATA_FOUND
+	} else if err != nil {
+		return 0, err
 	}
 
-	user := p.userStorage.UsersList[userIndex.(int)]
-
-	return user.ID, nil
+	return userID, nil
 }
 
 func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
-	userIndex, exist := p.userStorage.IdToUser.Load(userID)
-	if !exist {
-		return "", serverErrors.INTERNAL_SERVER_ERROR
+	var isApplicant bool
+
+	appErr := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.applicant WHERE user_id = $1)`, userID).Scan(&isApplicant)
+	if isApplicant {
+		return domain.Applicant, nil
+	} else if appErr != nil {
+		return "", appErr
 	}
 
-	user := p.userStorage.UsersList[userIndex.(int)]
+	var isEmployer bool
 
-	return user.Type, nil
+	empErr := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.employer WHERE user_id = $1)`, userID).Scan(&isEmployer)
+	if isEmployer {
+		return domain.Employer, nil
+	} else if empErr != nil {
+		return "", empErr
+	}
+
+	return "", serverErrors.NO_DATA_FOUND
 }
 
 func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
-	userID := user.ID
-
-	userIndex, exist := p.userStorage.IdToUser.Load(userID)
-	if !exist {
-		return serverErrors.INTERNAL_SERVER_ERROR
+	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET 
+									"email" = $1, "first_name" = $2, "last_name" = $3,
+									"birthday" = $4, "phone_number" = $5, "location" = $6`,
+		user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
+	if updErr != nil {
+		return updErr
 	}
 
-	if user.Email != "" {
-		p.userStorage.UsersList[userIndex.(int)].Email = user.Email
-	}
-	if user.FirstName != "" {
-		p.userStorage.UsersList[userIndex.(int)].FirstName = user.FirstName
-	}
-	if user.LastName != "" {
-		p.userStorage.UsersList[userIndex.(int)].LastName = user.LastName
-	}
-	if user.Password != "" {
-		p.userStorage.UsersList[userIndex.(int)].Password = user.Password
+	if user.NewPassword != "" {
+		hashedPass, salt, err := authUtils.GenerateHash(user.NewPassword)
+		if err != nil {
+			return serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		_, updPassErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET "pswd" = $1, "salt" = $2`, hashedPass, salt)
+		if updPassErr != nil {
+			return updPassErr
+		}
 	}
 
 	return nil
 }
 
 func (p *psqlUserRepository) GetUserOrgId(userID int) (int, error) {
-	userIndex, exist := p.userStorage.IdToUser.Load(userID)
-	if !exist {
-		return 0, serverErrors.INTERNAL_SERVER_ERROR
+	var orgID int
+
+	err := p.userStorage.QueryRow(`SELECT organization_id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&orgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, serverErrors.NO_DATA_FOUND
+	} else if err != nil {
+		return 0, err
 	}
 
-	//data mock
-	return userIndex.(int), nil
+	return orgID, nil
 }
