@@ -41,7 +41,8 @@ CREATE TABLE employer (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     organization_id int REFERENCES organization ON DELETE CASCADE,
-    user_id int REFERENCES user_profile ON DELETE CASCADE 
+    user_id int REFERENCES user_profile ON DELETE CASCADE,
+    UNIQUE (organization_id, user_id)
 );
 
 DROP TABLE IF EXISTS applicant CASCADE;
