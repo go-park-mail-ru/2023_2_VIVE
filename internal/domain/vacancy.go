@@ -5,7 +5,7 @@ import "time"
 type Vacancy struct {
 	ID                     int       `json:"id"`
 	Employer_id            int       `json:"employer_id"`
-	Name                   string    `json:"name"`
+	VacancyName            string    `json:"name"`
 	Description            string    `json:"description,omitempty"`
 	Salary_lower_bound     int       `json:"salary_lower_bound,omitempty"`
 	Salary_upper_bound     int       `json:"salary_upper_bound,omitempty"`

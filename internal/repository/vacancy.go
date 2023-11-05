@@ -3,6 +3,7 @@ package repository
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
+
 	// "fmt"
 	// "strings"
 
@@ -64,7 +65,7 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 		err := rows.Scan(
 			&vacancy.ID,
 			&vacancy.Employer_id,
-			&vacancy.Name,
+			&vacancy.VacancyName,
 			&vacancy.Description,
 			&vacancy.Salary_lower_bound,
 			&vacancy.Salary_upper_bound,
@@ -120,7 +121,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vac
 		err := rows.Scan(
 			&vacancy.ID,
 			&vacancy.Employer_id,
-			&vacancy.Name,
+			&vacancy.VacancyName,
 			&vacancy.Description,
 			&vacancy.Salary_lower_bound,
 			&vacancy.Salary_upper_bound,
@@ -166,7 +167,7 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 		Scan(
 			&vacancyToReturn.ID,
 			&vacancyToReturn.Employer_id,
-			&vacancyToReturn.Name,
+			&vacancyToReturn.VacancyName,
 			&vacancyToReturn.Description,
 			&vacancyToReturn.Salary_lower_bound,
 			&vacancyToReturn.Salary_upper_bound,
@@ -189,21 +190,20 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 }
 
 func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
-	query := `WITH w AS (
-		SELECT
-			e.organization_id,
-			v.id
-		FROM
-			hnh_data.employer e
-		LEFT JOIN hnh_data.vacancy v ON
-			e.id = v.employer_id
-		WHERE
-			v.id IS NOT NULL
-	) 
-	SELECT
+	query := `SELECT
 		organization_id
 	FROM
-		w
+	(
+	SELECT
+			e.organization_id,
+			v.id
+	FROM
+			hnh_data.employer e
+	LEFT JOIN hnh_data.vacancy v ON
+			e.id = v.employer_id
+	WHERE
+			v.id IS NOT NULL
+	) AS w
 	WHERE
 		id = $1`
 
@@ -244,7 +244,7 @@ func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, err
 	err := repo.DB.QueryRow(
 		query,
 		vacancy.Employer_id,
-		vacancy.Name,
+		vacancy.VacancyName,
 		vacancy.Description,
 		vacancy.Salary_lower_bound,
 		vacancy.Salary_upper_bound,
@@ -287,7 +287,7 @@ func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64
 	result, err := repo.DB.Exec(
 		query,
 		vacancy.Employer_id,
-		vacancy.Name,
+		vacancy.VacancyName,
 		vacancy.Description,
 		vacancy.Salary_lower_bound,
 		vacancy.Salary_upper_bound,
@@ -318,23 +318,4 @@ func (repo *psqlVacancyRepository) DeleteVacancy(vacancyID int) (int64, error) {
 	}
 
 	return result.RowsAffected()
-	// repo.DB.Mu.Lock()
-
-	// defer repo.DB.Mu.Unlock()
-
-	// indexToDelete := -1
-	// for index, elem := range repo.DB.VacancyList {
-	// 	if elem.ID == vacancyID {
-	// 		indexToDelete = index
-	// 		break
-	// 	}
-	// }
-
-	// if indexToDelete == -1 {
-	// 	return ENTITY_NOT_FOUND
-	// }
-
-	// repo.DB.VacancyList = append(repo.DB.VacancyList[:indexToDelete], repo.DB.VacancyList[indexToDelete+1:]...)
-
-	// return nil
 }
