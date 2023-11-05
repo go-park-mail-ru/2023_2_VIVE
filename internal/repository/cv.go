@@ -225,17 +225,18 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 }
 
 func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) (int64, error) {
-	query := `UPDATE hnh_data.cv 
+	query := `UPDATE
+		hnh_data.cv c
 	SET 
 		profession = $1, 
 		description = $2, 
 		status = $3,
 		updated_at = now()
-	FROM hnh_data.applicant 
+	FROM hnh_data.applicant a
 	WHERE 
-		hnh_data.cv.id = $4
-		AND hnh_data.applicant.user_id = $5
-		AND hnh_data.cv.applicant_id = hnh_data.applicant.id`
+		c.id = $4
+		AND a.user_id = $5
+		AND c.applicant_id = a.id`
 
 	result, err := repo.DB.Exec(
 		query,
@@ -255,12 +256,12 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV
 func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) (int64, error) {
 	query := `DELETE
 	FROM
-		hnh_data.cv
+		hnh_data.cv c
 			USING hnh_data.applicant a
 	WHERE
-		hnh_data.cv.id = $1
+		c.id = $1
 		AND a.user_id = $2
-		AND hnh_data.cv.applicant_id = a.id`
+		AND c.applicant_id = a.id`
 
 	result, err := repo.DB.Exec(query, cvID, userID)
 	if err != nil {

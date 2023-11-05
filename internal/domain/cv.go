@@ -2,11 +2,11 @@ package domain
 
 import "time"
 
-type status string
+type Status string
 
 const (
-	SEARCHING     status = "searching"
-	NOT_SEARCHING status = "not searching"
+	SEARCHING     Status = "searching"
+	NOT_SEARCHING Status = "not searching"
 )
 
 type CV struct {
@@ -14,7 +14,7 @@ type CV struct {
 	ApplicantID    int       `json:"applicant_id"`
 	ProfessionName string    `json:"name"`
 	Description    string    `json:"description,omitempty"`
-	Status         status    `json:"status,omitempty"`
+	Status         Status    `json:"status,omitempty"`
 	Created_at     time.Time `json:"created_at"`
 	Updated_at     time.Time `json:"updated_at"`
 	// UserID      int         `json:"user_id,omitempty"`

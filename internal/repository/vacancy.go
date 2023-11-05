@@ -20,8 +20,8 @@ type IVacancyRepository interface {
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
 	AddVacancy(vacancy *domain.Vacancy) (int, error)
-	UpdateVacancy(vacancy *domain.Vacancy) (int64, error)
-	DeleteVacancy(vacancyID int) (int64, error)
+	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) (int64, error)
+	DeleteOrgVacancy(orgID, vacancyID int) (int64, error)
 }
 
 type psqlVacancyRepository struct {
@@ -82,6 +82,9 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 		}
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
+	if len(vacanciesToReturn) == 0 {
+		return nil, ENTITY_NOT_FOUND
+	}
 	return vacanciesToReturn, nil
 }
 
@@ -137,6 +140,9 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vac
 			return nil, err
 		}
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
+	}
+	if len(vacanciesToReturn) == 0 {
+		return nil, ENTITY_NOT_FOUND
 	}
 	return vacanciesToReturn, nil
 }
@@ -237,7 +243,7 @@ func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, err
 			education_type,
 			"location"
 		)
-	VALUES ($1, $1, $1, $1, $1, $1, $1, $1, $1, $1)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING id`
 
 	var insertedVacancyID int
@@ -266,9 +272,9 @@ func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, err
 	return insertedVacancyID, nil
 }
 
-func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64, error) {
+func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) (int64, error) {
 	query := `UPDATE
-		hnh_data.vacancy
+		hnh_data.vacancy v
 	SET
 		employer_id = $1,
 		"name" = $2,
@@ -281,8 +287,12 @@ func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64
 		education_type = $9,
 		"location" = $10,
 		updated_at = now()
+	FROM
+		hnh_data.employer e
 	WHERE
-		id = $11`
+		v.id = $11
+		AND e.organization_id = $12
+		AND v.employer_id = e.id`
 
 	result, err := repo.DB.Exec(
 		query,
@@ -296,7 +306,8 @@ func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64
 		vacancy.Experience_upper_bound,
 		vacancy.EducationType,
 		vacancy.Location,
-		vacancy.ID,
+		vacancyID,
+		orgID,
 	)
 	if err != nil {
 		return 0, err
@@ -305,14 +316,17 @@ func (repo *psqlVacancyRepository) UpdateVacancy(vacancy *domain.Vacancy) (int64
 	return result.RowsAffected()
 }
 
-func (repo *psqlVacancyRepository) DeleteVacancy(vacancyID int) (int64, error) {
+func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) (int64, error) {
 	query := `DELETE
-		FROM
-			hnh_data.vacancy
-		WHERE
-			id = $1;`
+	FROM
+		hnh_data.vacancy v
+		USING hnh_data.employer e
+	WHERE
+		v.id = $1
+		AND e.organization_id = $2
+		AND v.employer_id = e.id`
 
-	result, err := repo.DB.Exec(query, vacancyID)
+	result, err := repo.DB.Exec(query, vacancyID, orgID)
 	if err != nil {
 		return 0, err
 	}
