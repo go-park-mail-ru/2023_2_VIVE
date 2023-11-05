@@ -4,12 +4,10 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
-	"fmt"
 
 	"errors"
 
 	"database/sql"
-	//"github.com/jmoiron/sqlx"
 )
 
 type IUserRepository interface {
@@ -162,7 +160,6 @@ func (p *psqlUserRepository) AddUser(user *domain.User) error {
 		return addErr
 	}
 
-	fmt.Printf("ADD USER %v\n", addErr)
 	if user.Type == domain.Applicant {
 		_, appErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
 		if appErr != nil {
