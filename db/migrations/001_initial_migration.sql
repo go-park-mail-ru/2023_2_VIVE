@@ -40,7 +40,8 @@ CREATE TABLE employer (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     organization_id int REFERENCES organization ON DELETE CASCADE,
-    user_id int REFERENCES user_profile UNIQUE ON DELETE CASCADE,
+    user_id int REFERENCES user_profile ON DELETE CASCADE,
+    UNIQUE (user_id),
     UNIQUE (organization_id, user_id)
 );
 
@@ -49,9 +50,10 @@ DROP TABLE IF EXISTS applicant CASCADE;
 CREATE TABLE applicant (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    user_id int REFERENCES user_profile UNIQUE ON DELETE CASCADE,
+    user_id int REFERENCES user_profile ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'searching'
-        CONSTRAINT status_is_not_empty CHECK (length(status) > 0)
+        CONSTRAINT status_is_not_empty CHECK (length(status) > 0),
+    UNIQUE (user_id)
 );
 
 DROP TABLE IF EXISTS vacancy CASCADE;
@@ -91,7 +93,7 @@ CREATE TABLE cv (
         CONSTRAINT id_is_positive CHECK (id > 0),
     applicant_id int REFERENCES applicant ON DELETE CASCADE,
     profession TEXT NOT NULL
-        CONSTRAINT profession_is_not_empty CHECK (length("name") > 0),
+        CONSTRAINT profession_is_not_empty CHECK (length(profession) > 0),
     description TEXT NOT NULL
         CONSTRAINT description_is_not_empty CHECK (length(description) > 0),
     status TEXT NOT NULL DEFAULT 'searching'
