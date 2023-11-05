@@ -12,8 +12,8 @@ type ICVRepository interface {
 	GetCVsByUserId(userID int) ([]domain.CV, error)
 	AddCV(cv *domain.CV) (int, error)
 	GetOneOfUsersCV(userID, cvID int) (*domain.CV, error)
-	UpdateOneOfUsersCV( /* userID, */ cvID int, cv *domain.CV) (int64, error)
-	DeleteOneOfUsersCV( /* userID,  */ cvID int) (int64, error)
+	UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) (int64, error)
+	DeleteOneOfUsersCV(userID, cvID int) (int64, error)
 }
 
 type psqlCVRepository struct {
@@ -103,7 +103,6 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
 	return cvsToReturn, nil
 }
 
-// по id юзера или id соискателя?
 func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
 	query := `SELECT
 		id,
@@ -184,7 +183,6 @@ func (repo *psqlCVRepository) AddCV(cv *domain.CV) (int, error) {
 	return insertedCVID, nil
 }
 
-// что это за функция, зачем она нужна?
 func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, error) {
 	query := `SELECT
 		id,
@@ -226,26 +224,26 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 	return cvToReturn, nil
 }
 
-// нужкн ли здесь userID? + добавил еще cv *domain.CV
-func (repo *psqlCVRepository) UpdateOneOfUsersCV( /*userID, */ cvID int, cv *domain.CV) (int64, error) {
-	query := `UPDATE
-		hnh_data.cv
-	SET
-		applicant_id = $1,
-		profession = $2,
-		description = $3,
-		status = $4,
+func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) (int64, error) {
+	query := `UPDATE hnh_data.cv 
+	SET 
+		profession = $1, 
+		description = $2, 
+		status = $3,
 		updated_at = now()
-	WHERE
-		id = $5`
+	FROM hnh_data.applicant 
+	WHERE 
+		hnh_data.cv.id = $4
+		AND hnh_data.applicant.user_id = $5
+		AND hnh_data.cv.applicant_id = hnh_data.applicant.id`
 
 	result, err := repo.DB.Exec(
 		query,
-		cv.ApplicantID,
 		cv.ProfessionName,
 		cv.Description,
 		cv.Status,
 		cvID,
+		userID,
 	)
 	if err != nil {
 		return 0, err
@@ -254,14 +252,17 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV( /*userID, */ cvID int, cv *dom
 	return result.RowsAffected()
 }
 
-func (repo *psqlCVRepository) DeleteOneOfUsersCV( /* userID,  */ cvID int) (int64, error) {
+func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) (int64, error) {
 	query := `DELETE
-		FROM
-			hnh_data.cv
-		WHERE
-			id = $1;`
+	FROM
+		hnh_data.cv
+			USING hnh_data.applicant a
+	WHERE
+		hnh_data.cv.id = $1
+		AND a.user_id = $2
+		AND hnh_data.cv.applicant_id = a.id`
 
-	result, err := repo.DB.Exec(query, cvID)
+	result, err := repo.DB.Exec(query, cvID, userID)
 	if err != nil {
 		return 0, err
 	}
