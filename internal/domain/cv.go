@@ -5,8 +5,8 @@ import "time"
 type Status string
 
 const (
-	SEARCHING     Status = "searching"
-	NOT_SEARCHING Status = "not searching"
+	Searching    Status = "searching"
+	NotSearching Status = "not searching"
 )
 
 type CV struct {
@@ -17,7 +17,7 @@ type CV struct {
 	Status         Status    `json:"status,omitempty"`
 	Created_at     time.Time `json:"created_at"`
 	Updated_at     time.Time `json:"updated_at"`
-	// UserID      int         `json:"user_id,omitempty"`
+	// UserID         int       `json:"user_id,omitempty"`
 	// FirstName   string      `json:"first_name"`
 	// LastName    string      `json:"last_name"`
 	// DateOfBirth string      `json:"date_of_bitrh,omitempty"`

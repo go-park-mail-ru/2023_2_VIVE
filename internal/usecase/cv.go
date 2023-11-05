@@ -11,7 +11,7 @@ type ICVUsecase interface {
 	GetCVList(sessionID string) ([]domain.CV, error)
 	AddNewCV(sessionID string, cv *domain.CV) (int, error)
 	GetCVOfUserById(sessionID string, cvID int) (*domain.CV, error)
-	UpdateCVOfUserById(sessionID string, cvID int) error
+	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.CV) error
 	DeleteCVOfUserById(sessionID string, cvID int) error
 }
 
@@ -67,6 +67,8 @@ func (cvUsecase *CVUsecase) validateRoleAndGetUserId(sessionID string, requiredR
 	return userID, nil
 }
 
+// TODO: make in one query for response
+// Finds cv that responded to one of the current user's vacancy
 func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, error) {
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Employer)
 	if validStatus != nil {
@@ -90,7 +92,7 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, e
 
 	found := false
 	for _, vac := range vacList {
-		if vac.CompanyID == userOrgID {
+		if vac.CompanyID == userOrgID {	// FIXME: remove this vac.CompanyID
 			found = true
 			break
 		}
@@ -128,9 +130,9 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.CV) (int, erro
 		return 0, validStatus
 	}
 
-	cv.UserID = userID
+	// cv.UserID = userID
 
-	cvID, addErr := cvUsecase.cvRepo.AddCV(cv)
+	cvID, addErr := cvUsecase.cvRepo.AddCV(userID, cv)
 	if addErr != nil {
 		return 0, addErr
 	}
@@ -152,13 +154,13 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain
 	return cv, nil
 }
 
-func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int) error {
+func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.CV) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID)
+	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, cv)
 	if updStatus != nil {
 		return updStatus
 	}

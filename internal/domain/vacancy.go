@@ -5,15 +5,15 @@ import "time"
 type EmploymentType string
 
 const (
-	FULL_TIME EmploymentType = "full-time"
-	PART_TIME EmploymentType = "part-time"
+	FullTime EmploymentType = "full-time"
+	PartTime EmploymentType = "part-time"
 )
 
 type EducationType string
 
 const (
-	HIGHER    EducationType = "full-time"
-	SECONDARY EducationType = "part-time"
+	Higher    EducationType = "higher"
+	Secondary EducationType = "secondary"
 )
 
 type Vacancy struct {
@@ -30,7 +30,7 @@ type Vacancy struct {
 	Location               string         `json:"location,omitempty"`
 	Created_at             time.Time      `json:"created_at"`
 	Updated_at             time.Time      `json:"updated_at"`
+	// CompanyID              int            `json:"company_id,omitempty"`
 	// CompanyName            string    `json:"company_name"`
-	// CompanyID              int       `json:"company_id,omitempty"`
 	// Salary                 int       `json:"salary,omitempty"`
 }

@@ -57,22 +57,22 @@ func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetOrgId(sessionID stri
 	return userOrgID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancyID int) error {
+func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancyID int) (int, error) {
 	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(sessionID)
 	if validStatus != nil {
-		return validStatus
+		return 0, validStatus
 	}
 
 	orgID, err := vacancyUsecase.vacancyRepo.GetOrgId(vacancyID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if userOrgID != orgID {
-		return serverErrors.FORBIDDEN
+		return 0, serverErrors.FORBIDDEN
 	}
 
-	return nil
+	return userOrgID, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.Vacancy, error) {
@@ -99,11 +99,11 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 		return 0, validStatus
 	}
 
-	if userOrgID != vacancy.CompanyID {
-		return 0, serverErrors.FORBIDDEN
-	}
+	// if userOrgID != vacancy.CompanyID {
+	// 	return 0, serverErrors.FORBIDDEN
+	// }
 
-	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(vacancy)
+	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(userOrgID, vacancy)
 	if addStatus != nil {
 		return 0, addStatus
 	}
@@ -112,29 +112,27 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 }
 
 func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error {
-	validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
+	orgID, validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	updStatus := vacancyUsecase.vacancyRepo.UpdateVacancy(vacancy)
+	updStatus := vacancyUsecase.vacancyRepo.UpdateOrgVacancy(orgID, vacancyID, vacancy)
 	if updStatus != nil {
 		return updStatus
 	}
-
 	return nil
 }
 
 func (vacancyUsecase *VacancyUsecase) DeleteVacancy(sessionID string, vacancyID int) error {
-	validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
+	orgID, validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	delStatus := vacancyUsecase.vacancyRepo.DeleteVacancy(vacancyID)
+	delStatus := vacancyUsecase.vacancyRepo.DeleteOrgVacancy(orgID, vacancyID)
 	if delStatus != nil {
 		return delStatus
 	}
-
 	return nil
 }

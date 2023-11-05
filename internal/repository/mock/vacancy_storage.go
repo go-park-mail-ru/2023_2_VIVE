@@ -1,15 +1,15 @@
 package mock
 
-import (
-	"HnH/internal/domain"
-	"sync"
-)
+// import (
+// 	"HnH/internal/domain"
+// 	"sync"
+// )
 
-type Vacancies struct {
-	VacancyList []domain.Vacancy
-	Mu          *sync.RWMutex
-	CurrentID   int
-}
+// type Vacancies struct {
+// 	VacancyList []domain.Vacancy
+// 	Mu          *sync.RWMutex
+// 	CurrentID   int
+// }
 
 // var VacancyDB = Vacancies{
 // 	VacancyList: []domain.Vacancy{

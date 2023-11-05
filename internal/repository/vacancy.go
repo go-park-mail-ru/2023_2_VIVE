@@ -18,10 +18,11 @@ type IVacancyRepository interface {
 	GetAllVacancies() ([]domain.Vacancy, error)
 	GetVacanciesByIds(idList []int) ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
+	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
-	AddVacancy(vacancy *domain.Vacancy) (int, error)
-	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) (int64, error)
-	DeleteOrgVacancy(orgID, vacancyID int) (int64, error)
+	AddVacancy(userID int, vacancy *domain.Vacancy) (int, error)
+	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) error
+	DeleteOrgVacancy(orgID, vacancyID int) error
 }
 
 type psqlVacancyRepository struct {
@@ -83,7 +84,7 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
 	if len(vacanciesToReturn) == 0 {
-		return nil, ENTITY_NOT_FOUND
+		return nil, ErrEntityNotFound
 	}
 	return vacanciesToReturn, nil
 }
@@ -142,7 +143,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vac
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
 	if len(vacanciesToReturn) == 0 {
-		return nil, ENTITY_NOT_FOUND
+		return nil, ErrEntityNotFound
 	}
 	return vacanciesToReturn, nil
 }
@@ -186,7 +187,7 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 			&vacancyToReturn.Updated_at,
 		)
 	if err == sql.ErrNoRows {
-		return nil, ENTITY_NOT_FOUND
+		return nil, ErrEntityNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -194,6 +195,58 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 
 	return &vacancyToReturn, nil
 }
+
+// func (repo *psqlVacancyRepository) GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error) {
+// 	query := `SELECT
+// 		v.id,
+// 		v.employer_id,
+// 		v."name",
+// 		v.description,
+// 		v.salary_lower_bound,
+// 		v.salary_upper_bound,
+// 		v.employment,
+// 		v.experience_lower_bound,
+// 		v.experience_upper_bound,
+// 		v.education_type,
+// 		v."location",
+// 		v.created_at,
+// 		v.updated_at
+// 	FROM
+// 		hnh_data.vacancy v
+// 	LEFT JOIN hnh_data.employer e ON
+// 		v.employer_id = e.id
+// 	WHERE
+// 		e.user_id = $1
+// 		AND v.id = $2`
+
+// 	vacancyToReturn := domain.Vacancy{}
+
+// 	err := repo.DB.QueryRow(query, userID, vacancyID).
+// 		Scan(
+// 			&vacancyToReturn.ID,
+// 			&vacancyToReturn.Employer_id,
+// 			&vacancyToReturn.VacancyName,
+// 			&vacancyToReturn.Description,
+// 			&vacancyToReturn.Salary_lower_bound,
+// 			&vacancyToReturn.Salary_upper_bound,
+// 			&vacancyToReturn.Employment,
+// 			&vacancyToReturn.Experience_lower_bound,
+// 			&vacancyToReturn.Experience_upper_bound,
+// 			&vacancyToReturn.EducationType,
+// 			&vacancyToReturn.Location,
+// 			&vacancyToReturn.Created_at,
+// 			&vacancyToReturn.Updated_at,
+// 		)
+// 	if err == sql.ErrNoRows {
+// 		return nil, ErrEntityNotFound
+// 	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &vacancyToReturn, nil
+// }
+
 
 func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 	query := `SELECT
@@ -218,7 +271,7 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 		Scan(&organizationIDToReturn)
 
 	if err == sql.ErrNoRows {
-		return 0, ENTITY_NOT_FOUND
+		return 0, ErrEntityNotFound
 	}
 	if err != nil {
 		return 0, err
@@ -228,28 +281,32 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 }
 
 // Add new vacancy and return new id if successful
-func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, error) {
+func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.Vacancy) (int, error) {
 	query := `INSERT
-		INTO
-		hnh_data.vacancy (
-			employer_id,
-			"name",
-			description,
-			salary_lower_bound,
-			salary_upper_bound,
-			employment,
-			experience_lower_bound,
-			experience_upper_bound,
-			education_type,
-			"location"
-		)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	RETURNING id`
+    INTO
+    hnh_data.vacancy (
+        employer_id,
+        "name",
+        description,
+        salary_lower_bound,
+        salary_upper_bound,
+        employment,
+        experience_lower_bound,
+        experience_upper_bound,
+        education_type,
+        "location"
+    )
+    SELECT
+        e.id, $1, $2, $3, $4, $5, $6, $7, $8, $9
+FROM
+    hnh_data.employer e
+WHERE
+    e.user_id = $10
+    RETURNING id`
 
 	var insertedVacancyID int
 	err := repo.DB.QueryRow(
 		query,
-		vacancy.Employer_id,
 		vacancy.VacancyName,
 		vacancy.Description,
 		vacancy.Salary_lower_bound,
@@ -259,11 +316,12 @@ func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, err
 		vacancy.Experience_upper_bound,
 		vacancy.EducationType,
 		vacancy.Location,
+		userID,
 	).
 		Scan(&insertedVacancyID)
 
 	if err == sql.ErrNoRows {
-		return 0, ENTITY_NOT_FOUND
+		return 0, ErrNotInserted
 	}
 	if err != nil {
 		return 0, err
@@ -272,7 +330,7 @@ func (repo *psqlVacancyRepository) AddVacancy(vacancy *domain.Vacancy) (int, err
 	return insertedVacancyID, nil
 }
 
-func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) (int64, error) {
+func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) error {
 	query := `UPDATE
 		hnh_data.vacancy v
 	SET
@@ -310,13 +368,21 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacanc
 		orgID,
 	)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return result.RowsAffected()
+	rows_affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows_affected == 0 {
+		return ErrNoRowsUpdated
+	}
+
+	return nil
 }
 
-func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) (int64, error) {
+func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) error {
 	query := `DELETE
 	FROM
 		hnh_data.vacancy v
@@ -328,8 +394,16 @@ func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) (int64
 
 	result, err := repo.DB.Exec(query, vacancyID, orgID)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return result.RowsAffected()
+	rows_affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows_affected == 0 {
+		return ErrNoRowsUpdated
+	}
+
+	return nil
 }

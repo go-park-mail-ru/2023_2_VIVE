@@ -10,10 +10,10 @@ type ICVRepository interface {
 	GetCVById(cvID int) (*domain.CV, error)
 	GetCVsByIds(idList []int) ([]domain.CV, error)
 	GetCVsByUserId(userID int) ([]domain.CV, error)
-	AddCV(cv *domain.CV) (int, error)
+	AddCV(userID int, cv *domain.CV) (int, error)
 	GetOneOfUsersCV(userID, cvID int) (*domain.CV, error)
-	UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) (int64, error)
-	DeleteOneOfUsersCV(userID, cvID int) (int64, error)
+	UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) error
+	DeleteOneOfUsersCV(userID, cvID int) error
 }
 
 type psqlCVRepository struct {
@@ -51,7 +51,7 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.CV, error) {
 			&cvToReturn.Updated_at,
 		)
 	if err == sql.ErrNoRows {
-		return nil, ENTITY_NOT_FOUND
+		return nil, ErrEntityNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -100,6 +100,9 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
 		}
 		cvsToReturn = append(cvsToReturn, cv)
 	}
+	if len(cvsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
 	return cvsToReturn, nil
 }
 
@@ -147,10 +150,13 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
 		}
 		cvsToReturn = append(cvsToReturn, cv)
 	}
+	if len(cvsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
 	return cvsToReturn, nil
 }
 
-func (repo *psqlCVRepository) AddCV(cv *domain.CV) (int, error) {
+func (repo *psqlCVRepository) AddCV(userID int, cv *domain.CV) (int, error) {
 	query := `INSERT
 		INTO
 		hnh_data.cv (
@@ -159,22 +165,30 @@ func (repo *psqlCVRepository) AddCV(cv *domain.CV) (int, error) {
 			description,
 			status
 		)
-	VALUES ($1, $2, $3, $4)
+	SELECT
+		a.id,
+		$1,
+		$2,
+		$3
+	FROM
+		hnh_data.applicant a
+	WHERE
+		a.user_id = $4
 	RETURNING id`
 
 	var insertedCVID int
 	err := repo.DB.QueryRow(
 		query,
-		cv.ID,
-		cv.ApplicantID,
 		cv.ProfessionName,
 		cv.Description,
 		cv.Status,
+		cv.Status,
+		userID,
 	).
 		Scan(&insertedCVID)
 
 	if err == sql.ErrNoRows {
-		return 0, ENTITY_NOT_FOUND
+		return 0, ErrNotInserted
 	}
 	if err != nil {
 		return 0, err
@@ -215,7 +229,7 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 		Scan(&cvToReturn)
 
 	if err == sql.ErrNoRows {
-		return nil, ENTITY_NOT_FOUND
+		return nil, ErrEntityNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -224,7 +238,7 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 	return cvToReturn, nil
 }
 
-func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) (int64, error) {
+func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) error {
 	query := `UPDATE
 		hnh_data.cv c
 	SET 
@@ -247,13 +261,21 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV
 		userID,
 	)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return result.RowsAffected()
+	rows_affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows_affected == 0 {
+		return ErrNoRowsUpdated
+	}
+
+	return nil
 }
 
-func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) (int64, error) {
+func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
 	query := `DELETE
 	FROM
 		hnh_data.cv c
@@ -265,8 +287,16 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) (int64, error
 
 	result, err := repo.DB.Exec(query, cvID, userID)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	return result.RowsAffected()
+	rows_affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows_affected == 0 {
+		return ErrNoRowsDeleted
+	}
+
+	return nil
 }
