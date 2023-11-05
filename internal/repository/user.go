@@ -31,23 +31,13 @@ func NewPsqlUserRepository(db *sql.DB) IUserRepository {
 	}
 }
 
-func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string) error {
-	var actualHash interface{}
-	var salt interface{}
-
-	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&actualHash, &salt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return ENTITY_NOT_FOUND
-	} else if err != nil {
-		return err
-	}
-
-	castedHash, ok := actualHash.([]byte)
+func (p *psqlUserRepository) castRawPasswordAndCompare(rawHash, rawSalt interface{}, passwordToCheck string) error {
+	castedHash, ok := rawHash.([]byte)
 	if !ok {
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
-	castedSalt, ok := salt.([]byte)
+	castedSalt, ok := rawSalt.([]byte)
 	if !ok {
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
@@ -59,6 +49,20 @@ func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string)
 	}
 
 	return nil
+}
+
+func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string) error {
+	var actualHash interface{}
+	var salt interface{}
+
+	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&actualHash, &salt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ENTITY_NOT_FOUND
+	} else if err != nil {
+		return err
+	}
+
+	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
 func (p *psqlUserRepository) checkRole(user *domain.User) error {
@@ -116,23 +120,7 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 		return err
 	}
 
-	castedHash, ok := actualHash.([]byte)
-	if !ok {
-		return serverErrors.INTERNAL_SERVER_ERROR
-	}
-
-	castedSalt, ok := salt.([]byte)
-	if !ok {
-		return serverErrors.INTERNAL_SERVER_ERROR
-	}
-
-	isEqual := authUtils.ComparePasswordAndHash(passwordToCheck, castedSalt, castedHash)
-
-	if !isEqual {
-		return serverErrors.INCORRECT_CREDENTIALS
-	}
-
-	return nil
+	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
 func (p *psqlUserRepository) AddUser(user *domain.User) error {
