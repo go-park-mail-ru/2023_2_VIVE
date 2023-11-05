@@ -38,7 +38,7 @@ func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string)
 
 	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&actualHash, &salt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return serverErrors.NO_DATA_FOUND
+		return ENTITY_NOT_FOUND
 	} else if err != nil {
 		return err
 	}
@@ -66,9 +66,9 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 	if user.Type == domain.Employer {
 		var isEmployer bool
 
-		empErr := p.userStorage.QueryRow(`SELECT EXISTS
-										(SELECT id FROM hnh_data.employer
-										WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isEmployer)
+		empErr := p.userStorage.QueryRow(`SELECT EXISTS`+
+			`(SELECT id FROM hnh_data.employer`+
+			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isEmployer)
 		if !isEmployer {
 			return serverErrors.INCORRECT_ROLE
 		} else if empErr != nil {
@@ -77,9 +77,9 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 	} else if user.Type == domain.Applicant {
 		var isApplicant bool
 
-		appErr := p.userStorage.QueryRow(`SELECT EXISTS
-										(SELECT id FROM hnh_data.applicant
-										WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isApplicant)
+		appErr := p.userStorage.QueryRow(`SELECT EXISTS`+
+			`(SELECT id FROM hnh_data.applicant`+
+			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isApplicant)
 		if !isApplicant {
 			return serverErrors.INCORRECT_ROLE
 		} else if appErr != nil {
@@ -112,7 +112,7 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 
 	err := p.userStorage.QueryRow(`SELECT pswd, salt FROM hnh_data.user_profile WHERE id = $1`, id).Scan(&actualHash, &salt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return serverErrors.NO_DATA_FOUND
+		return ENTITY_NOT_FOUND
 	} else if err != nil {
 		return err
 	}
@@ -152,10 +152,11 @@ func (p *psqlUserRepository) AddUser(user *domain.User) error {
 	}
 
 	var userID int
-	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile 
-									("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") 
-									VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).Scan(&userID)
+	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile`+
+		`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location")`+
+		`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
+		Scan(&userID)
 	if addErr != nil {
 		return addErr
 	}
@@ -180,11 +181,11 @@ func (p *psqlUserRepository) AddUser(user *domain.User) error {
 func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
 	user := &domain.User{}
 
-	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location 
-								  FROM hnh_data.user_profile WHERE id = $1`, userID).
+	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location`+
+		`FROM hnh_data.user_profile WHERE id = $1`, userID).
 		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, serverErrors.NO_DATA_FOUND
+		return nil, ENTITY_NOT_FOUND
 	} else if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func (p *psqlUserRepository) GetUserIdByEmail(email string) (int, error) {
 
 	err := p.userStorage.QueryRow(`SELECT id FROM hnh_data.user_profile WHERE email = $1`, email).Scan(&userID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, serverErrors.NO_DATA_FOUND
+		return 0, ENTITY_NOT_FOUND
 	} else if err != nil {
 		return 0, err
 	}
@@ -224,13 +225,13 @@ func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
 		return "", empErr
 	}
 
-	return "", serverErrors.NO_DATA_FOUND
+	return "", ENTITY_NOT_FOUND
 }
 
 func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
-	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET 
-									"email" = $1, "first_name" = $2, "last_name" = $3,
-									"birthday" = $4, "phone_number" = $5, "location" = $6`,
+	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET`+
+		`"email" = $1, "first_name" = $2, "last_name" = $3,`+
+		`"birthday" = $4, "phone_number" = $5, "location" = $6`,
 		user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
 	if updErr != nil {
 		return updErr
@@ -256,7 +257,7 @@ func (p *psqlUserRepository) GetUserOrgId(userID int) (int, error) {
 
 	err := p.userStorage.QueryRow(`SELECT organization_id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&orgID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, serverErrors.NO_DATA_FOUND
+		return 0, ENTITY_NOT_FOUND
 	} else if err != nil {
 		return 0, err
 	}

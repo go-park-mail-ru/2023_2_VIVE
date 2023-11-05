@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"HnH/pkg/serverErrors"
-
 	"database/sql"
 	"errors"
 )
@@ -35,7 +33,7 @@ func (p *psqlResponseRepository) RespondToVacancy(vacancyID, cvID int) error {
 func (p *psqlResponseRepository) GetVacanciesIdsByCVId(cvID int) ([]int, error) {
 	rows, err := p.responseStorage.Query(`SELECT vacancy_id FROM hnh_data.response WHERE cv_id = $1`, cvID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, serverErrors.NO_DATA_FOUND
+		return nil, ENTITY_NOT_FOUND
 	} else if err != nil {
 		return nil, err
 	}
@@ -59,7 +57,7 @@ func (p *psqlResponseRepository) GetVacanciesIdsByCVId(cvID int) ([]int, error) 
 func (p *psqlResponseRepository) GetAttachedCVs(vacancyID int) ([]int, error) {
 	rows, err := p.responseStorage.Query(`SELECT cv_id FROM hnh_data.response WHERE vacancy_id = $1`, vacancyID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, serverErrors.NO_DATA_FOUND
+		return nil, ENTITY_NOT_FOUND
 	} else if err != nil {
 		return nil, err
 	}
