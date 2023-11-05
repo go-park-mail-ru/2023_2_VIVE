@@ -1,13 +1,13 @@
 package http
 
 import (
+	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
-	"HnH/pkg/serverErrors"
-	"fmt"
+	"HnH/pkg/responseTemplates"
 
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -18,67 +18,68 @@ type CVHandler struct {
 	cvUsecase usecase.ICVUsecase
 }
 
-func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase) {
+func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase usecase.ISessionUsecase) {
 	handler := &CVHandler{
 		cvUsecase: cvUCase,
 	}
+	router.Handle("/cv/{cvID}",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCV))).
+		Methods("GET")
 
-	router.HandleFunc("/cv/{cvID}", handler.GetCV).Methods("GET")
-	router.HandleFunc("/current_user/cvs", handler.GetCVList).Methods("GET")
-	router.HandleFunc("/current_user/cvs", handler.AddNewCV).Methods("POST")
-	router.HandleFunc("/current_user/cvs/{cvID}", handler.GetCVOfUser).Methods("GET")
-	router.HandleFunc("/current_user/cvs/{cvID}", handler.UpdateCVOfUser).Methods("PUT")
-	router.HandleFunc("/current_user/cvs/{cvID}", handler.DeleteCVOfUser).Methods("DELETE")
+	router.Handle("/current_user/cvs",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCVList))).
+		Methods("GET")
+
+	router.Handle("/current_user/cvs",
+		middleware.JSONBodyValidationMiddleware(middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.AddNewCV)))).
+		Methods("POST")
+
+	router.Handle("/current_user/cvs/{cvID}",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCVOfUser))).
+		Methods("GET")
+
+	router.Handle("/current_user/cvs/{cvID}",
+		middleware.JSONBodyValidationMiddleware(middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.UpdateCVOfUser)))).
+		Methods("PUT")
+
+	router.Handle("/current_user/cvs/{cvID}",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteCVOfUser))).
+		Methods("DELETE")
 }
 
 func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		return
 	}
 
 	cv, err := cvHandler.cvUsecase.GetCVById(cookie.Value, cvID)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusForbidden)
+		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return
 	}
 
-	marshalAndSend(w, *cv)
+	responseTemplates.MarshalAndSend(w, *cv)
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	cvs, err := cvHandler.cvUsecase.GetCVList(cookie.Value)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	marshalAndSend(w, cvs)
+	responseTemplates.MarshalAndSend(w, cvs)
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	defer r.Body.Close()
 
@@ -86,13 +87,13 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 
 	readErr := json.NewDecoder(r.Body).Decode(cv)
 	if readErr != nil {
-		sendErrorMessage(w, readErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
 
 	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, cv)
 	if addErr != nil {
-		sendErrorMessage(w, addErr, http.StatusUnauthorized)
+		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
 		return
 	}
 
@@ -102,47 +103,37 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		return
 	}
 
 	cv, err := cvHandler.cvUsecase.GetCVOfUserById(cookie.Value, cvID)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	marshalAndSend(w, *cv)
+	responseTemplates.MarshalAndSend(w, *cv)
 }
 
 func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		return
 	}
 
 	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID)
 	if udpErr != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
 		return
 	}
 
@@ -150,23 +141,18 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 }
 
 func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		sendErrorMessage(w, convErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		return
 	}
 
 	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(cookie.Value, cvID)
 	if deleteErr != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusBadRequest)
 		return
 	}
 

@@ -1,12 +1,13 @@
 package http
 
 import (
+	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/responseTemplates"
 	"HnH/pkg/serverErrors"
 
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -17,14 +18,22 @@ type UserHandler struct {
 	userUsecase usecase.IUserUsecase
 }
 
-func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase) {
+func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase, sessionUCase usecase.ISessionUsecase) {
 	handler := &UserHandler{
 		userUsecase: userUCase,
 	}
 
-	router.HandleFunc("/users", handler.SignUp).Methods("POST")
-	router.HandleFunc("/current_user", handler.GetInfo).Methods("GET")
-	router.HandleFunc("/current_user", handler.UpdateInfo).Methods("PUT")
+	router.Handle("/users",
+		middleware.JSONBodyValidationMiddleware(http.HandlerFunc(handler.SignUp))).
+		Methods("POST")
+
+	router.Handle("/current_user",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetInfo))).
+		Methods("GET")
+
+	router.Handle("/current_user",
+		middleware.JSONBodyValidationMiddleware(middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.UpdateInfo)))).
+		Methods("PUT")
 }
 
 func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -34,13 +43,13 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	sessionID, err := userHandler.userUsecase.SignUp(newUser)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -58,43 +67,33 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	user, err := userHandler.userUsecase.GetInfo(cookie.Value)
 	if err != nil {
-		sendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
+		responseTemplates.SendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
 		return
 	}
 
-	marshalAndSend(w, *user)
+	responseTemplates.MarshalAndSend(w, *user)
 }
 
 func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	defer r.Body.Close()
 
 	updateInfo := new(domain.UserUpdate)
 
 	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
-	if err != nil {
-		sendErrorMessage(w, decodeErr, http.StatusBadRequest)
+	if decodeErr != nil {
+		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
 		return
 	}
 
 	updStatus := userHandler.userUsecase.UpdateInfo(cookie.Value, updateInfo)
 	if updStatus != nil {
-		sendErrorMessage(w, updStatus, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
 	}
 

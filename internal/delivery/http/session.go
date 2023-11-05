@@ -1,12 +1,12 @@
 package http
 
 import (
+	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
-	"HnH/pkg/serverErrors"
+	"HnH/pkg/responseTemplates"
 
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -22,9 +22,17 @@ func NewSessionHandler(router *mux.Router, sessionUCase usecase.ISessionUsecase)
 		sessionUsecase: sessionUCase,
 	}
 
-	router.HandleFunc("/session", handler.Login).Methods("POST")
-	router.HandleFunc("/session", handler.Logout).Methods("DELETE")
-	router.HandleFunc("/session", handler.CheckLogin).Methods("GET")
+	router.Handle("/session",
+		middleware.JSONBodyValidationMiddleware(http.HandlerFunc(handler.Login))).
+		Methods("POST")
+
+	router.Handle("/session",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.Logout))).
+		Methods("DELETE")
+
+	router.Handle("/session",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.CheckLogin))).
+		Methods("GET")
 }
 
 func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -34,13 +42,13 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	sessionID, loginErr := sessionHandler.sessionUsecase.Login(user)
 	if loginErr != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, loginErr, http.StatusBadRequest)
 		return
 	}
 
@@ -58,16 +66,11 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 }
 
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	deleteErr := sessionHandler.sessionUsecase.Logout(cookie.Value)
 	if deleteErr != nil {
-		sendErrorMessage(w, deleteErr, http.StatusUnauthorized)
+		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusUnauthorized)
 		return
 	}
 
@@ -78,16 +81,11 @@ func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Requ
 }
 
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session")
-
-	if errors.Is(err, http.ErrNoCookie) {
-		sendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
-		return
-	}
+	cookie, _ := r.Cookie("session")
 
 	sessionErr := sessionHandler.sessionUsecase.CheckLogin(cookie.Value)
 	if sessionErr != nil {
-		sendErrorMessage(w, sessionErr, http.StatusUnauthorized)
+		responseTemplates.SendErrorMessage(w, sessionErr, http.StatusUnauthorized)
 		return
 	}
 
