@@ -115,7 +115,7 @@ erDiagram
         timestamptz updated_at
     }
 
-    RESPONCE {
+    RESPONSE {
         serial id
         int vacancy_id
         int cv_id
@@ -148,8 +148,8 @@ erDiagram
 
 
 
-    VACANCY }o--|| RESPONCE : ""
-    RESPONCE ||--o{ CV : ""
+    VACANCY }o--|| RESPONSE : ""
+    RESPONSE ||--o{ CV : ""
 
     VACANCY }o--|| VACANCY_SKILL_ASSIGN : ""
     SKILL }o--|| VACANCY_SKILL_ASSIGN : ""
@@ -408,19 +408,19 @@ Relation MAJOR_FIELD:
 
 ---
 
-#### RESPONCE
+#### RESPONSE
 
-Отношение `RESPONCE` содержит основную информацию об откликах соискателей на вакансии. Имеет связи:
+Отношение `RESPONSE` содержит основную информацию об откликах соискателей на вакансии. Имеет связи:
 
 - 1:M с отношением `VACANCY`
 - 1:M с отношением `CV`
 
 ```
-Relation RESPONCE:
+Relation RESPONSE:
     {id} -> vacancy_id, cv_id, created_at, updated_at
 ```
 
-В отношении `RESPONCE` выполняются следующие нормальные формы:
+В отношении `RESPONSE` выполняются следующие нормальные формы:
 
 - **1 НФ** - значения атрибутов `vacancy_id`, `cv_id`, `created_at`, `updated_at` являются атомарными
 - **2 НФ** - `vacancy_id`, `cv_id`, `created_at`, `updated_at` функционально зависят полностью от первичного ключа `id`

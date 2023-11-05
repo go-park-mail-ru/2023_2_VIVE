@@ -102,9 +102,9 @@ CREATE TABLE cv (
     updated_at timestamptz DEFAULT now()
 );
 
-DROP TABLE IF EXISTS responce CASCADE;
+DROP TABLE IF EXISTS response CASCADE;
 
-CREATE TABLE responce (
+CREATE TABLE response (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     vacancy_id int REFERENCES vacancy ON DELETE CASCADE,
