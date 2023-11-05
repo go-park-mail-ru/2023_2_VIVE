@@ -13,7 +13,11 @@ type errorToSend struct {
 
 func sendErrorMessage(w http.ResponseWriter, err error, statusCode int) {
 	errResp := errorToSend{Message: err.Error()}
-	errJs, _ := json.Marshal(errResp)
+	errJs, err := json.Marshal(errResp)
+	if err != nil {
+		sendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

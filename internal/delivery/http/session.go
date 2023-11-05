@@ -40,7 +40,7 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 
 	sessionID, loginErr := sessionHandler.sessionUsecase.Login(user)
 	if loginErr != nil {
-		sendErrorMessage(w, err, http.StatusBadRequest)
+		sendErrorMessage(w, loginErr, http.StatusBadRequest)
 		return
 	}
 

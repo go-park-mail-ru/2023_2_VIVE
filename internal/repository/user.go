@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	"fmt"
 
 	"errors"
 
@@ -161,10 +162,11 @@ func (p *psqlUserRepository) AddUser(user *domain.User) error {
 		return addErr
 	}
 
+	fmt.Printf("ADD USER %v\n", addErr)
 	if user.Type == domain.Applicant {
-		_, roleErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
-		if roleErr != nil {
-			return roleErr
+		_, appErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
+		if appErr != nil {
+			return appErr
 		}
 	} else if user.Type == domain.Employer {
 		_, empErr := p.userStorage.Exec(`INSERT INTO hnh_data.employer ("user_id") VALUES ($1)`, userID)

@@ -14,11 +14,16 @@ import (
 )
 
 func Run() error {
+	db, err := getPostgres()
+	if err != nil {
+		return err
+	}
+
 	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
-	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
+	userRepo := repository.NewPsqlUserRepository(db)
 	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
 	cvRepo := repository.NewPsqlCVRepository()
-	responseRepo := repository.NewPsqlResponseRepository()
+	responseRepo := repository.NewPsqlResponseRepository(db)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
@@ -38,7 +43,7 @@ func Run() error {
 	http.Handle("/", corsRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
-	err := http.ListenAndServe(configs.PORT, nil)
+	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
 		return err
 	}
