@@ -3,7 +3,8 @@ package configs
 import "github.com/rs/cors"
 
 const (
-	PORT = ":8081"
+	PORT         = ":8081"
+	LOGFILE_NAME = "server.log"
 )
 
 var CORS = cors.New(cors.Options{
