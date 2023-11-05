@@ -3,17 +3,28 @@ package app
 import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
+	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/repository"
 	"HnH/internal/repository/mock"
 	"HnH/internal/usecase"
+	"HnH/pkg/logging"
 
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
 
 func Run() error {
+	logFile, err := os.OpenFile(configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer logFile.Close()
+	logger := logging.InitLogger(logFile)
+
 	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
 	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
 	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
@@ -29,16 +40,19 @@ func Run() error {
 	router := mux.NewRouter()
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
-	deliveryHTTP.NewUserHandler(router, userUsecase)
-	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase)
-	deliveryHTTP.NewCVHandler(router, cvUsecase)
-	deliveryHTTP.NewResponseHandler(router, responseUsecase)
+	deliveryHTTP.NewUserHandler(router, userUsecase, sessionUsecase)
+	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase, sessionUsecase)
+	deliveryHTTP.NewCVHandler(router, cvUsecase, sessionUsecase)
+	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
-	http.Handle("/", corsRouter)
+	loggedRouter := middleware.AccessLogMiddleware(logger, corsRouter)
+	finalRouter := middleware.PanicRecoverMiddleware(logger, loggedRouter)
+
+	http.Handle("/", finalRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
-	err := http.ListenAndServe(configs.PORT, nil)
+	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
 		return err
 	}
