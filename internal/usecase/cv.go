@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/serverErrors"
 )
 
@@ -16,18 +16,18 @@ type ICVUsecase interface {
 }
 
 type CVUsecase struct {
-	cvRepo       repository.ICVRepository
-	sessionRepo  repository.ISessionRepository
-	userRepo     repository.IUserRepository
-	responseRepo repository.IResponseRepository
-	vacancyRepo  repository.IVacancyRepository
+	cvRepo       psql.ICVRepository
+	sessionRepo  psql.ISessionRepository
+	userRepo     psql.IUserRepository
+	responseRepo psql.IResponseRepository
+	vacancyRepo  psql.IVacancyRepository
 }
 
-func NewCVUsecase(cvRepository repository.ICVRepository,
-	sessionRepository repository.ISessionRepository,
-	userRepository repository.IUserRepository,
-	responseRepository repository.IResponseRepository,
-	vacancyRepository repository.IVacancyRepository) ICVUsecase {
+func NewCVUsecase(cvRepository psql.ICVRepository,
+	sessionRepository psql.ISessionRepository,
+	userRepository psql.IUserRepository,
+	responseRepository psql.IResponseRepository,
+	vacancyRepository psql.IVacancyRepository) ICVUsecase {
 	return &CVUsecase{
 		cvRepo:       cvRepository,
 		sessionRepo:  sessionRepository,

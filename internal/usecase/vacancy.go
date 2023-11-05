@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/serverErrors"
 )
 
@@ -16,14 +16,14 @@ type IVacancyUsecase interface {
 }
 
 type VacancyUsecase struct {
-	vacancyRepo repository.IVacancyRepository
-	sessionRepo repository.ISessionRepository
-	userRepo    repository.IUserRepository
+	vacancyRepo psql.IVacancyRepository
+	sessionRepo psql.ISessionRepository
+	userRepo    psql.IUserRepository
 }
 
-func NewVacancyUsecase(vacancyRepository repository.IVacancyRepository,
-	sessionRepository repository.ISessionRepository,
-	userRepository repository.IUserRepository) IVacancyUsecase {
+func NewVacancyUsecase(vacancyRepository psql.IVacancyRepository,
+	sessionRepository psql.ISessionRepository,
+	userRepository psql.IUserRepository) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo: vacancyRepository,
 		sessionRepo: sessionRepository,

@@ -1,4 +1,4 @@
-package repository
+package psql
 
 type IResponseRepository interface {
 	RespondToVacancy(vacancyID, cvID int) error

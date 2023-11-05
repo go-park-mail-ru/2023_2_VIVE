@@ -1,17 +1,9 @@
-package repository
+package psql
 
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
-
-	// "fmt"
-	// "strings"
-
-	// "context"
-	// "HnH/internal/repository/mock"
 	"database/sql"
-	// "github.com/jackc/pgx/stdlib"
-	// _ "github.com/jackc/pgx/stdlib"
 )
 
 type IVacancyRepository interface {

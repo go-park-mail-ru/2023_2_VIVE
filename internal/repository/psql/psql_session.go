@@ -1,4 +1,4 @@
-package repository
+package psql
 
 import (
 	"HnH/internal/repository/mock"
