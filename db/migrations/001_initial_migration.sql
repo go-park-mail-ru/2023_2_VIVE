@@ -17,8 +17,8 @@ CREATE TABLE user_profile (
     birthday date DEFAULT NULL,
     phone_number CHARACTER(16) DEFAULT NULL
         CONSTRAINT phone_number_is_not_empty CHECK (length(phone_number) > 0),
-    location TEXT DEFAULT NULL
-        CONSTRAINT location_is_not_empty CHECK (length(location) > 0)
+    "location" TEXT DEFAULT NULL
+        CONSTRAINT location_is_not_empty CHECK (length("location") > 0)
 );
 
 DROP TABLE IF EXISTS organization CASCADE;
@@ -26,11 +26,10 @@ DROP TABLE IF EXISTS organization CASCADE;
 CREATE TABLE organization (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    name TEXT UNIQUE NOT NULL
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
---    employer_id int REFERENCES employer ON DELETE CASCADE,
+    "name" TEXT UNIQUE NOT NULL
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0),
     location TEXT DEFAULT NULL
-        CONSTRAINT location_is_not_empty CHECK (length(location) > 0),
+        CONSTRAINT location_is_not_empty CHECK (length("location") > 0),
     description TEXT NOT NULL
         CONSTRAINT description_is_not_empty CHECK (length(description) > 0)
 );
@@ -41,7 +40,7 @@ CREATE TABLE employer (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     organization_id int REFERENCES organization ON DELETE CASCADE,
-    user_id int REFERENCES user_profile ON DELETE CASCADE,
+    user_id int REFERENCES user_profile UNIQUE ON DELETE CASCADE,
     UNIQUE (organization_id, user_id)
 );
 
@@ -50,7 +49,7 @@ DROP TABLE IF EXISTS applicant CASCADE;
 CREATE TABLE applicant (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    user_id int REFERENCES user_profile ON DELETE CASCADE,
+    user_id int REFERENCES user_profile UNIQUE ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'searching'
         CONSTRAINT status_is_not_empty CHECK (length(status) > 0)
 );
@@ -61,8 +60,8 @@ CREATE TABLE vacancy (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     employer_id int REFERENCES employer ON DELETE CASCADE,
-    name TEXT NOT NULL
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
+    "name" TEXT NOT NULL
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0),
     description TEXT NOT NULL
         CONSTRAINT description_is_not_empty CHECK (length(description) > 0),
     salary_lower_bound int DEFAULT NULL
@@ -77,8 +76,8 @@ CREATE TABLE vacancy (
         CONSTRAINT experience_upper_bound_is_not_negative CHECK (experience_upper_bound >= 0),
     education_type TEXT NOT NULL DEFAULT 'secondary'
         CONSTRAINT education_type_is_not_empty CHECK (length(education_type) > 0),
-    location TEXT DEFAULT NULL
-        CONSTRAINT location_is_not_empty CHECK (length(location) > 0),
+    "location" TEXT DEFAULT NULL
+        CONSTRAINT location_is_not_empty CHECK (length("location") > 0),
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     CONSTRAINT valid_salaries CHECK (salary_lower_bound <= salary_upper_bound),
@@ -91,6 +90,10 @@ CREATE TABLE cv (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     applicant_id int REFERENCES applicant ON DELETE CASCADE,
+    profession TEXT NOT NULL
+        CONSTRAINT profession_is_not_empty CHECK (length("name") > 0),
+    description TEXT NOT NULL
+        CONSTRAINT description_is_not_empty CHECK (length(description) > 0),
     status TEXT NOT NULL DEFAULT 'searching'
         CONSTRAINT status_is_not_empty CHECK (length(status) > 0),
     created_at timestamptz DEFAULT now(),
@@ -105,7 +108,8 @@ CREATE TABLE responce (
     vacancy_id int REFERENCES vacancy ON DELETE CASCADE,
     cv_id int REFERENCES cv ON DELETE CASCADE,
     created_at timestamptz DEFAULT now(),
-    updated_at timestamptz DEFAULT now()
+    updated_at timestamptz DEFAULT now(),
+    UNIQUE (vacancy_id, cv_id)
 );
 
 DROP TABLE IF EXISTS experience CASCADE;
@@ -116,6 +120,8 @@ CREATE TABLE experience (
     cv_id int REFERENCES cv ON DELETE CASCADE,
     organization_name TEXT NOT NULL
         CONSTRAINT organization_name_is_not_empty CHECK (length(organization_name) > 0),
+    "position" TEXT NOT NULL
+        CONSTRAINT position_is_not_empty CHECK (length("position") > 0),
     description TEXT NOT NULL
         CONSTRAINT description_is_not_empty CHECK (length(description) > 0),
     start_date date NOT NULL,
@@ -127,11 +133,11 @@ DROP TABLE IF EXISTS "language" CASCADE;
 CREATE TABLE "language" (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    name TEXT NOT NULL
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
-    level TEXT NOT NULL
-        CONSTRAINT level_is_not_empty CHECK (length(level) > 0),
-    UNIQUE (name, level)
+    "name" TEXT NOT NULL
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0),
+    "level" TEXT NOT NULL
+        CONSTRAINT level_is_not_empty CHECK (length("level") > 0),
+    UNIQUE ("name", "level")
 );
 
 DROP TABLE IF EXISTS cv_language_assign CASCADE;
@@ -147,11 +153,11 @@ DROP TABLE IF EXISTS education_institution CASCADE;
 CREATE TABLE education_institution (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    name TEXT NOT NULL
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0),
+    "name" TEXT NOT NULL
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0),
     education_level TEXT NOT NULL
         CONSTRAINT education_level_is_not_empty CHECK (length(education_level) > 0),
-    UNIQUE (name, education_level)
+    UNIQUE ("name", education_level)
 );
 
 DROP TABLE IF EXISTS major_field CASCADE;
@@ -159,8 +165,8 @@ DROP TABLE IF EXISTS major_field CASCADE;
 CREATE TABLE major_field (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    name TEXT NOT NULL UNIQUE
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0)
+    "name" TEXT NOT NULL UNIQUE
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0)
 );
 
 DROP TABLE IF EXISTS institution_major_assign CASCADE;
@@ -188,8 +194,8 @@ DROP TABLE IF EXISTS skill CASCADE;
 CREATE TABLE skill (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    name TEXT NOT NULL UNIQUE
-        CONSTRAINT name_is_not_empty CHECK (length(name) > 0)
+    "name" TEXT NOT NULL UNIQUE
+        CONSTRAINT name_is_not_empty CHECK (length("name") > 0)
 );
 
 DROP TABLE IF EXISTS cv_skill_assign CASCADE;
