@@ -8,6 +8,7 @@ import (
 	"HnH/internal/repository/mock"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
+	"HnH/pkg/serverErrors"
 
 	"fmt"
 	"net/http"
@@ -52,8 +53,11 @@ func Run() error {
 	http.Handle("/", finalRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
+	logger.Infof("starting server at %s", configs.PORT)
+
 	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
+		logger.WithField("message", serverErrors.SERVER_IS_NOT_RUNNING).Error(err)
 		return err
 	}
 
