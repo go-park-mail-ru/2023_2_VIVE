@@ -3,6 +3,7 @@ package psql
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/nullTypes"
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"reflect"
@@ -491,16 +492,19 @@ func TestGetVacancySuccess(t *testing.T) {
 }
 
 var testGetVacancyQueryErrorCases = []struct {
-	input    int
-	expected error
+	input        int
+	returningErr error
+	expectedErr  error
 }{
 	{
-		input:    1,
-		expected: ErrEntityNotFound,
+		input:        1,
+		returningErr: sql.ErrNoRows,
+		expectedErr:  ErrEntityNotFound,
 	},
 	{
-		input:    1,
-		expected: ErrQuery,
+		input:        1,
+		returningErr: ErrQuery,
+		expectedErr:  ErrQuery,
 	},
 }
 
@@ -517,15 +521,15 @@ func TestGetVacancyQueryError(t *testing.T) {
 		mock.
 			ExpectQuery("SELECT(.|\n)+FROM(.|\n)+WHERE(.|\n)+").
 			WithArgs(testCase.input).
-			WillReturnError(testCase.expected)
+			WillReturnError(testCase.returningErr)
 
 		_, actualErr := repo.GetVacancy(testCase.input)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
 		}
-		if actualErr != testCase.expected {
-			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expected, actualErr)
+		if actualErr != testCase.expectedErr {
+			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
 			return
 		}
 	}
@@ -547,4 +551,84 @@ var testGetOrgIdSuccessCases = []struct {
 		input:    3,
 		expected: 3,
 	},
+}
+
+func TestGetOrgIdSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewPsqlVacancyRepository(db)
+
+	for _, testCase := range testGetOrgIdSuccessCases {
+		rows := sqlmock.NewRows([]string{"id"}).
+			AddRow(
+				testCase.expected,
+			)
+
+		mock.
+			ExpectQuery("SELECT(.|\n)+FROM(.|\n)+WHERE(.|\n)+").
+			WithArgs(testCase.input).
+			WillReturnRows(rows)
+
+		actual, err := repo.GetOrgId(testCase.input)
+		if err != nil {
+			t.Errorf("unexpected err: %s", err)
+			return
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+			return
+		}
+		if !reflect.DeepEqual(actual, testCase.expected) {
+			t.Errorf("results not match, want %v, have %v", testCase.expected, actual)
+			return
+		}
+	}
+}
+
+var testGetOrgIdQueryErrorCases = []struct {
+	input        int
+	returningErr error
+	expectedErr  error
+}{
+	{
+		input:        1,
+		returningErr: sql.ErrNoRows,
+		expectedErr:  ErrEntityNotFound,
+	},
+	{
+		input:        1,
+		returningErr: ErrQuery,
+		expectedErr:  ErrQuery,
+	},
+}
+
+func TestGetOrgIdQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewPsqlVacancyRepository(db)
+
+	for _, testCase := range testGetOrgIdQueryErrorCases {
+		mock.
+			ExpectQuery("SELECT(.|\n)+FROM(.|\n)+WHERE(.|\n)+").
+			WithArgs(testCase.input).
+			WillReturnError(testCase.returningErr)
+
+		_, actualErr := repo.GetOrgId(testCase.input)
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+			return
+		}
+		if actualErr != testCase.expectedErr {
+			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
+			return
+		}
+	}
 }
