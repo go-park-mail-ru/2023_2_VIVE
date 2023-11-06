@@ -67,8 +67,8 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 			&vacancy.Experience_upper_bound,
 			&vacancy.EducationType,
 			&vacancy.Location,
-			&vacancy.Created_at,
-			&vacancy.Updated_at,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -130,8 +130,8 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vac
 			&vacancy.Experience_upper_bound,
 			&vacancy.EducationType,
 			&vacancy.Location,
-			&vacancy.Created_at,
-			&vacancy.Updated_at,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -179,8 +179,8 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 			&vacancyToReturn.Experience_upper_bound,
 			&vacancyToReturn.EducationType,
 			&vacancyToReturn.Location,
-			&vacancyToReturn.Created_at,
-			&vacancyToReturn.Updated_at,
+			&vacancyToReturn.CreatedAt,
+			&vacancyToReturn.UpdatedAt,
 		)
 	if err == sql.ErrNoRows {
 		return nil, ErrEntityNotFound

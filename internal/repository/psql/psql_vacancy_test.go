@@ -3,18 +3,16 @@ package psql
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/nullTypes"
+	"HnH/pkg/testHelper"
 	"database/sql"
 	"database/sql/driver"
-	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var (
-	ErrQuery         = fmt.Errorf("some query error")
 	vacanciesColumns = []string{
 		"id",
 		"employer_id",
@@ -30,9 +28,6 @@ var (
 		"created_at",
 		"updated_at",
 	}
-	location, _ = time.LoadLocation("Local")
-	created_at  = time.Date(2023, 11, 1, 0, 0, 0, 0, location)
-	updated_at  = time.Date(2023, 11, 2, 0, 0, 0, 0, location)
 
 	fullVacancyID1 = domain.Vacancy{
 		ID:                     1,
@@ -46,8 +41,8 @@ var (
 		Experience_upper_bound: nullTypes.NewNullInt(12, true),
 		EducationType:          domain.Higher,
 		Location:               nullTypes.NewNullString("Moscow", true),
-		Created_at:             created_at,
-		Updated_at:             updated_at,
+		CreatedAt:              testHelper.Created_at,
+		UpdatedAt:              testHelper.Updated_at,
 	}
 	fullVacancyID2 = domain.Vacancy{
 		ID:                     2,
@@ -61,8 +56,8 @@ var (
 		Experience_upper_bound: nullTypes.NewNullInt(12, true),
 		EducationType:          domain.Higher,
 		Location:               nullTypes.NewNullString("Moscow", true),
-		Created_at:             created_at,
-		Updated_at:             updated_at,
+		CreatedAt:              testHelper.Created_at,
+		UpdatedAt:              testHelper.Updated_at,
 	}
 	incompleteVacancyID3 = domain.Vacancy{
 		ID:                     3,
@@ -76,27 +71,10 @@ var (
 		Experience_upper_bound: nullTypes.NewNullInt(0, false),
 		EducationType:          domain.Secondary,
 		Location:               nullTypes.NewNullString("", false),
-		Created_at:             created_at,
-		Updated_at:             updated_at,
+		CreatedAt:              testHelper.Created_at,
+		UpdatedAt:              testHelper.Updated_at,
 	}
 )
-
-const (
-	SELECT_QUERY = "SELECT(.|\n)+FROM(.|\n)+"
-	INSER_QUERY  = "INSERT(.|\n)+INTO(.|\n)+RETURNING(.|\n)+"
-	UPDATE_QUERY = "UPDATE(.|\n)+SET(.|\n)+FROM(.|\n)+WHERE(.|\n)+"
-	DELETE_QUERY = "DELETE(.|\n)+FROM(.|\n)+"
-)
-
-func sliceIntToDriverValue(slice []int) []driver.Value {
-	result := make([]driver.Value, len(slice))
-
-	for i := 0; i < len(slice); i++ {
-		result[i] = slice[i]
-	}
-
-	return result
-}
 
 var testGetAllVacanciesSuccessCases = []struct {
 	expected []domain.Vacancy
@@ -134,12 +112,12 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 				item.Experience_upper_bound.GetValue(),
 				item.EducationType,
 				item.Location.GetValue(),
-				item.Created_at,
-				item.Updated_at,
+				item.CreatedAt,
+				item.UpdatedAt,
 			)
 		}
 		mock.
-			ExpectQuery(SELECT_QUERY).
+			ExpectQuery(testHelper.SELECT_QUERY).
 			WillReturnRows(rows)
 
 		actual, err := repo.GetAllVacancies()
@@ -168,8 +146,8 @@ func TestGetAllVacanciesQueryError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	mock.
-		ExpectQuery(SELECT_QUERY).
-		WillReturnError(ErrQuery)
+		ExpectQuery(testHelper.SELECT_QUERY).
+		WillReturnError(testHelper.ErrQuery)
 
 	_, returnedErr := repo.GetAllVacancies()
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -194,7 +172,7 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 	rows := sqlmock.NewRows(vacanciesColumns)
 
 	mock.
-		ExpectQuery(SELECT_QUERY).
+		ExpectQuery(testHelper.SELECT_QUERY).
 		WillReturnRows(rows)
 
 	_, returnedErr := repo.GetAllVacancies()
@@ -247,13 +225,13 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 				item.Experience_upper_bound.GetValue(),
 				item.EducationType,
 				item.Location.GetValue(),
-				item.Created_at,
-				item.Updated_at,
+				item.CreatedAt,
+				item.UpdatedAt,
 			)
 		}
 		mock.
-			ExpectQuery("SELECT(.|\n)+FROM(.|\n)+WHERE(.|\n)+").
-			WithArgs(sliceIntToDriverValue(testCase.input)...).
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testHelper.SliceIntToDriverValue(testCase.input)...).
 			WillReturnRows(rows)
 
 		actual, err := repo.GetVacanciesByIds(testCase.input)
@@ -298,16 +276,16 @@ func TestGetVacanciesByIdsQueryError(t *testing.T) {
 
 	input := []int{1, 2, 3}
 	mock.
-		ExpectQuery(SELECT_QUERY).
-		WithArgs(sliceIntToDriverValue(input)...).
-		WillReturnError(ErrQuery)
+		ExpectQuery(testHelper.SELECT_QUERY).
+		WithArgs(testHelper.SliceIntToDriverValue(input)...).
+		WillReturnError(testHelper.ErrQuery)
 
 	_, returnedErr := repo.GetVacanciesByIds(input)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-	if returnedErr != ErrQuery {
+	if returnedErr != testHelper.ErrQuery {
 		t.Errorf("expected query error, got: '%s'", returnedErr)
 		return
 	}
@@ -325,8 +303,8 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 	input := []int{1, 2, 3}
 	rows := sqlmock.NewRows(vacanciesColumns)
 	mock.
-		ExpectQuery(SELECT_QUERY).
-		WithArgs(sliceIntToDriverValue(input)...).
+		ExpectQuery(testHelper.SELECT_QUERY).
+		WithArgs(testHelper.SliceIntToDriverValue(input)...).
 		WillReturnRows(rows)
 
 	_, returnedErr := repo.GetVacanciesByIds(input)
@@ -381,12 +359,12 @@ func TestGetVacancySuccess(t *testing.T) {
 				testCase.expected.Experience_upper_bound.GetValue(),
 				testCase.expected.EducationType,
 				testCase.expected.Location.GetValue(),
-				testCase.expected.Created_at,
-				testCase.expected.Updated_at,
+				testCase.expected.CreatedAt,
+				testCase.expected.UpdatedAt,
 			)
 
 		mock.
-			ExpectQuery(SELECT_QUERY).
+			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.input).
 			WillReturnRows(rows)
 
@@ -418,8 +396,8 @@ var testGetVacancyQueryErrorCases = []struct {
 	},
 	{
 		input:        1,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 }
 
@@ -434,7 +412,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testGetVacancyQueryErrorCases {
 		mock.
-			ExpectQuery(SELECT_QUERY).
+			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.input).
 			WillReturnError(testCase.returningErr)
 
@@ -484,7 +462,7 @@ func TestGetOrgIdSuccess(t *testing.T) {
 			)
 
 		mock.
-			ExpectQuery(SELECT_QUERY).
+			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.input).
 			WillReturnRows(rows)
 
@@ -516,8 +494,8 @@ var testGetOrgIdQueryErrorCases = []struct {
 	},
 	{
 		input:        1,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 }
 
@@ -532,7 +510,7 @@ func TestGetOrgIdQueryError(t *testing.T) {
 
 	for _, testCase := range testGetOrgIdQueryErrorCases {
 		mock.
-			ExpectQuery(SELECT_QUERY).
+			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.input).
 			WillReturnError(testCase.returningErr)
 
@@ -584,7 +562,7 @@ func TestAddVacancySuccess(t *testing.T) {
 			AddRow(testCase.expected)
 
 		mock.
-			ExpectQuery(INSER_QUERY).
+			ExpectQuery(testHelper.INSERT_QUERY).
 			WithArgs(
 				testCase.inputVacancy.VacancyName,
 				testCase.inputVacancy.Description,
@@ -630,8 +608,8 @@ var testAddVacancyErrorCases = []struct {
 	{
 		inputUserID:  1,
 		inputVacancy: fullVacancyID1,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 	{
 		inputUserID:  3,
@@ -642,8 +620,8 @@ var testAddVacancyErrorCases = []struct {
 	{
 		inputUserID:  3,
 		inputVacancy: incompleteVacancyID3,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 }
 
@@ -658,7 +636,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testAddVacancyErrorCases {
 		mock.
-			ExpectQuery(INSER_QUERY).
+			ExpectQuery(testHelper.INSERT_QUERY).
 			WithArgs(
 				testCase.inputVacancy.VacancyName,
 				testCase.inputVacancy.Description,
@@ -718,7 +696,7 @@ func TestUpdateOrgVacancySuccess(t *testing.T) {
 
 	for _, testCase := range testUpdateOrgVacancySuccessCases {
 		mock.
-			ExpectExec(UPDATE_QUERY).
+			ExpectExec(testHelper.UPDATE_QUERY).
 			WithArgs(
 				testCase.inputVacancy.Employer_id,
 				testCase.inputVacancy.VacancyName,
@@ -765,8 +743,8 @@ var testUpdateOrgVacancyErrorCases = []struct {
 		inputOrgID:   1,
 		inputVacID:   1,
 		inputVacancy: fullVacancyID1,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 	{
 		inputOrgID:   3,
@@ -779,8 +757,8 @@ var testUpdateOrgVacancyErrorCases = []struct {
 		inputOrgID:   3,
 		inputVacID:   3,
 		inputVacancy: incompleteVacancyID3,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 }
 
@@ -795,7 +773,7 @@ func TestUpdateOrgVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testUpdateOrgVacancyErrorCases {
 		mock.
-			ExpectExec(UPDATE_QUERY).
+			ExpectExec(testHelper.UPDATE_QUERY).
 			WithArgs(
 				testCase.inputVacancy.Employer_id,
 				testCase.inputVacancy.VacancyName,
@@ -853,7 +831,7 @@ func TestDeleteOrgVacancySuccess(t *testing.T) {
 
 	for _, testCase := range testDeleteOrgVacancySuccessCases {
 		mock.
-			ExpectExec(DELETE_QUERY).
+			ExpectExec(testHelper.DELETE_QUERY).
 			WithArgs(
 				testCase.inputVacID,
 				testCase.inputOrgID,
@@ -887,8 +865,8 @@ var testDeleteOrgVacancyErrorCases = []struct {
 	{
 		inputOrgID:   1,
 		inputVacID:   1,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 	{
 		inputOrgID:   3,
@@ -899,8 +877,8 @@ var testDeleteOrgVacancyErrorCases = []struct {
 	{
 		inputOrgID:   3,
 		inputVacID:   3,
-		returningErr: ErrQuery,
-		expectedErr:  ErrQuery,
+		returningErr: testHelper.ErrQuery,
+		expectedErr:  testHelper.ErrQuery,
 	},
 }
 
@@ -915,7 +893,7 @@ func TestDeleteOrgVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testDeleteOrgVacancyErrorCases {
 		mock.
-			ExpectExec(DELETE_QUERY).
+			ExpectExec(testHelper.DELETE_QUERY).
 			WithArgs(
 				testCase.inputVacID,
 				testCase.inputOrgID,

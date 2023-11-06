@@ -31,8 +31,8 @@ type Vacancy struct {
 	Experience_upper_bound nullTypes.NullInt32  `json:"experience_upper_bound,omitempty"`
 	EducationType          EducationType        `json:"education_type,omitempty"`
 	Location               nullTypes.NullString `json:"location,omitempty"`
-	Created_at             time.Time            `json:"created_at"`
-	Updated_at             time.Time            `json:"updated_at"`
+	CreatedAt              time.Time            `json:"created_at"`
+	UpdatedAt              time.Time            `json:"updated_at"`
 	// CompanyID              int            `json:"company_id,omitempty"`
 	// CompanyName            string    `json:"company_name"`
 	// Salary                 int       `json:"salary,omitempty"`

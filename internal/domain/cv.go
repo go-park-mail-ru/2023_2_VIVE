@@ -15,8 +15,8 @@ type CV struct {
 	ProfessionName string    `json:"name"`
 	Description    string    `json:"description,omitempty"`
 	Status         Status    `json:"status,omitempty"`
-	Created_at     time.Time `json:"created_at"`
-	Updated_at     time.Time `json:"updated_at"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 	// UserID         int       `json:"user_id,omitempty"`
 	// FirstName   string      `json:"first_name"`
 	// LastName    string      `json:"last_name"`
