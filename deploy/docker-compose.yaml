@@ -4,6 +4,7 @@ services:
     container_name: redis_hnh
     image: redis:${REDDIS_VERSION}-alpine
     restart: always
+    command: redis-server --requirepass ${REDDIS_PASSWORD}
     ports: 
       - "8008:6379"
     environment:
