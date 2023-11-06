@@ -7,6 +7,6 @@ services:
     ports: 
       - "8008:6379"
     environment:
-      - REDIS_PASSWORD: ${REDDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDDIS_PASSWORD}
     volumes:
       - $PWD/redis_data:/docker_redis_data
