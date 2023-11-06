@@ -12,6 +12,7 @@ var (
 	ACCOUNT_ALREADY_EXISTS = fmt.Errorf("An account with given email already exists")
 	SESSION_ALREADY_EXISTS = fmt.Errorf("Session has already started")
 	INVALID_COOKIE         = fmt.Errorf("The cookie provided is invalid")
+	NO_SESSION             = fmt.Errorf("The requested session does not exist. Authorization required")
 	NO_COOKIE              = fmt.Errorf("No cookie provided")
 	AUTH_REQUIRED          = fmt.Errorf("You need to be authenticated")
 	FORBIDDEN              = fmt.Errorf("Access to this resource is restricted")

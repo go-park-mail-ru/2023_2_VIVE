@@ -10,7 +10,7 @@ import (
 )
 
 type IUserUsecase interface {
-	SignUp(user *domain.User) (string, error)
+	SignUp(user *domain.User, expiryUnixSeconds int64) (string, error)
 	GetInfo(sessionID string) (*domain.User, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 }
@@ -41,7 +41,7 @@ func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (i
 	return userID, nil
 }
 
-func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
+func (userUsecase *UserUsecase) SignUp(user *domain.User, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus
@@ -68,7 +68,7 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
 
 	sessionID := uuid.NewString()
 
-	addErr := userUsecase.sessionRepo.AddSession(sessionID, userID)
+	addErr := userUsecase.sessionRepo.AddSession(sessionID, userID, expiryUnixSeconds)
 	if addErr != nil {
 		return "", addErr
 	}
