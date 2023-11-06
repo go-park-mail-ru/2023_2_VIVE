@@ -24,11 +24,11 @@ type Vacancy struct {
 	Employer_id            int                  `json:"employer_id"`
 	VacancyName            string               `json:"name"`
 	Description            string               `json:"description,omitempty"`
-	Salary_lower_bound     nullTypes.NullInt    `json:"salary_lower_bound,omitempty"`
-	Salary_upper_bound     nullTypes.NullInt    `json:"salary_upper_bound,omitempty"`
+	Salary_lower_bound     nullTypes.NullInt32  `json:"salary_lower_bound,omitempty"`
+	Salary_upper_bound     nullTypes.NullInt32  `json:"salary_upper_bound,omitempty"`
 	Employment             nullTypes.NullString `json:"employment,omitempty"`
-	Experience_lower_bound nullTypes.NullInt    `json:"experience_lower_bound,omitempty"`
-	Experience_upper_bound nullTypes.NullInt    `json:"experience_upper_bound,omitempty"`
+	Experience_lower_bound nullTypes.NullInt32  `json:"experience_lower_bound,omitempty"`
+	Experience_upper_bound nullTypes.NullInt32  `json:"experience_upper_bound,omitempty"`
 	EducationType          EducationType        `json:"education_type,omitempty"`
 	Location               nullTypes.NullString `json:"location,omitempty"`
 	Created_at             time.Time            `json:"created_at"`

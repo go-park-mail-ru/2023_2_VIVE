@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
 
@@ -16,11 +16,11 @@ type IUserUsecase interface {
 }
 
 type UserUsecase struct {
-	userRepo    repository.IUserRepository
-	sessionRepo repository.ISessionRepository
+	userRepo    psql.IUserRepository
+	sessionRepo psql.ISessionRepository
 }
 
-func NewUserUsecase(userRepository repository.IUserRepository, sessionRepository repository.ISessionRepository) IUserUsecase {
+func NewUserUsecase(userRepository psql.IUserRepository, sessionRepository psql.ISessionRepository) IUserUsecase {
 	return &UserUsecase{
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,

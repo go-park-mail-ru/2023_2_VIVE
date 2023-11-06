@@ -243,7 +243,6 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 // 	return &vacancyToReturn, nil
 // }
 
-
 func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 	query := `SELECT
 		organization_id
@@ -279,26 +278,26 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 // Add new vacancy and return new id if successful
 func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.Vacancy) (int, error) {
 	query := `INSERT
-    INTO
-    hnh_data.vacancy (
-        employer_id,
-        "name",
-        description,
-        salary_lower_bound,
-        salary_upper_bound,
-        employment,
-        experience_lower_bound,
-        experience_upper_bound,
-        education_type,
-        "location"
-    )
-    SELECT
-        e.id, $1, $2, $3, $4, $5, $6, $7, $8, $9
-FROM
-    hnh_data.employer e
-WHERE
-    e.user_id = $10
-    RETURNING id`
+		INTO
+		hnh_data.vacancy (
+			employer_id,
+			"name",
+			description,
+			salary_lower_bound,
+			salary_upper_bound,
+			employment,
+			experience_lower_bound,
+			experience_upper_bound,
+			education_type,
+			"location"
+		)
+		SELECT
+			e.id, $1, $2, $3, $4, $5, $6, $7, $8, $9
+	FROM
+		hnh_data.employer e
+	WHERE
+		e.user_id = $10
+		RETURNING id`
 
 	var insertedVacancyID int
 	err := repo.DB.QueryRow(
@@ -363,16 +362,16 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacanc
 		vacancyID,
 		orgID,
 	)
+	if err == sql.ErrNoRows {
+		return ErrNoRowsUpdated
+	}
 	if err != nil {
 		return err
 	}
 
-	rows_affected, err := result.RowsAffected()
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
-	}
-	if rows_affected == 0 {
-		return ErrNoRowsUpdated
 	}
 
 	return nil
@@ -389,16 +388,16 @@ func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) error 
 		AND v.employer_id = e.id`
 
 	result, err := repo.DB.Exec(query, vacancyID, orgID)
+	if err == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
 	if err != nil {
 		return err
 	}
 
-	rows_affected, err := result.RowsAffected()
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
-	}
-	if rows_affected == 0 {
-		return ErrNoRowsUpdated
 	}
 
 	return nil

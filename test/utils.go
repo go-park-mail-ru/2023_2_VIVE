@@ -1,4 +1,4 @@
-package requestHandlers_test
+package test
 
 import (
 	"net/http"
