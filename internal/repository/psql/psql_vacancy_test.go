@@ -2,6 +2,8 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/nullTypes"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -14,11 +16,74 @@ var created_at = time.Date(2023, 11, 1, 0, 0, 0, 0, location)
 var updated_at = time.Date(2023, 11, 2, 0, 0, 0, 0, location)
 
 var rows = []struct {
-	colomns  []string
 	expected []domain.Vacancy
 }{
 	{
-		colomns: []string{
+		expected: []domain.Vacancy{
+			{
+				ID:                     1,
+				Employer_id:            1,
+				VacancyName:            "Vacancy #1",
+				Description:            "Description #1",
+				Salary_lower_bound:     nullTypes.NewNullInt(10000, true),
+				Salary_upper_bound:     nullTypes.NewNullInt(20000, true),
+				Employment:             nullTypes.NewNullString(string(domain.FullTime), true),
+				Experience_lower_bound: nullTypes.NewNullInt(0, true),
+				Experience_upper_bound: nullTypes.NewNullInt(12, true),
+				EducationType:          domain.Higher,
+				Location:               nullTypes.NewNullString("Moscow", true),
+				Created_at:             created_at,
+				Updated_at:             updated_at,
+			},
+			{
+				ID:                     2,
+				Employer_id:            2,
+				VacancyName:            "Vacancy #2",
+				Description:            "Description #2",
+				Salary_lower_bound:     nullTypes.NewNullInt(10000, true),
+				Salary_upper_bound:     nullTypes.NewNullInt(20000, true),
+				Employment:             nullTypes.NewNullString(string(domain.FullTime), true),
+				Experience_lower_bound: nullTypes.NewNullInt(0, true),
+				Experience_upper_bound: nullTypes.NewNullInt(12, true),
+				EducationType:          domain.Higher,
+				Location:               nullTypes.NewNullString("Moscow", true),
+				Created_at:             created_at,
+				Updated_at:             updated_at,
+			},
+		},
+	},
+	{
+		expected: []domain.Vacancy{
+			{
+				ID:                     1,
+				Employer_id:            1,
+				VacancyName:            "Vacancy #1",
+				Description:            "Description #1",
+				Salary_lower_bound:     nullTypes.NewNullInt(0, false),
+				Salary_upper_bound:     nullTypes.NewNullInt(0, false),
+				Employment:             nullTypes.NewNullString("", false),
+				Experience_lower_bound: nullTypes.NewNullInt(0, false),
+				Experience_upper_bound: nullTypes.NewNullInt(0, false),
+				EducationType:          domain.Secondary,
+				Location:               nullTypes.NewNullString("", false),
+				Created_at:             created_at,
+				Updated_at:             updated_at,
+			},
+		},
+	},
+}
+
+func TestGetAllVacanciesSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewPsqlVacancyRepository(db)
+
+	for _, testCase := range rows {
+		rows := sqlmock.NewRows([]string{
 			"id",
 			"employer_id",
 			"name",
@@ -32,53 +97,7 @@ var rows = []struct {
 			"location",
 			"created_at",
 			"updated_at",
-		},
-		expected: []domain.Vacancy{
-			{
-				ID:                     1,
-				Employer_id:            1,
-				VacancyName:            "Vacancy #1",
-				Description:            "Description #1",
-				Salary_lower_bound:     10000,
-				Salary_upper_bound:     20000,
-				Employment:             domain.FullTime,
-				Experience_lower_bound: 0,
-				Experience_upper_bound: 12,
-				EducationType:          domain.Higher,
-				Location:               "Moscow",
-				Created_at:             created_at,
-				Updated_at:             updated_at,
-			},
-			{
-				ID:                     2,
-				Employer_id:            2,
-				VacancyName:            "Vacancy #2",
-				Description:            "Description #2",
-				Salary_lower_bound:     10000,
-				Salary_upper_bound:     20000,
-				Employment:             domain.FullTime,
-				Experience_lower_bound: 0,
-				Experience_upper_bound: 12,
-				EducationType:          domain.Higher,
-				Location:               "Moscow",
-				Created_at:             created_at,
-				Updated_at:             updated_at,
-			},
-		},
-	},
-}
-
-func TestGetAllVacancies(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	repo := NewPsqlVacancyRepository(db)
-
-	for _, testCase := range rows {
-		rows := sqlmock.NewRows(testCase.colomns)
+		})
 
 		for _, item := range testCase.expected {
 			rows = rows.AddRow(
@@ -114,7 +133,29 @@ func TestGetAllVacancies(t *testing.T) {
 			t.Errorf("results not match, want %v, have %v", testCase.expected, actual)
 			return
 		}
-
 	}
+}
 
+func TestGetAllVacanciesQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := NewPsqlVacancyRepository(db)
+
+	mock.
+		ExpectQuery("SELECT(.|\n)+FROM(.|\n)+").
+		WillReturnError(fmt.Errorf("some query error"))
+
+	_, queryErr := repo.GetAllVacancies()
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+	if queryErr == nil {
+		t.Errorf("expected error %s, got nil", err)
+		return
+	}
 }
