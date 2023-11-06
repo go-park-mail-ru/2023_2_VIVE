@@ -82,6 +82,10 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 }
 
 func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vacancy, error) {
+	if len(idList) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
 	placeHolderString := queryUtils.QueryPlaceHolders(placeHolderValues...)
 
