@@ -9,4 +9,4 @@ services:
     environment:
       - REDIS_PASSWORD=${REDDIS_PASSWORD}
     volumes:
-      - $PWD/redis_data:/docker_redis_data
+      - $PWD/redis_data:/data
