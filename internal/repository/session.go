@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"HnH/internal/repository/mock"
 	"HnH/pkg/serverErrors"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 type ISessionRepository interface {
@@ -13,12 +14,12 @@ type ISessionRepository interface {
 }
 
 type psqlSessionRepository struct {
-	sessionStorage *mock.Sessions
+	sessionStorage redis.Conn
 }
 
-func NewPsqlSessionRepository(sessions *mock.Sessions) ISessionRepository {
+func NewPsqlSessionRepository(conn redis.Conn) ISessionRepository {
 	return &psqlSessionRepository{
-		sessionStorage: sessions,
+		sessionStorage: conn,
 	}
 }
 

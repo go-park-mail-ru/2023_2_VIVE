@@ -14,7 +14,12 @@ import (
 )
 
 func Run() error {
-	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
+	redisDB, err := getRedis()
+	if err != nil {
+		return err
+	}
+
+	sessionRepo := repository.NewPsqlSessionRepository(redisDB)
 	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
 	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
 	cvRepo := repository.NewPsqlCVRepository()
@@ -38,7 +43,7 @@ func Run() error {
 	http.Handle("/", corsRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
-	err := http.ListenAndServe(configs.PORT, nil)
+	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
 		return err
 	}

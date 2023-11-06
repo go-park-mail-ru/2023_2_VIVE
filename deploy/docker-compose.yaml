@@ -1,0 +1,12 @@
+services:
+
+  sessions_hnh:
+    container_name: redis_hnh
+    image: redis:${REDDIS_VERSION}-alpine
+    restart: always
+    ports: 
+      - "8008:6379"
+    environment:
+      - REDIS_PASSWORD: ${REDDIS_PASSWORD}
+    volumes:
+      - $PWD/redis_data:/docker_redis_data
