@@ -140,7 +140,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID)
+	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID)	// FIXME: add arg
 	if udpErr != nil {
 		sendErrorMessage(w, err, http.StatusBadRequest)
 		return

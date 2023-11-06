@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/serverErrors"
 )
 
@@ -12,18 +12,18 @@ type IResponseUsecase interface {
 }
 
 type ResponseUsecase struct {
-	responseRepo repository.IResponseRepository
-	sessionRepo  repository.ISessionRepository
-	userRepo     repository.IUserRepository
-	vacancyRepo  repository.IVacancyRepository
-	cvRepo       repository.ICVRepository
+	responseRepo psql.IResponseRepository
+	sessionRepo  psql.ISessionRepository
+	userRepo     psql.IUserRepository
+	vacancyRepo  psql.IVacancyRepository
+	cvRepo       psql.ICVRepository
 }
 
-func NewResponseUsecase(respondRepository repository.IResponseRepository,
-	sessionRepository repository.ISessionRepository,
-	userRepository repository.IUserRepository,
-	vacancyRepository repository.IVacancyRepository,
-	cvRepository repository.ICVRepository) IResponseUsecase {
+func NewResponseUsecase(respondRepository psql.IResponseRepository,
+	sessionRepository psql.ISessionRepository,
+	userRepository psql.IUserRepository,
+	vacancyRepository psql.IVacancyRepository,
+	cvRepository psql.ICVRepository) IResponseUsecase {
 	return &ResponseUsecase{
 		responseRepo: respondRepository,
 		sessionRepo:  sessionRepository,
@@ -112,7 +112,7 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.CV) []domain.Ap
 			CVid:      cv.ID,
 			FirstName: cv.FirstName,
 			LastName:  cv.LastName,
-			Skills:    cv.Skills,
+			Skills:    cv.Skills,	// FIXME: remove this field
 		}
 
 		infoToReturn = append(infoToReturn, info)

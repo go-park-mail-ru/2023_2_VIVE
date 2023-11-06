@@ -3,7 +3,7 @@ package app
 import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
 	"HnH/internal/repository/mock"
 	"HnH/internal/usecase"
 
@@ -14,11 +14,16 @@ import (
 )
 
 func Run() error {
-	sessionRepo := repository.NewPsqlSessionRepository(&mock.SessionDB)
-	userRepo := repository.NewPsqlUserRepository(&mock.UserDB)
-	vacancyRepo := repository.NewPsqlVacancyRepository(&mock.VacancyDB)
-	cvRepo := repository.NewPsqlCVRepository()
-	responseRepo := repository.NewPsqlResponseRepository()
+	db, err := getPostgres()
+	if err != nil {
+		return err
+	}
+
+	sessionRepo := psql.NewPsqlSessionRepository(&mock.SessionDB)
+	userRepo := psql.NewPsqlUserRepository(db)
+	vacancyRepo := psql.NewPsqlVacancyRepository(&mock.VacancyDB)	// FIXME: cahnge mock to connection to DB
+	cvRepo := psql.NewPsqlCVRepository()
+	responseRepo := psql.NewPsqlResponseRepository(db)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
@@ -38,7 +43,7 @@ func Run() error {
 	http.Handle("/", corsRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
-	err := http.ListenAndServe(configs.PORT, nil)
+	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {
 		return err
 	}
