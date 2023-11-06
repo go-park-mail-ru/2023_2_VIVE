@@ -20,7 +20,8 @@ func PanicRecoverMiddleware(logger *logrus.Logger, next http.Handler) http.Handl
 					"method":   r.Method,
 					"URL":      r.URL.Path,
 					"endpoint": r.RemoteAddr,
-				}).Panic(err)
+					"panic":    err,
+				}).Error("recovered")
 
 				return
 			}
