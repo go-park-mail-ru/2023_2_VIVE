@@ -56,7 +56,7 @@ func AccessLogMiddleware(logger *logrus.Logger, next http.Handler) http.Handler 
 			"method":         r.Method,
 			"URL":            r.URL.Path,
 			"endpoint":       r.RemoteAddr,
-			"execution_time": time.Since(start),
+			"execution_time": time.Since(start).String(),
 		})
 
 		if wrappedWriter.body != "" {
