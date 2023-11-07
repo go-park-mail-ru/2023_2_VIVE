@@ -1,3 +1,4 @@
 server.log
 deploy/.env
 configs/secret_key.go
+*.rdb
