@@ -29,11 +29,13 @@ func Run() error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	redisDB, err := getRedis()
 	if err != nil {
 		return err
 	}
+	defer redisDB.Close()
 
 	sessionRepo := redisRepo.NewPsqlSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
