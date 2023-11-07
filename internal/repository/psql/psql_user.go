@@ -138,22 +138,32 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
-	var userID int
-	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
-		`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
-		`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
-		Scan(&userID)
-	if addErr != nil {
-		return addErr
-	}
-
 	if user.Type == domain.Applicant {
+		var userID int
+		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
+			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
+			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
+			Scan(&userID)
+		if addErr != nil {
+			return addErr
+		}
+
 		_, appErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
 		if appErr != nil {
 			return appErr
 		}
 	} else if user.Type == domain.Employer {
+		var userID int
+		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
+			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
+			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
+			Scan(&userID)
+		if addErr != nil {
+			return addErr
+		}
+
 		_, empErr := p.userStorage.Exec(`INSERT INTO hnh_data.employer ("user_id") VALUES ($1)`, userID)
 		if empErr != nil {
 			return empErr
@@ -227,23 +237,26 @@ func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
 }
 
 func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
-	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
-		`"email" = $1, "first_name" = $2, "last_name" = $3, `+
-		`"birthday" = $4, "phone_number" = $5, "location" = $6`,
-		user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
-	if updErr != nil {
-		return updErr
-	}
-
 	if user.NewPassword != "" {
 		hashedPass, salt, err := authUtils.GenerateHash(user.NewPassword)
 		if err != nil {
 			return serverErrors.INTERNAL_SERVER_ERROR
 		}
 
-		_, updPassErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET "pswd" = $1, "salt" = $2`, hashedPass, salt)
-		if updPassErr != nil {
-			return updPassErr
+		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
+			`"email" = $1, "pswd" = $2, "salt" = $3, "first_name" = $4, "last_name" = $5, `+
+			`"birthday" = $6, "phone_number" = $7, "location" = $8`,
+			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
+		if updErr != nil {
+			return updErr
+		}
+	} else {
+		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
+			`"email" = $1, "first_name" = $2, "last_name" = $3, `+
+			`"birthday" = $4, "phone_number" = $5, "location" = $6`,
+			user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
+		if updErr != nil {
+			return updErr
 		}
 	}
 
