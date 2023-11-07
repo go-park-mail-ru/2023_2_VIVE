@@ -69,8 +69,8 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 	if user.Type == domain.Employer {
 		var isEmployer bool
 
-		empErr := p.userStorage.QueryRow(`SELECT EXISTS`+
-			`(SELECT id FROM hnh_data.employer`+
+		empErr := p.userStorage.QueryRow(`SELECT EXISTS `+
+			`(SELECT id FROM hnh_data.employer `+
 			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isEmployer)
 		if empErr != nil {
 			return empErr
@@ -80,8 +80,8 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 	} else if user.Type == domain.Applicant {
 		var isApplicant bool
 
-		appErr := p.userStorage.QueryRow(`SELECT EXISTS`+
-			`(SELECT id FROM hnh_data.applicant`+
+		appErr := p.userStorage.QueryRow(`SELECT EXISTS `+
+			`(SELECT id FROM hnh_data.applicant `+
 			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isApplicant)
 		if appErr != nil {
 			return appErr
@@ -139,8 +139,8 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 	}
 
 	var userID int
-	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile`+
-		`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location")`+
+	addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
+		`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
 		`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
 		user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
 		Scan(&userID)
@@ -168,7 +168,7 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
 	user := &domain.User{}
 
-	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location`+
+	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location `+
 		`FROM hnh_data.user_profile WHERE id = $1`, userID).
 		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -216,8 +216,8 @@ func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
 }
 
 func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
-	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET`+
-		`"email" = $1, "first_name" = $2, "last_name" = $3,`+
+	_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
+		`"email" = $1, "first_name" = $2, "last_name" = $3, `+
 		`"birthday" = $4, "phone_number" = $5, "location" = $6`,
 		user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
 	if updErr != nil {
