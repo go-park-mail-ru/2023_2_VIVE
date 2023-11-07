@@ -22,6 +22,7 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 	handler := &CVHandler{
 		cvUsecase: cvUCase,
 	}
+
 	router.Handle("/cv/{cvID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCV))).
 		Methods("GET")

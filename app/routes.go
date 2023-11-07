@@ -39,6 +39,9 @@ func Run() error {
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)
 
 	router := mux.NewRouter()
+	router.Use(func(h http.Handler) http.Handler {
+		return middleware.CSRFProtectionMiddleware(sessionRepo, h)
+	})
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
 	deliveryHTTP.NewUserHandler(router, userUsecase, sessionUsecase)
