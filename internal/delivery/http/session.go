@@ -46,7 +46,9 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sessionID, loginErr := sessionHandler.sessionUsecase.Login(user)
+	expiryTime := time.Now().Add(10 * time.Hour)
+
+	sessionID, loginErr := sessionHandler.sessionUsecase.Login(user, expiryTime.Unix())
 	if loginErr != nil {
 		responseTemplates.SendErrorMessage(w, loginErr, http.StatusBadRequest)
 		return
@@ -55,7 +57,7 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 	cookie := &http.Cookie{
 		Name:     "session",
 		Value:    sessionID,
-		Expires:  time.Now().Add(10 * time.Hour),
+		Expires:  expiryTime,
 		Path:     "/",
 		Secure:   false,
 		HttpOnly: true,
