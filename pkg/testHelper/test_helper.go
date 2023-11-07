@@ -16,7 +16,8 @@ var (
 
 const (
 	SELECT_QUERY = "SELECT(.|\n)+FROM(.|\n)+"
-	INSERT_QUERY = "INSERT(.|\n)+INTO(.|\n)+RETURNING(.|\n)+"
+	SELECT_EXISTS_QUERY = "SELECT EXISTS(.|\n)+"
+	INSERT_QUERY = "INSERT(.|\n)+INTO(.|\n)+"
 	UPDATE_QUERY = "UPDATE(.|\n)+SET(.|\n)+FROM(.|\n)+WHERE(.|\n)+"
 	DELETE_QUERY = "DELETE(.|\n)+FROM(.|\n)+"
 )

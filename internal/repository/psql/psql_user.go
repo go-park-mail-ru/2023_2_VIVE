@@ -13,7 +13,7 @@ import (
 type IUserRepository interface {
 	CheckUser(user *domain.User) error
 	CheckPasswordById(id int, passwordToCheck string) error
-	AddUser(user *domain.User) error
+	AddUser(user *domain.User, hasher authUtils.HashGenerator) error
 	GetUserIdByEmail(email string) (int, error)
 	GetRoleById(userID int) (domain.Role, error)
 	GetUserInfo(userID int) (*domain.User, error)
@@ -72,10 +72,10 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 		empErr := p.userStorage.QueryRow(`SELECT EXISTS`+
 			`(SELECT id FROM hnh_data.employer`+
 			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isEmployer)
-		if !isEmployer {
-			return serverErrors.INCORRECT_ROLE
-		} else if empErr != nil {
+		if empErr != nil {
 			return empErr
+		} else if !isEmployer {
+			return serverErrors.INCORRECT_ROLE
 		}
 	} else if user.Type == domain.Applicant {
 		var isApplicant bool
@@ -83,10 +83,10 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 		appErr := p.userStorage.QueryRow(`SELECT EXISTS`+
 			`(SELECT id FROM hnh_data.applicant`+
 			`WHERE user_id = (SELECT id FROM hnh_data.user_profile WHERE email = $1))`, user.Email).Scan(&isApplicant)
-		if !isApplicant {
-			return serverErrors.INCORRECT_ROLE
-		} else if appErr != nil {
+		if appErr != nil {
 			return appErr
+		} else if !isApplicant {
+			return serverErrors.INCORRECT_ROLE
 		}
 	} else {
 		return serverErrors.INVALID_ROLE
@@ -123,7 +123,7 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
-func (p *psqlUserRepository) AddUser(user *domain.User) error {
+func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGenerator) error {
 	var exists bool
 
 	err := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
@@ -133,7 +133,7 @@ func (p *psqlUserRepository) AddUser(user *domain.User) error {
 		return err
 	}
 
-	hashedPass, salt, err := authUtils.GenerateHash(user.Password)
+	hashedPass, salt, err := hasher(user.Password)
 	if err != nil {
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}

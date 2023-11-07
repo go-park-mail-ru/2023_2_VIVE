@@ -7,6 +7,8 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+type HashGenerator func(password string) (hash []byte, salt []byte, err error)
+
 type hashParams struct {
 	memory      uint32
 	iterations  uint32
