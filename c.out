@@ -78,17 +78,6 @@ HnH/internal/repository/psql/psql_response.go:68.18,72.17 3 0
 HnH/internal/repository/psql/psql_response.go:72.17,74.4 1 0
 HnH/internal/repository/psql/psql_response.go:75.3,75.32 1 0
 HnH/internal/repository/psql/psql_response.go:78.2,78.20 1 0
-HnH/internal/repository/psql/psql_session.go:19.75,23.2 1 0
-HnH/internal/repository/psql/psql_session.go:25.80,28.2 2 0
-HnH/internal/repository/psql/psql_session.go:30.71,33.12 2 0
-HnH/internal/repository/psql/psql_session.go:33.12,35.3 1 0
-HnH/internal/repository/psql/psql_session.go:37.2,38.12 2 0
-HnH/internal/repository/psql/psql_session.go:41.73,44.9 2 0
-HnH/internal/repository/psql/psql_session.go:44.9,46.3 1 0
-HnH/internal/repository/psql/psql_session.go:48.2,48.12 1 0
-HnH/internal/repository/psql/psql_session.go:51.83,53.9 2 0
-HnH/internal/repository/psql/psql_session.go:53.9,55.3 1 0
-HnH/internal/repository/psql/psql_session.go:57.2,57.26 1 0
 HnH/internal/repository/psql/psql_user.go:28.56,32.2 1 1
 HnH/internal/repository/psql/psql_user.go:34.116,36.9 2 1
 HnH/internal/repository/psql/psql_user.go:36.9,38.3 1 0
