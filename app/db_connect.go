@@ -4,6 +4,9 @@ import (
 	"HnH/configs"
 
 	"github.com/gomodule/redigo/redis"
+	"database/sql"
+
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 func getRedis() (redis.Conn, error) {
@@ -18,4 +21,20 @@ func getRedis() (redis.Conn, error) {
 	}
 
 	return conn, nil
+}
+
+func getPostgres() (*sql.DB, error) {
+	dsn := configs.HnHPostgresConfig.GetConnectionString()
+
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return db, err
 }

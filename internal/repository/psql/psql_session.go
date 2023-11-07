@@ -1,4 +1,4 @@
-package repository
+package psql
 
 import (
 	"HnH/pkg/serverErrors"
