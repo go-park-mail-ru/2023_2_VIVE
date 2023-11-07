@@ -3,8 +3,8 @@ package app
 import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
-	"HnH/internal/repository/psql"
 	"HnH/internal/repository/mock"
+	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
 
 	"fmt"
@@ -21,8 +21,8 @@ func Run() error {
 
 	sessionRepo := psql.NewPsqlSessionRepository(&mock.SessionDB)
 	userRepo := psql.NewPsqlUserRepository(db)
-	vacancyRepo := psql.NewPsqlVacancyRepository(&mock.VacancyDB)	// FIXME: cahnge mock to connection to DB
-	cvRepo := psql.NewPsqlCVRepository()
+	vacancyRepo := psql.NewPsqlVacancyRepository(db)
+	cvRepo := psql.NewPsqlCVRepository(db)
 	responseRepo := psql.NewPsqlResponseRepository(db)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)

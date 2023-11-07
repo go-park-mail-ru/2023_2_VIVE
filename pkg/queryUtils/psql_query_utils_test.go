@@ -65,7 +65,7 @@ var testQueryPlaceHoldersCases = []struct {
 func TestQueryPlaceHolders(t *testing.T) {
 	for _, testCase := range testQueryPlaceHoldersCases {
 		args := *IntToAnySlice(testCase.input)
-		actual := QueryPlaceHolders(args...)
+		actual := QueryPlaceHolders(1, args...)
 		if !reflect.DeepEqual(actual, testCase.expected) {
 			t.Errorf("Two strings must be equal\nExpected: %v\nActual: %v", testCase.expected, actual)
 		}

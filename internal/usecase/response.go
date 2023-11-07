@@ -82,12 +82,13 @@ func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vaca
 		return nil, err
 	}
 
-	vacancy, err := responseUsecase.vacancyRepo.GetVacancy(vacancyID)
-	if err != nil {
-		return nil, err
-	}
+	// vacancy, err := responseUsecase.vacancyRepo.GetVacancy(vacancyID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if vacancy.CompanyID != userOrgID {
+	orgID, _ := responseUsecase.vacancyRepo.GetOrgId(vacancyID)
+	if orgID != userOrgID {
 		return nil, serverErrors.FORBIDDEN
 	}
 
@@ -112,7 +113,7 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.CV) []domain.Ap
 			CVid:      cv.ID,
 			FirstName: cv.FirstName,
 			LastName:  cv.LastName,
-			Skills:    cv.Skills,	// FIXME: remove this field
+			// Skills:    cv.Skills,	// FIXME: remove this field
 		}
 
 		infoToReturn = append(infoToReturn, info)

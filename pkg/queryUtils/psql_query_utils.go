@@ -17,11 +17,11 @@ func IntToAnySlice(ints []int) *[]any {
 // Returns string containing query placeholders separated by comma
 //
 // Example: []int{3, 8, 9} -> "$1, $2, $3"
-func QueryPlaceHolders(values ...any) string {
+func QueryPlaceHolders(startIndex int, values ...any) string {
 	elementsNum := len(values)
 	queryPlaceHolders := make([]string, elementsNum)
 	for i := 0; i < elementsNum; i++ {
-		queryPlaceHolders[i] = fmt.Sprintf("$%d", i+1)
+		queryPlaceHolders[i] = fmt.Sprintf("$%d", i+startIndex)
 	}
 	return strings.Join(queryPlaceHolders, ", ")
 }

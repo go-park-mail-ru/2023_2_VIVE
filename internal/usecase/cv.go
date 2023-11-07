@@ -85,22 +85,25 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, e
 		return nil, err
 	}
 
-	vacList, err := cvUsecase.vacancyRepo.GetVacanciesByIds(vacIdsList)
+	_, err = cvUsecase.vacancyRepo.GetVacanciesByIds(userOrgID, vacIdsList)
+	if err == psql.ErrEntityNotFound {
+		return nil, serverErrors.FORBIDDEN
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	found := false
-	for _, vac := range vacList {
-		if vac.CompanyID == userOrgID {	// FIXME: remove this vac.CompanyID
-			found = true
-			break
-		}
-	}
+	// found := false
+	// for _, vac := range vacList {
+	// 	if vac.CompanyID == userOrgID {	// FIXME: remove this vac.CompanyID
+	// 		found = true
+	// 		break
+	// 	}
+	// }
 
-	if !found {
-		return nil, serverErrors.FORBIDDEN
-	}
+	// if !found {
+	// 	return nil, serverErrors.FORBIDDEN
+	// }
 
 	cv, err := cvUsecase.cvRepo.GetCVById(cvID)
 	if err != nil {

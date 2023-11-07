@@ -188,14 +188,17 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 
 var testGetVacanciesByIdsSuccessCases = []struct {
 	input    []int
+	orgID    int
 	expected []domain.Vacancy
 }{
 	{
 		input:    []int{1, 2},
+		orgID:    1,
 		expected: []domain.Vacancy{fullVacancyID1, fullVacancyID2},
 	},
 	{
 		input:    []int{1},
+		orgID:    1,
 		expected: []domain.Vacancy{incompleteVacancyID3},
 	},
 }
@@ -229,12 +232,19 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 				item.UpdatedAt,
 			)
 		}
+
+		items := make([]int, len(testCase.input)+1)
+		items[0] = testCase.orgID
+		for i := 1; i < len(items); i++ {
+			items[i] = testCase.input[i-1]
+		}
+
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
-			WithArgs(testHelper.SliceIntToDriverValue(testCase.input)...).
+			WithArgs(testHelper.SliceIntToDriverValue(items)...).
 			WillReturnRows(rows)
 
-		actual, err := repo.GetVacanciesByIds(testCase.input)
+		actual, err := repo.GetVacanciesByIds(1, testCase.input)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -259,7 +269,7 @@ func TestGetVacanciesByIdsEmptyInput(t *testing.T) {
 
 	repo := NewPsqlVacancyRepository(db)
 
-	_, err = repo.GetVacanciesByIds([]int{})
+	_, err = repo.GetVacanciesByIds(1, []int{})
 	if err != ErrEntityNotFound {
 		t.Errorf("expected error 'ErrEntityNotFound', got %s", err)
 	}
@@ -275,12 +285,18 @@ func TestGetVacanciesByIdsQueryError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
+	orgID := 1
+	items := make([]int, len(input)+1)
+	items[0] = orgID
+	for i := 1; i < len(items); i++ {
+		items[i] = input[i-1]
+	}
 	mock.
 		ExpectQuery(testHelper.SELECT_QUERY).
-		WithArgs(testHelper.SliceIntToDriverValue(input)...).
+		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnError(testHelper.ErrQuery)
 
-	_, returnedErr := repo.GetVacanciesByIds(input)
+	_, returnedErr := repo.GetVacanciesByIds(1, input)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -301,13 +317,19 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
+	orgID := 1
+	items := make([]int, len(input)+1)
+	items[0] = orgID
+	for i := 1; i < len(items); i++ {
+		items[i] = input[i-1]
+	}
 	rows := sqlmock.NewRows(vacanciesColumns)
 	mock.
 		ExpectQuery(testHelper.SELECT_QUERY).
-		WithArgs(testHelper.SliceIntToDriverValue(input)...).
+		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnRows(rows)
 
-	_, returnedErr := repo.GetVacanciesByIds(input)
+	_, returnedErr := repo.GetVacanciesByIds(1, input)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return

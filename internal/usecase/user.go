@@ -56,7 +56,7 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User) (string, error) {
 		return "", serverErrors.INVALID_ROLE
 	}
 
-	addStatus := userUsecase.userRepo.AddUser(user)
+	addStatus := userUsecase.userRepo.AddUser(user, authUtils.GenerateHash)
 	if addStatus != nil {
 		return "", addStatus
 	}

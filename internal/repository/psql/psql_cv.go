@@ -68,7 +68,7 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
-	placeHolderString := queryUtils.QueryPlaceHolders(placeHolderValues...)
+	placeHolderString := queryUtils.QueryPlaceHolders(1, placeHolderValues...)
 
 	query := `SELECT
 		id,

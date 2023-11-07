@@ -8,7 +8,7 @@ import (
 
 type IVacancyRepository interface {
 	GetAllVacancies() ([]domain.Vacancy, error)
-	GetVacanciesByIds(idList []int) ([]domain.Vacancy, error)
+	GetVacanciesByIds(orgID int, idList []int) ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
@@ -81,32 +81,41 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacanciesByIds(idList []int) ([]domain.Vacancy, error) {
+func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([]domain.Vacancy, error) {
 	if len(idList) == 0 {
 		return nil, ErrEntityNotFound
 	}
 
-	placeHolderValues := *queryUtils.IntToAnySlice(idList)
-	placeHolderString := queryUtils.QueryPlaceHolders(placeHolderValues...)
+	items := make([]int, len(idList)+1)
+	items[0] = orgID
+	for i := 1; i < len(items); i++ {
+		items[i] = idList[i-1]
+	}
+
+	placeHolderValues := *queryUtils.IntToAnySlice(items)
+	placeHolderString := queryUtils.QueryPlaceHolders(2, placeHolderValues...)
 
 	query := `SELECT
-		id,
-		employer_id,
-		"name",
-		description,
-		salary_lower_bound,
-		salary_upper_bound,
-		employment,
-		experience_lower_bound,
-		experience_upper_bound,
-		education_type,
-		"location",
-		created_at,
-		updated_at
+		v.id,
+		v.employer_id,
+		v."name",
+		v.description,
+		v.salary_lower_bound,
+		v.salary_upper_bound,
+		v.employment,
+		v.experience_lower_bound,
+		v.experience_upper_bound,
+		v.education_type,
+		v."location",
+		v.created_at,
+		v.updated_at
 	FROM
-		hnh_data.vacancy v
+		vacancy v
+	JOIN employer e ON
+		v.employer_id = e.id
 	WHERE
-		v.id IN (` + placeHolderString + `)`
+		e.organization_id = $1
+		AND v.id IN (` + placeHolderString + `)`
 
 	rows, err := repo.DB.Query(query, placeHolderValues...)
 	if err != nil {

@@ -17,9 +17,9 @@ type CV struct {
 	Status         Status    `json:"status,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	FirstName      string    `json:"first_name"`
+	LastName       string    `json:"last_name"`
 	// UserID         int       `json:"user_id,omitempty"`
-	// FirstName   string      `json:"first_name"`
-	// LastName    string      `json:"last_name"`
 	// DateOfBirth string      `json:"date_of_bitrh,omitempty"`
 	// Skills      []string    `json:"skills,omitempty"`
 	// Contact     string      `json:"contact,omitempty"`
