@@ -21,8 +21,8 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-
 	defer logFile.Close()
+
 	logger := logging.InitLogger(logFile)
 
 	db, err := getPostgres()
@@ -37,7 +37,7 @@ func Run() error {
 	}
 	defer redisDB.Close()
 
-	sessionRepo := redisRepo.NewPsqlSessionRepository(redisDB)
+	sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
@@ -54,7 +54,6 @@ func Run() error {
 	// 	return middleware.CSRFProtectionMiddleware(sessionRepo, h)
 	// })
 
-
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
 	deliveryHTTP.NewUserHandler(router, userUsecase, sessionUsecase)
 	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase, sessionUsecase)
@@ -65,7 +64,6 @@ func Run() error {
 	loggedRouter := middleware.AccessLogMiddleware(logger, corsRouter)
 	finalRouter := middleware.PanicRecoverMiddleware(logger, loggedRouter)
 
-	
 	http.Handle("/", finalRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)

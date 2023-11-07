@@ -136,7 +136,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 
 	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
 	if decodeErr != nil {
-		sendErrorMessage(w, decodeErr, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
 		return
 	}
 

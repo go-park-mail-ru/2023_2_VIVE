@@ -5,9 +5,9 @@ import (
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
 
-	"errors"
-
 	"database/sql"
+	"errors"
+	"strings"
 )
 
 type IUserRepository interface {
@@ -176,6 +176,17 @@ func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
 	} else if err != nil {
 		return nil, err
 	}
+
+	role, err := p.GetRoleById(userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, serverErrors.INTERNAL_SERVER_ERROR
+	} else if err != nil {
+		return nil, err
+	}
+	user.Type = role
+
+	user.Email = strings.TrimSpace(user.Email)
+	user.PhoneNumber.String = strings.TrimSpace(user.PhoneNumber.String)
 
 	return user, nil
 }

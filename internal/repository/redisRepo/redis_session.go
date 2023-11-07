@@ -13,17 +13,17 @@ type ISessionRepository interface {
 	GetUserIdBySession(sessionID string) (int, error)
 }
 
-type psqlSessionRepository struct {
+type redisSessionRepository struct {
 	sessionStorage redis.Conn
 }
 
-func NewPsqlSessionRepository(conn redis.Conn) ISessionRepository {
-	return &psqlSessionRepository{
+func NewRedisSessionRepository(conn redis.Conn) ISessionRepository {
+	return &redisSessionRepository{
 		sessionStorage: conn,
 	}
 }
 
-func (p *psqlSessionRepository) AddSession(sessionID string, userID int, expiryUnixSeconds int64) error {
+func (p *redisSessionRepository) AddSession(sessionID string, userID int, expiryUnixSeconds int64) error {
 	sessionKey := "sessions:" + sessionID
 
 	result, err := redis.String(p.sessionStorage.Do("SET", sessionKey, userID, "EXAT", expiryUnixSeconds))
@@ -36,7 +36,7 @@ func (p *psqlSessionRepository) AddSession(sessionID string, userID int, expiryU
 	return nil
 }
 
-func (p *psqlSessionRepository) DeleteSession(sessionID string) error {
+func (p *redisSessionRepository) DeleteSession(sessionID string) error {
 	sessionKey := "sessions:" + sessionID
 
 	_, err := redis.Int(p.sessionStorage.Do("DEL", sessionKey))
@@ -47,7 +47,7 @@ func (p *psqlSessionRepository) DeleteSession(sessionID string) error {
 	return nil
 }
 
-func (p *psqlSessionRepository) ValidateSession(sessionID string) error {
+func (p *redisSessionRepository) ValidateSession(sessionID string) error {
 	sessionKey := "sessions:" + sessionID
 
 	result, err := redis.Int(p.sessionStorage.Do("EXISTS", sessionKey))
@@ -60,7 +60,7 @@ func (p *psqlSessionRepository) ValidateSession(sessionID string) error {
 	return nil
 }
 
-func (p *psqlSessionRepository) GetUserIdBySession(sessionID string) (int, error) {
+func (p *redisSessionRepository) GetUserIdBySession(sessionID string) (int, error) {
 	sessionKey := "sessions:" + sessionID
 
 	userID, err := redis.Int(p.sessionStorage.Do("GET", sessionKey))
