@@ -3,6 +3,7 @@ package usecase
 import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
+	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 
 	"github.com/google/uuid"
@@ -15,11 +16,11 @@ type ISessionUsecase interface {
 }
 
 type SessionUsecase struct {
-	sessionRepo psql.ISessionRepository
+	sessionRepo redisRepo.ISessionRepository
 	userRepo    psql.IUserRepository
 }
 
-func NewSessionUsecase(sessionRepository psql.ISessionRepository, userRepository psql.IUserRepository) ISessionUsecase {
+func NewSessionUsecase(sessionRepository redisRepo.ISessionRepository, userRepository psql.IUserRepository) ISessionUsecase {
 	return &SessionUsecase{
 		sessionRepo: sessionRepository,
 		userRepo:    userRepository,

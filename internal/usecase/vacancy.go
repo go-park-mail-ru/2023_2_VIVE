@@ -3,6 +3,7 @@ package usecase
 import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
+	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
 )
 
@@ -17,12 +18,12 @@ type IVacancyUsecase interface {
 
 type VacancyUsecase struct {
 	vacancyRepo psql.IVacancyRepository
-	sessionRepo psql.ISessionRepository
+	sessionRepo redisRepo.ISessionRepository
 	userRepo    psql.IUserRepository
 }
 
 func NewVacancyUsecase(vacancyRepository psql.IVacancyRepository,
-	sessionRepository psql.ISessionRepository,
+	sessionRepository redisRepo.ISessionRepository,
 	userRepository psql.IUserRepository) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo: vacancyRepository,

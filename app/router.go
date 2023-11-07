@@ -3,8 +3,8 @@ package app
 import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
-	"HnH/internal/repository/mock"
 	"HnH/internal/repository/psql"
+	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 
 	"fmt"
@@ -19,7 +19,12 @@ func Run() error {
 		return err
 	}
 
-	sessionRepo := psql.NewPsqlSessionRepository(&mock.SessionDB)
+	redisDB, err := getRedis()
+	if err != nil {
+		return err
+	}
+
+	sessionRepo := redisRepo.NewPsqlSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
@@ -34,10 +39,10 @@ func Run() error {
 	router := mux.NewRouter()
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
-	deliveryHTTP.NewUserHandler(router, userUsecase)
-	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase)
-	deliveryHTTP.NewCVHandler(router, cvUsecase)
-	deliveryHTTP.NewResponseHandler(router, responseUsecase)
+	deliveryHTTP.NewUserHandler(router, userUsecase, sessionUsecase)
+	deliveryHTTP.NewVacancyHandler(router, vacancyUsecase, sessionUsecase)
+	deliveryHTTP.NewCVHandler(router, cvUsecase, sessionUsecase)
+	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
 	http.Handle("/", corsRouter)

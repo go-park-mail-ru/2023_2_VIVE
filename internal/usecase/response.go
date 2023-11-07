@@ -3,6 +3,7 @@ package usecase
 import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
+	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
 )
 
@@ -13,14 +14,14 @@ type IResponseUsecase interface {
 
 type ResponseUsecase struct {
 	responseRepo psql.IResponseRepository
-	sessionRepo  psql.ISessionRepository
+	sessionRepo  redisRepo.ISessionRepository
 	userRepo     psql.IUserRepository
 	vacancyRepo  psql.IVacancyRepository
 	cvRepo       psql.ICVRepository
 }
 
 func NewResponseUsecase(respondRepository psql.IResponseRepository,
-	sessionRepository psql.ISessionRepository,
+	sessionRepository redisRepo.ISessionRepository,
 	userRepository psql.IUserRepository,
 	vacancyRepository psql.IVacancyRepository,
 	cvRepository psql.ICVRepository) IResponseUsecase {

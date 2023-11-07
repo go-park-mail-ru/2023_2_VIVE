@@ -1,4 +1,4 @@
-package psql
+package redisRepo
 
 import (
 	"HnH/pkg/serverErrors"

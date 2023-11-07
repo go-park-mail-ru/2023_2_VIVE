@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"HnH/configs"
-	"HnH/internal/repository"
+	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/serverErrors"
 
@@ -50,7 +50,7 @@ func JSONBodyValidationMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func CSRFProtectionMiddleware(sessionRepo repository.ISessionRepository, next http.Handler) http.Handler {
+func CSRFProtectionMiddleware(sessionRepo redisRepo.ISessionRepository, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && !ifAuthURL(r.URL.Path, r.Method) {
 			cookie, err := r.Cookie("session")
