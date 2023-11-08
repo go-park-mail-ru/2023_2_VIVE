@@ -32,7 +32,7 @@ func NewResponseHandler(router *mux.Router, responseUCase usecase.IResponseUseca
 }
 
 func (responseHandler *ResponseHandler) sanitizeApplicants(applicants ...domain.ApplicantInfo) []domain.ApplicantInfo {
-	result := make([]domain.ApplicantInfo, len(applicants))
+	result := make([]domain.ApplicantInfo, 0, len(applicants))
 
 	for _, app := range applicants {
 		app.FirstName = sanitizer.XSS.Sanitize(app.FirstName)

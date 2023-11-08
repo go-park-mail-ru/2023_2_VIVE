@@ -50,7 +50,7 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 }
 
 func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.CV) []domain.CV {
-	result := make([]domain.CV, len(CVs))
+	result := make([]domain.CV, 0, len(CVs))
 
 	for _, cv := range CVs {
 		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)
