@@ -31,7 +31,7 @@ func Run() error {
 	}
 	defer db.Close()
 
-	redisDB, err := getRedis()
+	redisDB := getRedis()
 	if err != nil {
 		return err
 	}

@@ -3,24 +3,39 @@ package app
 import (
 	"HnH/configs"
 
-	"github.com/gomodule/redigo/redis"
 	"database/sql"
 
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/jackc/pgx/stdlib"
 )
 
-func getRedis() (redis.Conn, error) {
-	conn, err := redis.DialURL(configs.HnHRedisConfig.GetConnectionURL())
-	if err != nil {
-		return nil, err
+func getRedis() *redis.Pool {
+	pool := &redis.Pool{
+		MaxIdle:   5,
+		MaxActive: 5,
+
+		Wait: true,
+
+		IdleTimeout:     0,
+		MaxConnLifetime: 0,
+
+		Dial: func() (redis.Conn, error) {
+			conn, err := redis.DialURL(configs.HnHRedisConfig.GetConnectionURL())
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = redis.String(conn.Do("PING"))
+			if err != nil {
+				conn.Close()
+				return nil, err
+			}
+
+			return conn, nil
+		},
 	}
 
-	_, err = redis.String(conn.Do("PING"))
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
+	return pool
 }
 
 func getPostgres() (*sql.DB, error) {

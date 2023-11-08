@@ -14,19 +14,22 @@ type ISessionRepository interface {
 }
 
 type redisSessionRepository struct {
-	sessionStorage redis.Conn
+	sessionStorage *redis.Pool
 }
 
-func NewRedisSessionRepository(conn redis.Conn) ISessionRepository {
+func NewRedisSessionRepository(conn *redis.Pool) ISessionRepository {
 	return &redisSessionRepository{
 		sessionStorage: conn,
 	}
 }
 
 func (p *redisSessionRepository) AddSession(sessionID string, userID int, expiryUnixSeconds int64) error {
+	connection := p.sessionStorage.Get()
+	defer connection.Close()
+
 	sessionKey := "sessions:" + sessionID
 
-	result, err := redis.String(p.sessionStorage.Do("SET", sessionKey, userID, "EXAT", expiryUnixSeconds))
+	result, err := redis.String(connection.Do("SET", sessionKey, userID, "EXAT", expiryUnixSeconds))
 	if err != nil {
 		return err
 	} else if result != "OK" {
@@ -37,9 +40,12 @@ func (p *redisSessionRepository) AddSession(sessionID string, userID int, expiry
 }
 
 func (p *redisSessionRepository) DeleteSession(sessionID string) error {
+	connection := p.sessionStorage.Get()
+	defer connection.Close()
+
 	sessionKey := "sessions:" + sessionID
 
-	_, err := redis.Int(p.sessionStorage.Do("DEL", sessionKey))
+	_, err := redis.Int(connection.Do("DEL", sessionKey))
 	if err != nil {
 		return err
 	}
@@ -48,9 +54,12 @@ func (p *redisSessionRepository) DeleteSession(sessionID string) error {
 }
 
 func (p *redisSessionRepository) ValidateSession(sessionID string) error {
+	connection := p.sessionStorage.Get()
+	defer connection.Close()
+
 	sessionKey := "sessions:" + sessionID
 
-	result, err := redis.Int(p.sessionStorage.Do("EXISTS", sessionKey))
+	result, err := redis.Int(connection.Do("EXISTS", sessionKey))
 	if result == 0 {
 		return serverErrors.NO_SESSION
 	} else if err != nil {
@@ -61,9 +70,12 @@ func (p *redisSessionRepository) ValidateSession(sessionID string) error {
 }
 
 func (p *redisSessionRepository) GetUserIdBySession(sessionID string) (int, error) {
+	connection := p.sessionStorage.Get()
+	defer connection.Close()
+
 	sessionKey := "sessions:" + sessionID
 
-	userID, err := redis.Int(p.sessionStorage.Do("GET", sessionKey))
+	userID, err := redis.Int(connection.Do("GET", sessionKey))
 	if err != nil {
 		return 0, err
 	}
