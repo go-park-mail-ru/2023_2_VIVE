@@ -30,7 +30,7 @@ func (rConf redisConfig) GetConnectionURL() string {
 
 var HnHRedisConfig = redisConfig{
 	protocol:       "redis",
-	networkAddress: "localhost",
+	networkAddress: "212.233.90.231",
 	port:           "8008",
 	password:       "vive_password_redis",
 }
@@ -54,7 +54,7 @@ var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
 	password: "vive_password",
 	dbname:   "hnh",
-	host:     "localhost",
+	host:     "212.233.90.231",
 	port:     "8054",
 	sslmode:  "disable",
 }
