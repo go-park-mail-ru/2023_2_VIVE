@@ -64,7 +64,7 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
 
-	router.Handle("vacancies/current_user", middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserVacancies))).
+	router.Handle("/vacancies/current_user", middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserVacancies))).
 		Methods("GET")
 }
 
