@@ -20,7 +20,7 @@ type IUserRepository interface {
 	UpdateUserInfo(userID int, user *domain.UserUpdate) error
 	GetUserOrgId(userID int) (int, error)
 	UploadAvatarByUserID(userID int, path string) error
-	//GetAvatarByUserID(userID int) (string, error)
+	GetAvatarByUserID(userID int) (string, error)
 }
 
 type psqlUserRepository struct {
@@ -295,8 +295,15 @@ func (p *psqlUserRepository) UploadAvatarByUserID(userID int, path string) error
 	return nil
 }
 
-/*func (p *psqlUserRepository) GetAvatarByUserID(userID int) (string, error) {
+func (p *psqlUserRepository) GetAvatarByUserID(userID int) (string, error) {
 	var path string
 
-	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile`)
-}*/
+	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile`).Scan(&path)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}

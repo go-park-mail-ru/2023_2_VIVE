@@ -160,8 +160,15 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-/*func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-
-}*/
+	file, err := userHandler.userUsecase.GetAvatar(cookie.Value)
+	if file == nil && err == nil {
+		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
+		return
+	} else if err != nil {
+		responseTemplates.SendErrorMessage(w, err, http.StatusNotFound)
+		return
+	}
+}

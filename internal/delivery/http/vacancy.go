@@ -20,7 +20,7 @@ type VacancyHandler struct {
 }
 
 func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.Vacancy) []domain.Vacancy {
-	result := make([]domain.Vacancy, len(vacancies))
+	result := make([]domain.Vacancy, 0, len(vacancies))
 
 	for _, vac := range vacancies {
 		vac.VacancyName = sanitizer.XSS.Sanitize(vac.VacancyName)
@@ -70,6 +70,7 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
 	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies()
+
 	if getErr != nil {
 		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
 		return

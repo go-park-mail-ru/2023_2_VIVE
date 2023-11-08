@@ -79,6 +79,7 @@ func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancy
 
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.Vacancy, error) {
 	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies()
+
 	if getErr != nil {
 		return nil, getErr
 	}

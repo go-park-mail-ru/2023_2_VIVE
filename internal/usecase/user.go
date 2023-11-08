@@ -1,11 +1,13 @@
 package usecase
 
 import (
+	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	"io/ioutil"
 
 	"github.com/google/uuid"
 )
@@ -15,7 +17,7 @@ type IUserUsecase interface {
 	GetInfo(sessionID string) (*domain.User, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 	UploadAvatar(sessionID, path string) error
-	//GetAvatar(sessionID string) ([]byte, error)
+	GetAvatar(sessionID string) ([]byte, error)
 }
 
 type UserUsecase struct {
@@ -126,11 +128,23 @@ func (userUsecase *UserUsecase) UploadAvatar(sessionID, path string) error {
 	return nil
 }
 
-/*func (userUsecase *UserUsecase) GetAvatar(sessionID string) ([]byte, error) {
+func (userUsecase *UserUsecase) GetAvatar(sessionID string) ([]byte, error) {
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
+	path, err := userUsecase.userRepo.GetAvatarByUserID(userID)
+	if path == "" {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
 
-}*/
+	fileBytes, err := ioutil.ReadFile(configs.CURRENT_DIR + path)
+	if err != nil {
+		return nil, CAN_NOT_READ_AVATAR
+	}
+
+	return fileBytes, nil
+}
