@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	"fmt"
 
 	"database/sql"
 	"errors"
@@ -138,6 +139,8 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
+	fmt.Printf("user: %v\n", user)
+
 	if user.Type == domain.Applicant {
 		var userID int
 		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
@@ -196,7 +199,10 @@ func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
 	user.Type = role
 
 	user.Email = strings.TrimSpace(user.Email)
-	user.PhoneNumber.String = strings.TrimSpace(user.PhoneNumber.String)
+
+	if user.PhoneNumber != nil {
+		*user.PhoneNumber = strings.TrimSpace(*user.PhoneNumber)
+	}
 
 	return user, nil
 }
