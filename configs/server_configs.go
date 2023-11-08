@@ -1,6 +1,10 @@
 package configs
 
-import "github.com/rs/cors"
+import (
+	"os"
+
+	"github.com/rs/cors"
+)
 
 const (
 	PORT         = ":8081"
@@ -54,3 +58,7 @@ var HnHPostgresConfig = postgresConfig{
 	port:     "8054",
 	sslmode:  "disable",
 }
+
+var CURRENT_DIR, _ = os.Getwd()
+
+const UPLOADS_DIR = "/assets/avatars/"

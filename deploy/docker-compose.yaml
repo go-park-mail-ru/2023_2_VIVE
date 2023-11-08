@@ -11,3 +11,16 @@ services:
       - REDIS_PASSWORD=${REDDIS_PASSWORD}
     volumes:
       - $PWD/redis_data:/data
+
+  db_hnh:
+    container_name: db_hnh
+    image: postgres:${POSTGRES_VERSION}-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "hnh"
+      POSTGRES_USER: vive_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./migrations/:/docker-entrypoint-initdb.d/
+    ports:
+      - "8054:5432"

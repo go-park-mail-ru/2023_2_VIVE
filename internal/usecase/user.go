@@ -15,6 +15,7 @@ type IUserUsecase interface {
 	GetInfo(sessionID string) (*domain.User, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 	UploadAvatar(sessionID, path string) error
+	//GetAvatar(sessionID string) ([]byte, error)
 }
 
 type UserUsecase struct {
@@ -124,3 +125,12 @@ func (userUsecase *UserUsecase) UploadAvatar(sessionID, path string) error {
 
 	return nil
 }
+
+/*func (userUsecase *UserUsecase) GetAvatar(sessionID string) ([]byte, error) {
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	if validStatus != nil {
+		return nil, validStatus
+	}
+
+
+}*/

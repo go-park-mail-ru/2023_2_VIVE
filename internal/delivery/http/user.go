@@ -160,6 +160,8 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+/*func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("session")
 
-}
+
+}*/
