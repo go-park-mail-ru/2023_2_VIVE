@@ -11,6 +11,7 @@ type IVacancyUsecase interface {
 	GetAllVacancies() ([]domain.Vacancy, error)
 
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
+	GetUserVacancies(sessionID string) ([]domain.Vacancy, error)
 	AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error)
 	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error
 	DeleteVacancy(sessionID string, vacancyID int) error
@@ -136,4 +137,27 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(sessionID string, vacancyID 
 		return delStatus
 	}
 	return nil
+}
+
+func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]domain.Vacancy, error) {
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	if err != nil {
+		return nil, serverErrors.AUTH_REQUIRED
+	}
+
+	role, err := vacancyUsecase.userRepo.GetRoleById(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if role != domain.Employer {
+		return nil, INAPPROPRIATE_ROLE
+	}
+
+	vacanciesList, err := vacancyUsecase.vacancyRepo.GetUserVacancies(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return vacanciesList, nil
 }

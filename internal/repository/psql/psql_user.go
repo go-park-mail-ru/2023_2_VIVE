@@ -19,6 +19,7 @@ type IUserRepository interface {
 	GetUserInfo(userID int) (*domain.User, error)
 	UpdateUserInfo(userID int, user *domain.UserUpdate) error
 	GetUserOrgId(userID int) (int, error)
+	UploadAvatarByUserID(userID int, path string) error
 }
 
 type psqlUserRepository struct {
@@ -178,9 +179,9 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
 	user := &domain.User{}
 
-	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location `+
+	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location, avatar_path `+
 		`FROM hnh_data.user_profile WHERE id = $1`, userID).
-		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location)
+		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location, &user.AvatarPath)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrEntityNotFound
 	} else if err != nil {
@@ -279,4 +280,16 @@ func (p *psqlUserRepository) GetUserOrgId(userID int) (int, error) {
 	}
 
 	return orgID, nil
+}
+
+func (p *psqlUserRepository) UploadAvatarByUserID(userID int, path string) error {
+	_, uplErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
+		`"avatar_path" = $1 `+
+		`WHERE id = $2`, path, userID)
+
+	if uplErr != nil {
+		return uplErr
+	}
+
+	return nil
 }

@@ -21,6 +21,7 @@ type User struct {
 	PhoneNumber *string `json:"phone_number,omitempty"`
 	Location    *string `json:"location,omitempty"`
 	Type        Role    `json:"role,omitempty"`
+	AvatarPath  *string `json:"avatar,omitempty"`
 }
 
 type UserUpdate struct {

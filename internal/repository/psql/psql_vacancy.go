@@ -4,12 +4,14 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
 	"database/sql"
+	"errors"
 )
 
 type IVacancyRepository interface {
 	GetAllVacancies() ([]domain.Vacancy, error)
 	GetVacanciesByIds(orgID int, idList []int) ([]domain.Vacancy, error)
 	GetVacancy(vacancyID int) (*domain.Vacancy, error)
+	GetUserVacancies(userID int) ([]domain.Vacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
 	AddVacancy(userID int, vacancy *domain.Vacancy) (int, error)
@@ -199,6 +201,71 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 	}
 
 	return &vacancyToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.Vacancy, error) {
+	var empID int
+
+	empErr := repo.DB.QueryRow(`SELECT id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&empID)
+	if empErr != nil {
+		return nil, empErr
+	}
+
+	rows, err := repo.DB.Query(`SELECT
+		id,
+		employer_id,
+		"name",
+		description,
+		salary_lower_bound,
+		salary_upper_bound,
+		employment,
+		experience_lower_bound,
+		experience_upper_bound,
+		education_type,
+		"location",
+		created_at,
+		updated_at
+	FROM
+		hnh_data.vacancy v
+	WHERE
+		v.employer_id = $1`, empID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return []domain.Vacancy{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	listToReturn := []domain.Vacancy{}
+	for rows.Next() {
+		var vacancy domain.Vacancy
+
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.Employer_id,
+			&vacancy.VacancyName,
+			&vacancy.Description,
+			&vacancy.Salary_lower_bound,
+			&vacancy.Salary_upper_bound,
+			&vacancy.Employment,
+			&vacancy.Experience_lower_bound,
+			&vacancy.Experience_upper_bound,
+			&vacancy.EducationType,
+			&vacancy.Location,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		listToReturn = append(listToReturn, vacancy)
+	}
+
+	return listToReturn, nil
 }
 
 // func (repo *psqlVacancyRepository) GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error) {

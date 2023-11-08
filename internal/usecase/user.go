@@ -14,6 +14,7 @@ type IUserUsecase interface {
 	SignUp(user *domain.User, expiryUnixSeconds int64) (string, error)
 	GetInfo(sessionID string) (*domain.User, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
+	UploadAvatar(sessionID, path string) error
 }
 
 type UserUsecase struct {
@@ -105,6 +106,20 @@ func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUp
 	updStatus := userUsecase.userRepo.UpdateUserInfo(userID, user)
 	if updStatus != nil {
 		return updStatus
+	}
+
+	return nil
+}
+
+func (userUsecase *UserUsecase) UploadAvatar(sessionID, path string) error {
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	if validStatus != nil {
+		return validStatus
+	}
+
+	err := userUsecase.userRepo.UploadAvatarByUserID(userID, path)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -63,6 +63,9 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 	router.Handle("/vacancies/{vacancyID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
+
+	router.Handle("vacancies/current_user", middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserVacancies))).
+		Methods("GET")
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
@@ -166,4 +169,18 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("session")
+
+	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(cookie.Value)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		return
+	}
+
+	sanitizedList := vacancyHandler.sanitizeVacancies(vacanciesList...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedList)
 }
