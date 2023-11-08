@@ -102,7 +102,7 @@ func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUp
 		return validPassStatus
 	}
 
-	updStatus := userUsecase.userRepo.UpdateUserInfo(user)
+	updStatus := userUsecase.userRepo.UpdateUserInfo(userID, user)
 	if updStatus != nil {
 		return updStatus
 	}

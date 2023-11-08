@@ -18,7 +18,7 @@ type IUserRepository interface {
 	GetUserIdByEmail(email string) (int, error)
 	GetRoleById(userID int) (domain.Role, error)
 	GetUserInfo(userID int) (*domain.User, error)
-	UpdateUserInfo(user *domain.UserUpdate) error
+	UpdateUserInfo(userID int, user *domain.UserUpdate) error
 	GetUserOrgId(userID int) (int, error)
 }
 
@@ -242,7 +242,7 @@ func (p *psqlUserRepository) GetRoleById(userID int) (domain.Role, error) {
 	return "", ErrEntityNotFound
 }
 
-func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
+func (p *psqlUserRepository) UpdateUserInfo(userID int, user *domain.UserUpdate) error {
 	if user.NewPassword != "" {
 		hashedPass, salt, err := authUtils.GenerateHash(user.NewPassword)
 		if err != nil {
@@ -251,16 +251,18 @@ func (p *psqlUserRepository) UpdateUserInfo(user *domain.UserUpdate) error {
 
 		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
 			`"email" = $1, "pswd" = $2, "salt" = $3, "first_name" = $4, "last_name" = $5, `+
-			`"birthday" = $6, "phone_number" = $7, "location" = $8`,
-			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
+			`"birthday" = $6, "phone_number" = $7, "location" = $8 `+
+			`WHERE id = $9`,
+			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location, userID)
 		if updErr != nil {
 			return updErr
 		}
 	} else {
 		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
 			`"email" = $1, "first_name" = $2, "last_name" = $3, `+
-			`"birthday" = $4, "phone_number" = $5, "location" = $6`,
-			user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location)
+			`"birthday" = $4, "phone_number" = $5, "location" = $6 `+
+			`WHERE id = $7`,
+			user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location, userID)
 		if updErr != nil {
 			return updErr
 		}
