@@ -298,7 +298,7 @@ func (p *psqlUserRepository) UploadAvatarByUserID(userID int, path string) error
 func (p *psqlUserRepository) GetAvatarByUserID(userID int) (string, error) {
 	var path string
 
-	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile`).Scan(&path)
+	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&path)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	} else if err != nil {
