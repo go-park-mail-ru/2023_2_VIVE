@@ -2,8 +2,10 @@ package http
 
 import (
 	"HnH/internal/delivery/http/middleware"
+	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
+	"HnH/pkg/sanitizer"
 
 	"net/http"
 	"strconv"
@@ -27,6 +29,23 @@ func NewResponseHandler(router *mux.Router, responseUCase usecase.IResponseUseca
 	router.Handle("/vacancies/{vacancyID}/applicants",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetApplicants))).
 		Methods("GET")
+}
+
+func (responseHandler *ResponseHandler) sanitizeApplicants(applicants ...domain.ApplicantInfo) []domain.ApplicantInfo {
+	result := make([]domain.ApplicantInfo, len(applicants))
+
+	for _, app := range applicants {
+		app.FirstName = sanitizer.XSS.Sanitize(app.FirstName)
+		app.LastName = sanitizer.XSS.Sanitize(app.LastName)
+
+		for i, skill := range app.Skills {
+			app.Skills[i] = sanitizer.XSS.Sanitize(skill)
+		}
+
+		result = append(result, app)
+	}
+
+	return result
 }
 
 func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
@@ -72,5 +91,7 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, applicantsList)
+	sanitizedApplicants := responseHandler.sanitizeApplicants(applicantsList...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedApplicants)
 }

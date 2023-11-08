@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"HnH/pkg/nullTypes"
 	"time"
 )
 
@@ -20,19 +19,19 @@ const (
 )
 
 type Vacancy struct {
-	ID                     int                  `json:"id"`
-	Employer_id            int                  `json:"employer_id"`
-	VacancyName            string               `json:"name"`
-	Description            string               `json:"description,omitempty"`
-	Salary_lower_bound     nullTypes.NullInt32  `json:"salary_lower_bound,omitempty"`
-	Salary_upper_bound     nullTypes.NullInt32  `json:"salary_upper_bound,omitempty"`
-	Employment             nullTypes.NullString `json:"employment,omitempty"`
-	Experience_lower_bound nullTypes.NullInt32  `json:"experience_lower_bound,omitempty"`
-	Experience_upper_bound nullTypes.NullInt32  `json:"experience_upper_bound,omitempty"`
-	EducationType          EducationType        `json:"education_type,omitempty"`
-	Location               nullTypes.NullString `json:"location,omitempty"`
-	CreatedAt              time.Time            `json:"created_at"`
-	UpdatedAt              time.Time            `json:"updated_at"`
+	ID                     int           `json:"id"`
+	Employer_id            int           `json:"employer_id"`
+	VacancyName            string        `json:"name"`
+	Description            string        `json:"description,omitempty"`
+	Salary_lower_bound     *int          `json:"salary_lower_bound,omitempty"`
+	Salary_upper_bound     *int          `json:"salary_upper_bound,omitempty"`
+	Employment             *string       `json:"employment,omitempty"`
+	Experience_lower_bound *int          `json:"experience_lower_bound,omitempty"`
+	Experience_upper_bound *int          `json:"experience_upper_bound,omitempty"`
+	EducationType          EducationType `json:"education_type,omitempty"`
+	Location               *string       `json:"location,omitempty"`
+	CreatedAt              time.Time     `json:"created_at"`
+	UpdatedAt              time.Time     `json:"updated_at"`
 	// CompanyID              int            `json:"company_id,omitempty"`
 	// CompanyName            string    `json:"company_name"`
 	// Salary                 int       `json:"salary,omitempty"`

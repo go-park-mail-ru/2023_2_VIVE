@@ -4,7 +4,6 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
-	"fmt"
 
 	"database/sql"
 	"errors"
@@ -138,8 +137,6 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 	if err != nil {
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
-
-	fmt.Printf("user: %v\n", user)
 
 	if user.Type == domain.Applicant {
 		var userID int

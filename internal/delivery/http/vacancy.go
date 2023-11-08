@@ -5,6 +5,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
+	"HnH/pkg/sanitizer"
 
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,26 @@ import (
 
 type VacancyHandler struct {
 	vacancyUsecase usecase.IVacancyUsecase
+}
+
+func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.Vacancy) []domain.Vacancy {
+	result := make([]domain.Vacancy, len(vacancies))
+
+	for _, vac := range vacancies {
+		vac.VacancyName = sanitizer.XSS.Sanitize(vac.VacancyName)
+		vac.Description = sanitizer.XSS.Sanitize(vac.Description)
+
+		if vac.Employment != nil {
+			*vac.Employment = sanitizer.XSS.Sanitize(*vac.Employment)
+		}
+		if vac.Location != nil {
+			*vac.Location = sanitizer.XSS.Sanitize(*vac.Location)
+		}
+
+		result = append(result, vac)
+	}
+
+	return result
 }
 
 func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase, sessionUCase usecase.ISessionUsecase) {
@@ -51,7 +72,9 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, vacancies)
+	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +91,9 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, *vacancy)
+	sanitizedVacancy := vacancyHandler.sanitizeVacancies(*vacancy)
+
+	responseTemplates.MarshalAndSend(w, sanitizedVacancy[0])
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {

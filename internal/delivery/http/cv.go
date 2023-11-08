@@ -5,6 +5,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
+	"HnH/pkg/sanitizer"
 
 	"encoding/json"
 	"fmt"
@@ -48,6 +49,21 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		Methods("DELETE")
 }
 
+func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.CV) []domain.CV {
+	result := make([]domain.CV, len(CVs))
+
+	for _, cv := range CVs {
+		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)
+		cv.Description = sanitizer.XSS.Sanitize(cv.Description)
+		cv.FirstName = sanitizer.XSS.Sanitize(cv.FirstName)
+		cv.LastName = sanitizer.XSS.Sanitize(cv.LastName)
+
+		result = append(result, cv)
+	}
+
+	return result
+}
+
 func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
@@ -64,7 +80,9 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, *cv)
+	sanitizedCV := cvHandler.sanitizeCVs(*cv)
+
+	responseTemplates.MarshalAndSend(w, sanitizedCV[0])
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +94,9 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, cvs)
+	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedCVs)
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +139,9 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, *cv)
+	sanitizedCV := cvHandler.sanitizeCVs(*cv)
+
+	responseTemplates.MarshalAndSend(w, sanitizedCV[0])
 }
 
 func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Request) {

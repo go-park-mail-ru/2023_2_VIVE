@@ -5,6 +5,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
+	"HnH/pkg/sanitizer"
 	"HnH/pkg/serverErrors"
 
 	"encoding/json"
@@ -34,6 +35,24 @@ func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase, sessionU
 	router.Handle("/current_user",
 		middleware.JSONBodyValidationMiddleware(middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.UpdateInfo)))).
 		Methods("PUT")
+}
+
+func (userHandler *UserHandler) sanitizeUser(user *domain.User) {
+	user.Email = sanitizer.XSS.Sanitize(user.Email)
+	user.FirstName = sanitizer.XSS.Sanitize(user.FirstName)
+	user.LastName = sanitizer.XSS.Sanitize(user.LastName)
+
+	if user.Birthday != nil {
+		*user.Birthday = sanitizer.XSS.Sanitize(*user.Birthday)
+	}
+
+	if user.PhoneNumber != nil {
+		*user.PhoneNumber = sanitizer.XSS.Sanitize(*user.PhoneNumber)
+	}
+
+	if user.Location != nil {
+		*user.Location = sanitizer.XSS.Sanitize(*user.Location)
+	}
 }
 
 func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +95,8 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 		responseTemplates.SendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
 		return
 	}
+
+	userHandler.sanitizeUser(user)
 
 	responseTemplates.MarshalAndSend(w, *user)
 }
