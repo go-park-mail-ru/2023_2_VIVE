@@ -7,7 +7,6 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/google/uuid"
@@ -135,9 +134,8 @@ func (userUsecase *UserUsecase) GetAvatar(sessionID string) ([]byte, error) {
 		return nil, validStatus
 	}
 
-	fmt.Printf("userID: %d\n", userID)
 	path, err := userUsecase.userRepo.GetAvatarByUserID(userID)
-	fmt.Printf("path: %s\n", path)
+
 	if path == "" {
 		return nil, nil
 	} else if err != nil {
