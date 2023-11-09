@@ -6,6 +6,10 @@ import (
 	"github.com/rs/cors"
 )
 
+var CURRENT_DIR, _ = os.Getwd()
+
+const UPLOADS_DIR = "/assets/avatars/"
+
 const (
 	PORT         = ":8081"
 	LOGFILE_NAME = "server.log"
@@ -17,22 +21,27 @@ var CORS = cors.New(cors.Options{
 	AllowCredentials: true,
 })
 
+var HnHRedisConfig = redisConfig{
+	protocol:       "redis",
+	networkAddress: "localhost",
+	port:           "8008",
+	password:       "vive_password_redis",
+}
+
+var HnHPostgresConfig = postgresConfig{
+	user:     "vive_admin",
+	password: "123",
+	dbname:   "hnh",
+	host:     "localhost",
+	port:     "8054",
+	sslmode:  "disable",
+}
+
 type redisConfig struct {
 	protocol       string
 	networkAddress string
 	port           string
 	password       string
-}
-
-func (rConf redisConfig) GetConnectionURL() string {
-	return rConf.protocol + "://" + rConf.password + "@" + rConf.networkAddress + ":" + rConf.port
-}
-
-var HnHRedisConfig = redisConfig{
-	protocol:       "redis",
-	networkAddress: "212.233.90.231",
-	port:           "8008",
-	password:       "vive_password_redis",
 }
 
 type postgresConfig struct {
@@ -44,21 +53,12 @@ type postgresConfig struct {
 	sslmode  string
 }
 
+func (rConf redisConfig) GetConnectionURL() string {
+	return rConf.protocol + "://" + rConf.password + "@" + rConf.networkAddress + ":" + rConf.port
+}
+
 func (pConf postgresConfig) GetConnectionString() string {
 	return "user=" + pConf.user + " password=" + pConf.password + " dbname=" + pConf.dbname +
 		" host=" + pConf.host + " port=" + pConf.port +
 		" sslmode=" + pConf.sslmode
 }
-
-var HnHPostgresConfig = postgresConfig{
-	user:     "vive_admin",
-	password: "vive_password",
-	dbname:   "hnh",
-	host:     "212.233.90.231",
-	port:     "8054",
-	sslmode:  "disable",
-}
-
-var CURRENT_DIR, _ = os.Getwd()
-
-const UPLOADS_DIR = "/assets/avatars/"

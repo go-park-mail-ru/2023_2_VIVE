@@ -5,14 +5,15 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
+	"fmt"
 )
 
 type ICVUsecase interface {
-	GetCVById(sessionID string, cvID int) (*domain.CV, error)
-	GetCVList(sessionID string) ([]domain.CV, error)
-	AddNewCV(sessionID string, cv *domain.CV) (int, error)
-	GetCVOfUserById(sessionID string, cvID int) (*domain.CV, error)
-	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.CV) error
+	GetCVById(sessionID string, cvID int) (*domain.DbCV, error)
+	GetCVList(sessionID string) ([]domain.DbCV, error)
+	AddNewCV(sessionID string, cv *domain.DbCV) (int, error)
+	GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error)
+	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.DbCV) error
 	DeleteCVOfUserById(sessionID string, cvID int) error
 }
 
@@ -70,7 +71,7 @@ func (cvUsecase *CVUsecase) validateRoleAndGetUserId(sessionID string, requiredR
 
 // TODO: make in one query for response
 // Finds cv that responded to one of the current user's vacancy
-func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, error) {
+func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.DbCV, error) {
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Employer)
 	if validStatus != nil {
 		return nil, validStatus
@@ -114,7 +115,7 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.CV, e
 	return cv, nil
 }
 
-func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
+func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.DbCV, error) {
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
@@ -128,8 +129,9 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.CV, error) {
 	return cvs, nil
 }
 
-func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.CV) (int, error) {
+func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.DbCV) (int, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	fmt.Println(userID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
@@ -144,7 +146,7 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.CV) (int, erro
 	return cvID, nil
 }
 
-func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.CV, error) {
+func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
@@ -158,7 +160,7 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain
 	return cv, nil
 }
 
-func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.CV) error {
+func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.DbCV) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus

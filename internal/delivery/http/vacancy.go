@@ -19,8 +19,8 @@ type VacancyHandler struct {
 	vacancyUsecase usecase.IVacancyUsecase
 }
 
-func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.Vacancy) []domain.Vacancy {
-	result := make([]domain.Vacancy, 0, len(vacancies))
+func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.DbVacancy) []domain.DbVacancy {
+	result := make([]domain.DbVacancy, 0, len(vacancies))
 
 	for _, vac := range vacancies {
 		vac.VacancyName = sanitizer.XSS.Sanitize(vac.VacancyName)
@@ -105,7 +105,7 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 
 	defer r.Body.Close()
 
-	vac := new(domain.Vacancy)
+	vac := new(domain.DbVacancy)
 
 	readErr := json.NewDecoder(r.Body).Decode(vac)
 	if readErr != nil {
@@ -136,7 +136,7 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 
 	defer r.Body.Close()
 
-	vac := new(domain.Vacancy)
+	vac := new(domain.DbVacancy)
 
 	readErr := json.NewDecoder(r.Body).Decode(vac)
 	if readErr != nil {

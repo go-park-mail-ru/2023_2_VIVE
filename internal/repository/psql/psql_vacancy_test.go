@@ -29,7 +29,7 @@ var (
 		"updated_at",
 	}
 
-	fullVacancyID1 = domain.Vacancy{
+	fullVacancyID1 = domain.DbVacancy{
 		ID:                     1,
 		Employer_id:            1,
 		VacancyName:            "Vacancy #1",
@@ -44,7 +44,7 @@ var (
 		CreatedAt:              testHelper.Created_at,
 		UpdatedAt:              testHelper.Updated_at,
 	}
-	fullVacancyID2 = domain.Vacancy{
+	fullVacancyID2 = domain.DbVacancy{
 		ID:                     2,
 		Employer_id:            2,
 		VacancyName:            "Vacancy #2",
@@ -59,7 +59,7 @@ var (
 		CreatedAt:              testHelper.Created_at,
 		UpdatedAt:              testHelper.Updated_at,
 	}
-	incompleteVacancyID3 = domain.Vacancy{
+	incompleteVacancyID3 = domain.DbVacancy{
 		ID:                     3,
 		Employer_id:            1,
 		VacancyName:            "Vacancy #1",
@@ -77,13 +77,13 @@ var (
 )
 
 var testGetAllVacanciesSuccessCases = []struct {
-	expected []domain.Vacancy
+	expected []domain.DbVacancy
 }{
 	{
-		expected: []domain.Vacancy{fullVacancyID1, fullVacancyID2},
+		expected: []domain.DbVacancy{fullVacancyID1, fullVacancyID2},
 	},
 	{
-		expected: []domain.Vacancy{incompleteVacancyID3},
+		expected: []domain.DbVacancy{incompleteVacancyID3},
 	},
 }
 
@@ -189,17 +189,17 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 var testGetVacanciesByIdsSuccessCases = []struct {
 	input    []int
 	orgID    int
-	expected []domain.Vacancy
+	expected []domain.DbVacancy
 }{
 	{
 		input:    []int{1, 2},
 		orgID:    1,
-		expected: []domain.Vacancy{fullVacancyID1, fullVacancyID2},
+		expected: []domain.DbVacancy{fullVacancyID1, fullVacancyID2},
 	},
 	{
 		input:    []int{1},
 		orgID:    1,
-		expected: []domain.Vacancy{incompleteVacancyID3},
+		expected: []domain.DbVacancy{incompleteVacancyID3},
 	},
 }
 
@@ -342,7 +342,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 
 var testGetVacancySuccessCases = []struct {
 	input    int
-	expected domain.Vacancy
+	expected domain.DbVacancy
 }{
 	{
 		input:    1,
@@ -550,7 +550,7 @@ func TestGetOrgIdQueryError(t *testing.T) {
 
 var testAddVacancySuccessCases = []struct {
 	inputUserID  int
-	inputVacancy domain.Vacancy
+	inputVacancy domain.DbVacancy
 	expected     int
 }{
 	{
@@ -617,7 +617,7 @@ func TestAddVacancySuccess(t *testing.T) {
 
 var testAddVacancyErrorCases = []struct {
 	inputUserID  int
-	inputVacancy domain.Vacancy
+	inputVacancy domain.DbVacancy
 	returningErr error
 	expectedErr  error
 }{
@@ -688,7 +688,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 var testUpdateOrgVacancySuccessCases = []struct {
 	inputOrgID   int
 	inputVacID   int
-	inputVacancy domain.Vacancy
+	inputVacancy domain.DbVacancy
 }{
 	{
 		inputOrgID:   1,
@@ -750,7 +750,7 @@ func TestUpdateOrgVacancySuccess(t *testing.T) {
 var testUpdateOrgVacancyErrorCases = []struct {
 	inputOrgID   int
 	inputVacID   int
-	inputVacancy domain.Vacancy
+	inputVacancy domain.DbVacancy
 	returningErr error
 	expectedErr  error
 }{

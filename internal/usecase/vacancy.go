@@ -8,12 +8,12 @@ import (
 )
 
 type IVacancyUsecase interface {
-	GetAllVacancies() ([]domain.Vacancy, error)
+	GetAllVacancies() ([]domain.DbVacancy, error)
 
-	GetVacancy(vacancyID int) (*domain.Vacancy, error)
-	GetUserVacancies(sessionID string) ([]domain.Vacancy, error)
-	AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error)
-	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error
+	GetVacancy(vacancyID int) (*domain.DbVacancy, error)
+	GetUserVacancies(sessionID string) ([]domain.DbVacancy, error)
+	AddVacancy(sessionID string, vacancy *domain.DbVacancy) (int, error)
+	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.DbVacancy) error
 	DeleteVacancy(sessionID string, vacancyID int) error
 }
 
@@ -77,7 +77,7 @@ func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancy
 	return userOrgID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.Vacancy, error) {
+func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.DbVacancy, error) {
 	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies()
 
 	if getErr != nil {
@@ -87,7 +87,7 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.Vacancy, error
 	return vacancies, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.Vacancy, error) {
+func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.DbVacancy, error) {
 	vacancy, err := vacancyUsecase.vacancyRepo.GetVacancy(vacancyID)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.Vacancy
 	return vacancy, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *domain.Vacancy) (int, error) {
+func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *domain.DbVacancy) (int, error) {
 	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(sessionID)
 	if validStatus != nil {
 		return 0, validStatus
@@ -114,7 +114,7 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 	return vacancyID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.Vacancy) error {
+func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.DbVacancy) error {
 	orgID, validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
@@ -140,7 +140,7 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(sessionID string, vacancyID 
 	return nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]domain.Vacancy, error) {
+func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]domain.DbVacancy, error) {
 	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
 	if err != nil {
 		return nil, serverErrors.AUTH_REQUIRED

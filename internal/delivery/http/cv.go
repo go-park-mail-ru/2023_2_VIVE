@@ -49,8 +49,8 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		Methods("DELETE")
 }
 
-func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.CV) []domain.CV {
-	result := make([]domain.CV, 0, len(CVs))
+func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.DbCV) []domain.DbCV {
+	result := make([]domain.DbCV, 0, len(CVs))
 
 	for _, cv := range CVs {
 		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)
@@ -104,13 +104,14 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	cv := new(domain.CV)
+	cv := new(domain.DbCV)
 
 	readErr := json.NewDecoder(r.Body).Decode(cv)
 	if readErr != nil {
 		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
+	fmt.Println(cv)
 
 	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, cv)
 	if addErr != nil {
@@ -154,7 +155,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updateInfo := new(domain.CV)
+	updateInfo := new(domain.DbCV)
 
 	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
 	if decodeErr != nil {

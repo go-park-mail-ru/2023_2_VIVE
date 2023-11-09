@@ -7,12 +7,12 @@ import (
 )
 
 type ICVRepository interface {
-	GetCVById(cvID int) (*domain.CV, error)
-	GetCVsByIds(idList []int) ([]domain.CV, error)
-	GetCVsByUserId(userID int) ([]domain.CV, error)
-	AddCV(userID int, cv *domain.CV) (int, error)
-	GetOneOfUsersCV(userID, cvID int) (*domain.CV, error)
-	UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) error
+	GetCVById(cvID int) (*domain.DbCV, error)
+	GetCVsByIds(idList []int) ([]domain.DbCV, error)
+	GetCVsByUserId(userID int) ([]domain.DbCV, error)
+	AddCV(userID int, cv *domain.DbCV) (int, error)
+	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error)
+	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV) error
 	DeleteOneOfUsersCV(userID, cvID int) error
 }
 
@@ -26,7 +26,7 @@ func NewPsqlCVRepository(db *sql.DB) ICVRepository {
 	}
 }
 
-func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.CV, error) {
+func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, error) {
 	query := `SELECT
 		id,
 		applicant_id,
@@ -40,7 +40,7 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.CV, error) {
 	WHERE
 		c.id = $1`
 
-	cvToReturn := domain.CV{}
+	cvToReturn := domain.DbCV{}
 
 	err := repo.DB.QueryRow(query, cvID).
 		Scan(
@@ -62,7 +62,7 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.CV, error) {
 	return &cvToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
+func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 	if len(idList) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -89,9 +89,9 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
 	}
 	defer rows.Close()
 
-	cvsToReturn := []domain.CV{}
+	cvsToReturn := []domain.DbCV{}
 	for rows.Next() {
-		cv := domain.CV{}
+		cv := domain.DbCV{}
 		err := rows.Scan(
 			&cv.ID,
 			&cv.ApplicantID,
@@ -112,7 +112,7 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.CV, error) {
 	return cvsToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
+func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) {
 	query := `SELECT
 		id,
 		applicant_id,
@@ -139,9 +139,9 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
 	}
 	defer rows.Close()
 
-	cvsToReturn := []domain.CV{}
+	cvsToReturn := []domain.DbCV{}
 	for rows.Next() {
-		cv := domain.CV{}
+		cv := domain.DbCV{}
 		err := rows.Scan(
 			&cv.ID,
 			&cv.ApplicantID,
@@ -162,24 +162,22 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.CV, error) {
 	return cvsToReturn, nil
 }
 
-func (repo *psqlCVRepository) AddCV(userID int, cv *domain.CV) (int, error) {
+func (repo *psqlCVRepository) AddCV(userID int, cv *domain.DbCV) (int, error) {
 	query := `INSERT
 		INTO
 		hnh_data.cv (
 			applicant_id,
 			profession,
-			description,
-			status
+			description
 		)
 	SELECT
 		a.id,
 		$1,
-		$2,
-		$3
+		$2
 	FROM
 		hnh_data.applicant a
 	WHERE
-		a.user_id = $4
+		a.user_id = $3
 	RETURNING id`
 
 	var insertedCVID int
@@ -187,8 +185,7 @@ func (repo *psqlCVRepository) AddCV(userID int, cv *domain.CV) (int, error) {
 		query,
 		cv.ProfessionName,
 		cv.Description,
-		cv.Status,
-		cv.Status,
+		// cv.Status,
 		userID,
 	).
 		Scan(&insertedCVID)
@@ -203,7 +200,7 @@ func (repo *psqlCVRepository) AddCV(userID int, cv *domain.CV) (int, error) {
 	return insertedCVID, nil
 }
 
-func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, error) {
+func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error) {
 	query := `SELECT
 		id,
 		applicant_id,
@@ -226,7 +223,7 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 	WHERE
 		c.id = $2`
 
-	var cvToReturn = domain.CV{}
+	var cvToReturn = domain.DbCV{}
 	err := repo.DB.QueryRow(
 		query,
 		userID,
@@ -252,7 +249,7 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.CV, err
 	return &cvToReturn, nil
 }
 
-func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.CV) error {
+func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV) error {
 	query := `UPDATE
 		hnh_data.cv c
 	SET 

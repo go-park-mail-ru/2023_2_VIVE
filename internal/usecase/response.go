@@ -106,7 +106,7 @@ func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vaca
 	return responseUsecase.makeSummary(CVs), nil
 }
 
-func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.CV) []domain.ApplicantInfo {
+func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.DbCV) []domain.ApplicantInfo {
 	infoToReturn := make([]domain.ApplicantInfo, 0, len(CVs))
 
 	for _, cv := range CVs {

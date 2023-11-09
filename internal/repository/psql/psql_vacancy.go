@@ -8,14 +8,14 @@ import (
 )
 
 type IVacancyRepository interface {
-	GetAllVacancies() ([]domain.Vacancy, error)
-	GetVacanciesByIds(orgID int, idList []int) ([]domain.Vacancy, error)
-	GetVacancy(vacancyID int) (*domain.Vacancy, error)
-	GetUserVacancies(userID int) ([]domain.Vacancy, error)
+	GetAllVacancies() ([]domain.DbVacancy, error)
+	GetVacanciesByIds(orgID int, idList []int) ([]domain.DbVacancy, error)
+	GetVacancy(vacancyID int) (*domain.DbVacancy, error)
+	GetUserVacancies(userID int) ([]domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetOrgId(vacancyID int) (int, error)
-	AddVacancy(userID int, vacancy *domain.Vacancy) (int, error)
-	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) error
+	AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error)
+	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.DbVacancy) error
 	DeleteOrgVacancy(orgID, vacancyID int) error
 }
 
@@ -29,7 +29,7 @@ func NewPsqlVacancyRepository(db *sql.DB) IVacancyRepository {
 	}
 }
 
-func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
+func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.DbVacancy, error) {
 	query := `SELECT
 	    id,
 	    employer_id,
@@ -53,10 +53,10 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 	}
 	defer rows.Close()
 
-	vacanciesToReturn := []domain.Vacancy{}
+	vacanciesToReturn := []domain.DbVacancy{}
 
 	for rows.Next() {
-		vacancy := domain.Vacancy{}
+		vacancy := domain.DbVacancy{}
 		err := rows.Scan(
 			&vacancy.ID,
 			&vacancy.Employer_id,
@@ -83,7 +83,7 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.Vacancy, error) {
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([]domain.Vacancy, error) {
+func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([]domain.DbVacancy, error) {
 	if len(idList) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -125,10 +125,10 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 	}
 	defer rows.Close()
 
-	vacanciesToReturn := []domain.Vacancy{}
+	vacanciesToReturn := []domain.DbVacancy{}
 
 	for rows.Next() {
-		vacancy := domain.Vacancy{}
+		vacancy := domain.DbVacancy{}
 		err := rows.Scan(
 			&vacancy.ID,
 			&vacancy.Employer_id,
@@ -155,7 +155,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, error) {
+func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.DbVacancy, error) {
 	query := `SELECT
 		id,
 		employer_id,
@@ -175,7 +175,7 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 	WHERE
 		v.id = $1`
 
-	vacancyToReturn := domain.Vacancy{}
+	vacancyToReturn := domain.DbVacancy{}
 
 	err := repo.DB.QueryRow(query, vacancyID).
 		Scan(
@@ -203,7 +203,7 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.Vacancy, e
 	return &vacancyToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.Vacancy, error) {
+func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.DbVacancy, error) {
 	var empID int
 
 	empErr := repo.DB.QueryRow(`SELECT id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&empID)
@@ -231,16 +231,16 @@ func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.Vacanc
 		v.employer_id = $1`, empID)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return []domain.Vacancy{}, nil
+		return []domain.DbVacancy{}, nil
 	} else if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	listToReturn := []domain.Vacancy{}
+	listToReturn := []domain.DbVacancy{}
 	for rows.Next() {
-		var vacancy domain.Vacancy
+		var vacancy domain.DbVacancy
 
 		err := rows.Scan(
 			&vacancy.ID,
@@ -352,7 +352,7 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 }
 
 // Add new vacancy and return new id if successful
-func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.Vacancy) (int, error) {
+func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error) {
 	query := `INSERT
 		INTO
 		hnh_data.vacancy (
@@ -401,7 +401,7 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.Vacanc
 	return insertedVacancyID, nil
 }
 
-func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.Vacancy) error {
+func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.DbVacancy) error {
 	query := `UPDATE
 		hnh_data.vacancy v
 	SET

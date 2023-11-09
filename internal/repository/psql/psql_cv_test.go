@@ -22,7 +22,7 @@ var (
 		"updated_at",
 	}
 
-	cvID1 = domain.CV{
+	cvID1 = domain.DbCV{
 		ID:             1,
 		ApplicantID:    1,
 		ProfessionName: "Profession #1",
@@ -31,7 +31,7 @@ var (
 		CreatedAt:      testHelper.Created_at,
 		UpdatedAt:      testHelper.Updated_at,
 	}
-	cvID2 = domain.CV{
+	cvID2 = domain.DbCV{
 		ID:             2,
 		ApplicantID:    2,
 		ProfessionName: "Profession #2",
@@ -40,7 +40,7 @@ var (
 		CreatedAt:      testHelper.Created_at,
 		UpdatedAt:      testHelper.Updated_at,
 	}
-	cvID3 = domain.CV{
+	cvID3 = domain.DbCV{
 		ID:             3,
 		ApplicantID:    3,
 		ProfessionName: "Profession #3",
@@ -53,7 +53,7 @@ var (
 
 var testGetCVByIdSuccessCases = []struct {
 	inputCVID int
-	expected  domain.CV
+	expected  domain.DbCV
 }{
 	{
 		inputCVID: 1,
@@ -153,27 +153,27 @@ func TestGetCVByIdQueryError(t *testing.T) {
 
 var testGetCVsByIdsSuccessCases = []struct {
 	inputCVIDs []int
-	expected   []domain.CV
+	expected   []domain.DbCV
 }{
 	{
 		inputCVIDs: []int{1, 2, 3},
-		expected:   []domain.CV{cvID1, cvID2, cvID3},
+		expected:   []domain.DbCV{cvID1, cvID2, cvID3},
 	},
 	{
 		inputCVIDs: []int{1, 2},
-		expected:   []domain.CV{cvID1, cvID2},
+		expected:   []domain.DbCV{cvID1, cvID2},
 	},
 	{
 		inputCVIDs: []int{1},
-		expected:   []domain.CV{cvID1},
+		expected:   []domain.DbCV{cvID1},
 	},
 	{
 		inputCVIDs: []int{2},
-		expected:   []domain.CV{cvID2},
+		expected:   []domain.DbCV{cvID2},
 	},
 	{
 		inputCVIDs: []int{3},
-		expected:   []domain.CV{cvID3},
+		expected:   []domain.DbCV{cvID3},
 	},
 }
 
@@ -308,19 +308,19 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 
 var testGetCVsByUserIdSuccessCases = []struct {
 	inputUserID int
-	expected    []domain.CV
+	expected    []domain.DbCV
 }{
 	{
 		inputUserID: 1,
-		expected:    []domain.CV{cvID1, cvID2},
+		expected:    []domain.DbCV{cvID1, cvID2},
 	},
 	{
 		inputUserID: 2,
-		expected:    []domain.CV{cvID3},
+		expected:    []domain.DbCV{cvID3},
 	},
 	{
 		inputUserID: 3,
-		expected:    []domain.CV{cvID1, cvID2, cvID3},
+		expected:    []domain.DbCV{cvID1, cvID2, cvID3},
 	},
 }
 
@@ -437,7 +437,7 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 
 var testAddCVSuccessCases = []struct {
 	inputUserID int
-	inputCV     domain.CV
+	inputCV     domain.DbCV
 	expected    int
 }{
 	{
@@ -499,7 +499,7 @@ func TestAddCVSuccess(t *testing.T) {
 
 var testAddCVQueryErrorCases = []struct {
 	inputUserID    int
-	inputCV        domain.CV
+	inputCV        domain.DbCV
 	returningError error
 	expectedError  error
 }{
@@ -553,7 +553,7 @@ func TestAddCVQueryError(t *testing.T) {
 var testGetOneOfUsersCVSuccessCases = []struct {
 	inputUserID int
 	inputCVID   int
-	expected    domain.CV
+	expected    domain.DbCV
 }{
 	{
 		inputUserID: 1,
@@ -664,7 +664,7 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 var testUpdateOneOfUsersCVSuccessCases = []struct {
 	inputUserID int
 	inputCVID   int
-	inputCV     domain.CV
+	inputCV     domain.DbCV
 }{
 	{
 		inputUserID: 1,
@@ -719,7 +719,7 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 var testUpdateOneOfUsersCVQueryErrorCases = []struct {
 	inputUserID    int
 	inputCVID      int
-	inputCV        domain.CV
+	inputCV        domain.DbCV
 	returningError error
 	expectedError  error
 }{
