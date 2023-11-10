@@ -10,7 +10,7 @@ import (
 )
 
 type ISessionUsecase interface {
-	Login(user *domain.User, expiryUnixSeconds int64) (string, error)
+	Login(user *domain.DbUser, expiryUnixSeconds int64) (string, error)
 	Logout(sessionID string) error
 	CheckLogin(sessionID string) error
 }
@@ -27,7 +27,7 @@ func NewSessionUsecase(sessionRepository redisRepo.ISessionRepository, userRepos
 	}
 }
 
-func (sessionUsecase *SessionUsecase) Login(user *domain.User, expiryUnixSeconds int64) (string, error) {
+func (sessionUsecase *SessionUsecase) Login(user *domain.DbUser, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus

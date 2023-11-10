@@ -38,7 +38,7 @@ func NewSessionHandler(router *mux.Router, sessionUCase usecase.ISessionUsecase)
 func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	user := new(domain.User)
+	user := new(domain.DbUser)
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {

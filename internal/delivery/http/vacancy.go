@@ -27,7 +27,7 @@ func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.DbVa
 		vac.Description = sanitizer.XSS.Sanitize(vac.Description)
 
 		if vac.Employment != nil {
-			*vac.Employment = sanitizer.XSS.Sanitize(*vac.Employment)
+			*vac.Employment = domain.EmploymentType((sanitizer.XSS.Sanitize(string(*vac.Employment))))
 		}
 		if vac.Location != nil {
 			*vac.Location = sanitizer.XSS.Sanitize(*vac.Location)
@@ -105,15 +105,19 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 
 	defer r.Body.Close()
 
-	vac := new(domain.DbVacancy)
+	apiVac := new(domain.ApiVacancy)
 
-	readErr := json.NewDecoder(r.Body).Decode(vac)
+	readErr := json.NewDecoder(r.Body).Decode(apiVac)
 	if readErr != nil {
 		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
+	fmt.Printf("apiVac: %v\n", apiVac)
 
-	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(cookie.Value, vac)
+	dbVac := apiVac.ToDb()
+	fmt.Printf("dbVac: %v\n", dbVac)
+
+	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(cookie.Value, dbVac)
 	if addStatus != nil {
 		responseTemplates.SendErrorMessage(w, addStatus, http.StatusBadRequest)
 		return

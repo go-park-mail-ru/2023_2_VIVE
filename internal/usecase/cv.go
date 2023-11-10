@@ -5,7 +5,6 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
-	"fmt"
 )
 
 type ICVUsecase interface {
@@ -131,7 +130,7 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.DbCV, error) {
 
 func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.DbCV) (int, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
-	fmt.Println(userID)
+	// fmt.Println(userID)
 	if validStatus != nil {
 		return 0, validStatus
 	}

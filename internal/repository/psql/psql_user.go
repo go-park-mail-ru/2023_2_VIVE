@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	// "fmt"
 
 	"database/sql"
 	"errors"
@@ -11,12 +12,12 @@ import (
 )
 
 type IUserRepository interface {
-	CheckUser(user *domain.User) error
+	CheckUser(user *domain.DbUser) error
 	CheckPasswordById(id int, passwordToCheck string) error
-	AddUser(user *domain.User, hasher authUtils.HashGenerator) error
+	AddUser(user *domain.ApiUserReg, hasher authUtils.HashGenerator) error
 	GetUserIdByEmail(email string) (int, error)
 	GetRoleById(userID int) (domain.Role, error)
-	GetUserInfo(userID int) (*domain.User, error)
+	GetUserInfo(userID int) (*domain.DbUser, error)
 	UpdateUserInfo(userID int, user *domain.UserUpdate) error
 	GetUserOrgId(userID int) (int, error)
 	UploadAvatarByUserID(userID int, path string) error
@@ -67,7 +68,7 @@ func (p *psqlUserRepository) checkPasswordByEmail(email, passwordToCheck string)
 	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
-func (p *psqlUserRepository) checkRole(user *domain.User) error {
+func (p *psqlUserRepository) checkRole(user *domain.DbUser) error {
 	if user.Type == domain.Employer {
 		var isEmployer bool
 
@@ -97,7 +98,7 @@ func (p *psqlUserRepository) checkRole(user *domain.User) error {
 	return nil
 }
 
-func (p *psqlUserRepository) CheckUser(user *domain.User) error {
+func (p *psqlUserRepository) CheckUser(user *domain.DbUser) error {
 	passwordStatus := p.checkPasswordByEmail(user.Email, user.Password)
 	if passwordStatus != nil {
 		return passwordStatus
@@ -125,7 +126,8 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
-func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGenerator) error {
+func (p *psqlUserRepository) AddUser(user *domain.ApiUserReg, hasher authUtils.HashGenerator) error {
+	// fmt.Printf("user to put to db: %v\n", *user)
 	var exists bool
 
 	err := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
@@ -157,6 +159,8 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 		}
 	} else if user.Type == domain.Employer {
 		var userID int
+		// fmt.Printf("before putting employer to db\n")
+
 		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
 			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
 			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
@@ -166,7 +170,26 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 			return addErr
 		}
 
-		_, empErr := p.userStorage.Exec(`INSERT INTO hnh_data.employer ("user_id") VALUES ($1)`, userID)
+		_, empErr := p.userStorage.Exec(`INSERT
+				INTO
+				hnh_data.employer (
+					user_id,
+					organization_id
+				)
+			VALUES (
+				$1,
+				(
+					SELECT
+						id
+					FROM
+						hnh_data.organization o
+					WHERE
+						o.name = $2
+				)
+			);`,
+			userID,
+			user.OrganizationName,
+		)
 		if empErr != nil {
 			return empErr
 		}
@@ -177,8 +200,8 @@ func (p *psqlUserRepository) AddUser(user *domain.User, hasher authUtils.HashGen
 	return nil
 }
 
-func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.User, error) {
-	user := &domain.User{}
+func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, error) {
+	user := &domain.DbUser{}
 
 	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location, avatar_path `+
 		`FROM hnh_data.user_profile WHERE id = $1`, userID).

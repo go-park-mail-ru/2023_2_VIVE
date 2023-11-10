@@ -7,14 +7,15 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	// "fmt"
 	"io/ioutil"
 
 	"github.com/google/uuid"
 )
 
 type IUserUsecase interface {
-	SignUp(user *domain.User, expiryUnixSeconds int64) (string, error)
-	GetInfo(sessionID string) (*domain.User, error)
+	SignUp(user *domain.ApiUserReg, expiryUnixSeconds int64) (string, error)
+	GetInfo(sessionID string) (*domain.DbUser, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 	UploadAvatar(sessionID, path string) error
 	GetAvatar(sessionID string) ([]byte, error)
@@ -23,12 +24,18 @@ type IUserUsecase interface {
 type UserUsecase struct {
 	userRepo    psql.IUserRepository
 	sessionRepo redisRepo.ISessionRepository
+	orgRepo     psql.IOrganizationRepository
 }
 
-func NewUserUsecase(userRepository psql.IUserRepository, sessionRepository redisRepo.ISessionRepository) IUserUsecase {
+func NewUserUsecase(
+	userRepository psql.IUserRepository,
+	sessionRepository redisRepo.ISessionRepository,
+	orgRepository psql.IOrganizationRepository,
+) IUserUsecase {
 	return &UserUsecase{
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,
+		orgRepo:     orgRepository,
 	}
 }
 
@@ -46,7 +53,7 @@ func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (i
 	return userID, nil
 }
 
-func (userUsecase *UserUsecase) SignUp(user *domain.User, expiryUnixSeconds int64) (string, error) {
+func (userUsecase *UserUsecase) SignUp(user *domain.ApiUserReg, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus
@@ -60,11 +67,23 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User, expiryUnixSeconds int6
 	if !user.Type.IsRole() {
 		return "", serverErrors.INVALID_ROLE
 	}
-
+	// fmt.Printf("before add user to db\n")
+	if user.Type == domain.Employer {
+		organization := domain.Organization{
+			Name:        user.OrganizationName,
+			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
+			Location:    user.Location,
+		}
+		_, addOrgErr := userUsecase.orgRepo.AddOrganization(&organization)
+		if addOrgErr != nil {
+			return "", addOrgErr
+		}
+	}
 	addStatus := userUsecase.userRepo.AddUser(user, authUtils.GenerateHash)
 	if addStatus != nil {
 		return "", addStatus
 	}
+	// fmt.Printf("after add user to db\n")
 
 	userID, err := userUsecase.userRepo.GetUserIdByEmail(user.Email)
 	if err != nil {
@@ -81,7 +100,7 @@ func (userUsecase *UserUsecase) SignUp(user *domain.User, expiryUnixSeconds int6
 	return sessionID, nil
 }
 
-func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.User, error) {
+func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.DbUser, error) {
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus

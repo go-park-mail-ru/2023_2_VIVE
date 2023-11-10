@@ -55,8 +55,8 @@ func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.DbCV) []domain.DbCV {
 	for _, cv := range CVs {
 		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)
 		cv.Description = sanitizer.XSS.Sanitize(cv.Description)
-		cv.FirstName = sanitizer.XSS.Sanitize(cv.FirstName)
-		cv.LastName = sanitizer.XSS.Sanitize(cv.LastName)
+		// cv.FirstName = sanitizer.XSS.Sanitize(cv.FirstName)
+		// cv.LastName = sanitizer.XSS.Sanitize(cv.LastName)
 
 		result = append(result, cv)
 	}
@@ -104,16 +104,17 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	cv := new(domain.DbCV)
+	apiCV := new(domain.ApiCV)
 
-	readErr := json.NewDecoder(r.Body).Decode(cv)
+	readErr := json.NewDecoder(r.Body).Decode(apiCV)
 	if readErr != nil {
 		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
-	fmt.Println(cv)
+	// fmt.Println(cv)
+	bdCV := apiCV.ToDb()
 
-	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, cv)
+	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, bdCV)
 	if addErr != nil {
 		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
 		return

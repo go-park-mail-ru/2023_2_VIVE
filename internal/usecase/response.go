@@ -112,8 +112,8 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.DbCV) []domain.
 	for _, cv := range CVs {
 		info := domain.ApplicantInfo{
 			CVid:      cv.ID,
-			FirstName: cv.FirstName,
-			LastName:  cv.LastName,
+			// FirstName: cv.FirstName,
+			// LastName:  cv.LastName,
 			// Skills:    cv.Skills,	// FIXME: remove this field
 		}
 

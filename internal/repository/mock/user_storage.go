@@ -15,7 +15,7 @@ const (
 )
 
 type Users struct {
-	UsersList   []*domain.User
+	UsersList   []*domain.DbUser
 	IdToUser    sync.Map
 	EmailToUser sync.Map
 	CurrentID   int
@@ -23,7 +23,7 @@ type Users struct {
 }
 
 var UserDB = Users{
-	UsersList:   make([]*domain.User, 0),
+	UsersList:   make([]*domain.DbUser, 0),
 	IdToUser:    sync.Map{},
 	EmailToUser: sync.Map{},
 	CurrentID:   0,

@@ -18,7 +18,7 @@ import (
 var (
 	password1                 = "password_number_1"
 	hashedPassword1, salt1, _ = authUtils.GenerateHash(password1)
-	applicant1                = domain.User{
+	applicant1                = domain.DbUser{
 		ID:          1,
 		Email:       "applicant1@example.com",
 		Password:    password1,
@@ -29,7 +29,7 @@ var (
 		Location:    nullTypes.NewNullString("Moscow", true),
 		Type:        domain.Applicant,
 	}
-	employer1 = domain.User{
+	employer1 = domain.DbUser{
 		ID:          1,
 		Email:       "employer1@example.com",
 		Password:    password1,
@@ -43,7 +43,7 @@ var (
 
 	password2                 = "password_number_2"
 	hashedPassword2, salt2, _ = authUtils.GenerateHash(password2)
-	applicant2                = domain.User{
+	applicant2                = domain.DbUser{
 		ID:          1,
 		Email:       "applicant2@example.com",
 		Password:    password2,
@@ -54,7 +54,7 @@ var (
 		Location:    nullTypes.NewNullString("Moscow", true),
 		Type:        domain.Applicant,
 	}
-	employer2 = domain.User{
+	employer2 = domain.DbUser{
 		ID:          1,
 		Email:       "employer2@example.com",
 		Password:    password2,
@@ -68,7 +68,7 @@ var (
 )
 
 var testCheckUserCases = []struct {
-	inputUser      domain.User
+	inputUser      domain.DbUser
 	hashedPassword []byte
 	salt           []byte
 }{
@@ -327,7 +327,7 @@ func TestCheckPasswordByIdQueryError(t *testing.T) {
 }
 
 var testAddUserCases = []struct {
-	user           domain.User
+	user           domain.DbUser
 	hashedPassword []byte
 	salt           []byte
 }{

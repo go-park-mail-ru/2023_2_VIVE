@@ -39,12 +39,13 @@ func Run() error {
 
 	sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
+	organizationRepo := psql.NewPsqlOrganizationRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
 	responseRepo := psql.NewPsqlResponseRepository(db)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)

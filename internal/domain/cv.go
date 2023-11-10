@@ -23,17 +23,6 @@ type DbCV struct {
 	Status         Status    `json:"status,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
-	// FirstName      string    `json:"first_name"`
-	// LastName       string    `json:"last_name"`
-	// UserID         int       `json:"user_id,omitempty"`
-	// DateOfBirth string      `json:"date_of_bitrh,omitempty"`
-	// Skills      []string    `json:"skills,omitempty"`
-	// Contact     string      `json:"contact,omitempty"`
-	// PhoneNumber string      `json:"phone_number,omitempty"`
-	// Location    string      `json:"location,omitempty"`
-	// Grades      []Education `json:"grades,omitempty"`
-	// Languages   []Language  `json:"languages,omitempty"`
-	// MainText    string      `json:"main_text,omitempty"`
 }
 
 type ApiCV struct {
@@ -54,5 +43,11 @@ type ApiCV struct {
 	StartDate                string         `json:"start_date,omitempty"`
 	EndDate                  string         `json:"end_date,omitempty"`
 	ExperienceDescription    string         `json:"experience_description,omitempty"`
-	ApplicantDescription     string         `json:"applicant_description,omitempty"`
+	Description              string         `json:"description,omitempty"`
+}
+
+func (apiCV *ApiCV) ToDb() *DbCV {
+	res := DbCV{ProfessionName: apiCV.ProfessionName, Description: apiCV.Description}
+	return &res
+
 }
