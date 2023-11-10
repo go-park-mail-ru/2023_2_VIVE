@@ -112,10 +112,10 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("apiVac: %v\n", apiVac)
+	// fmt.Printf("apiVac: %v\n", apiVac)
 
 	dbVac := apiVac.ToDb()
-	fmt.Printf("dbVac: %v\n", dbVac)
+	// fmt.Printf("dbVac: %v\n", dbVac)
 
 	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(cookie.Value, dbVac)
 	if addStatus != nil {
