@@ -2,20 +2,20 @@ package authUtils
 
 import "unicode"
 
-const specialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
+// const specialChars = `~!?@#$%^&*_-+()[]{}></\|"'.,:;`
 
 func ValidatePassword(password string) error {
 	if len(password) == 0 {
 		return EMPTY_PASSWORD
 	}
 
-	if len(password) < 8 || len(password) > 128 {
+	if len(password) < 6 || len(password) > 128 {
 		return INVALID_PASSWORD
 	}
 
 	hasDigit := false
 	hasCapital := false
-	hasSpecialChar := false
+	// hasSpecialChar := false
 
 	for _, char := range password {
 		if !hasDigit {
@@ -26,18 +26,18 @@ func ValidatePassword(password string) error {
 			hasCapital = unicode.Is(unicode.Latin, char) && unicode.IsUpper(char)
 		}
 
-		if !hasSpecialChar {
-			for _, specCh := range specialChars {
-				hasSpecialChar = (char == specCh)
+		// if !hasSpecialChar {
+		// 	for _, specCh := range specialChars {
+		// 		hasSpecialChar = (char == specCh)
 
-				if hasSpecialChar {
-					break
-				}
-			}
-		}
+		// 		if hasSpecialChar {
+		// 			break
+		// 		}
+		// 	}
+		// }
 	}
 
-	if !(hasDigit && hasCapital && hasSpecialChar) {
+	if !(hasDigit && hasCapital /* && hasSpecialChar */) {
 		return INVALID_PASSWORD
 	}
 
