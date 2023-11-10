@@ -3,6 +3,7 @@ package http
 import (
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
+	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
@@ -71,7 +72,9 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
 	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies()
 
-	if getErr != nil {
+	if getErr == psql.ErrEntityNotFound {
+		vacancies = []domain.DbVacancy{}
+	} else if getErr != nil {
 		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
 		return
 	}
