@@ -205,18 +205,18 @@ func (repo *psqlCVRepository) AddCV(userID int, cv *domain.DbCV) (int, error) {
 
 func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error) {
 	query := `SELECT
-		id,
-		applicant_id,
-		profession,
-		description,
-		status,
-		created_at,
-		updated_at
+		c.id,
+		c.applicant_id,
+		c.profession,
+		c.description,
+		c.status,
+		c.created_at,
+		c.updated_at
 	FROM
 		hnh_data.cv c
 	INNER JOIN (
 			SELECT
-				id
+				a.id
 			FROM
 				hnh_data.applicant a
 			WHERE

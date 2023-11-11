@@ -5,7 +5,7 @@ import (
 	"HnH/pkg/queryUtils"
 	"database/sql"
 	"errors"
-	"fmt"
+	// "fmt"
 )
 
 type IVacancyRepository interface {
@@ -354,7 +354,7 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 
 // Add new vacancy and return new id if successful
 func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error) {
-	fmt.Printf("before inserting vacancy in db: %v\n", vacancy)
+	// fmt.Printf("before inserting vacancy in db: %v\n", vacancy)
 	query := `INSERT
 		INTO
 		hnh_data.vacancy (
