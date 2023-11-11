@@ -5,6 +5,7 @@ import (
 	"HnH/pkg/queryUtils"
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 type IVacancyRepository interface {
@@ -353,6 +354,7 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 
 // Add new vacancy and return new id if successful
 func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error) {
+	fmt.Printf("before inserting vacancy in db: %v\n", vacancy)
 	query := `INSERT
 		INTO
 		hnh_data.vacancy (
@@ -372,10 +374,22 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVaca
 	FROM
 		hnh_data.employer e
 	WHERE
-		e.user_id = $10
+		e.organization_id = $10
 		RETURNING id`
 
 	var insertedVacancyID int
+
+	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
+	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
+	// fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.Salary_lower_bound)
+	// fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.Salary_upper_bound)
+	// fmt.Printf("*vacancy.Employment: %v\n", *vacancy.Employment)
+	// fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.Experience_lower_bound)
+	// fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.Experience_upper_bound)
+	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
+	// fmt.Printf("*vacancy.Location: %v\n", *vacancy.Location)
+	// fmt.Printf("userID: %v\n", userID)
+
 	err := repo.DB.QueryRow(
 		query,
 		vacancy.VacancyName,
@@ -405,27 +419,37 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacanc
 	query := `UPDATE
 		hnh_data.vacancy v
 	SET
-		employer_id = $1,
-		"name" = $2,
-		description = $3,
-		salary_lower_bound = $4,
-		salary_upper_bound = $5,
-		employment = $6,
-		experience_lower_bound = $7,
-		experience_upper_bound = $8,
-		education_type = $9,
-		"location" = $10,
+		"name" = $1,
+		description = $2,
+		salary_lower_bound = $3,
+		salary_upper_bound = $4,
+		employment = $5,
+		experience_lower_bound = $6,
+		experience_upper_bound = $7,
+		education_type = $8,
+		"location" = $9,
 		updated_at = now()
 	FROM
 		hnh_data.employer e
 	WHERE
-		v.id = $11
-		AND e.organization_id = $12
+		v.id = $10
+		AND e.organization_id = $11
 		AND v.employer_id = e.id`
+
+	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
+	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
+	// fmt.Printf("vacancy.Salary_lower_bound: %v\n", vacancy.Salary_lower_bound)
+	// fmt.Printf("vacancy.Salary_upper_bound: %v\n", vacancy.Salary_upper_bound)
+	// fmt.Printf("vacancy.Employment: %v\n", vacancy.Employment)
+	// fmt.Printf("vacancy.Experience_lower_bound: %v\n", vacancy.Experience_lower_bound)
+	// fmt.Printf("vacancy.Experience_upper_bound: %v\n", vacancy.Experience_upper_bound)
+	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
+	// fmt.Printf("vacancy.Location: %v\n", vacancy.Location)
+	// fmt.Printf("vacancyID: %v\n", vacancyID)
+	// fmt.Printf("orgID: %v\n", orgID)
 
 	result, err := repo.DB.Exec(
 		query,
-		vacancy.Employer_id,
 		vacancy.VacancyName,
 		vacancy.Description,
 		vacancy.Salary_lower_bound,

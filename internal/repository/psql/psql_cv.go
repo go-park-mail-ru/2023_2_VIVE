@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
 	"database/sql"
+	"fmt"
 )
 
 type ICVRepository interface {
@@ -113,19 +114,20 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 }
 
 func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) {
+	// fmt.Printf("userID: %v\n", userID)
 	query := `SELECT
-		id,
-		applicant_id,
-		profession,
-		description,
-		status,
-		created_at,
-		updated_at
+		c.id,
+		c.applicant_id,
+		c.profession,
+		c.description,
+		c.status,
+		c.created_at,
+		c.updated_at
 	FROM
 		hnh_data.cv c
 	INNER JOIN (
 			SELECT
-				id
+				a.id
 			FROM
 				hnh_data.applicant a
 			WHERE
@@ -135,6 +137,7 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) 
 
 	rows, err := repo.DB.Query(query, userID)
 	if err != nil {
+		// fmt.Printf("err: %v\n", err)
 		return nil, err
 	}
 	defer rows.Close()

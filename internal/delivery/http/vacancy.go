@@ -108,7 +108,7 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 
 	defer r.Body.Close()
 
-	apiVac := new(domain.ApiVacancy)
+	apiVac := new(domain.ApiVacancyCreate)
 
 	readErr := json.NewDecoder(r.Body).Decode(apiVac)
 	if readErr != nil {
@@ -143,15 +143,19 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 
 	defer r.Body.Close()
 
-	vac := new(domain.DbVacancy)
+	updatedVac := new(domain.ApiVacancyUpdate)
 
-	readErr := json.NewDecoder(r.Body).Decode(vac)
+	readErr := json.NewDecoder(r.Body).Decode(updatedVac)
 	if readErr != nil {
 		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
 		return
 	}
 
-	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(cookie.Value, vacancyID, vac)
+	// fmt.Printf("updatedVac: %v\n", updatedVac)
+	vacToDb := updatedVac.ToDb()
+	// fmt.Printf("vacToDb: %v\n", vacToDb)
+
+	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(cookie.Value, vacancyID, vacToDb)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
