@@ -44,7 +44,7 @@ type DbCV struct {
 	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
-type ApiCVCreate struct {
+type ApiCV struct {
 	FirstName             string                          `json:"first_name"`            // имя
 	LastName              string                          `json:"last_name"`             // фамилия
 	MiddleName            *string                         `json:"middle_name,omitempty"` // отчество
@@ -58,7 +58,7 @@ type ApiCVCreate struct {
 	Description           *string                         `json:"description,omitempty"`
 }
 
-func (cv *ApiCVCreate) ToDb() *DbCV {
+func (cv *ApiCV) ToDb() *DbCV {
 	res := DbCV{
 		ProfessionName: cv.ProfessionName,
 		FirstName:      cv.FirstName,
@@ -73,27 +73,27 @@ func (cv *ApiCVCreate) ToDb() *DbCV {
 	return &res
 }
 
-type ApiCVUpdate struct {
-	FirstName                string         `json:"first_name"`            // имя
-	LastName                 string         `json:"last_name"`             // фамилия
-	MiddleName               string         `json:"middle_name,omitempty"` // отчество
-	ProfessionName           string         `json:"profession_name"`
-	Gender                   Gender         `json:"gender"`
-	City                     string         `json:"city,omitempty"`
-	Birthday                 string         `json:"birthday,omitempty"`
-	EducationLevel           EducationLevel `json:"education_level"`
-	EducationInstitutionName string         `json:"education_institution_name,omitempty"`
-	Division                 string         `json:"division,omitempty"`
-	MajorField               string         `json:"major_field,omitempty"`
-	GraduationYear           string         `json:"graduation_year,omitempty"`
-	OrganizationName         string         `json:"organization_name,omitempty"`
-	JobPosition              string         `json:"job_position,omitempty"`
-	StartDate                string         `json:"start_date,omitempty"`
-	EndDate                  string         `json:"end_date,omitempty"`
-	ExperienceDescription    string         `json:"experience_description,omitempty"`
-	Description              string         `json:"description,omitempty"`
-	Status                   Status         `json:"status,omitempty"`
-}
+// type ApiCVUpdate struct {
+// 	FirstName                string         `json:"first_name"`            // имя
+// 	LastName                 string         `json:"last_name"`             // фамилия
+// 	MiddleName               string         `json:"middle_name,omitempty"` // отчество
+// 	ProfessionName           string         `json:"profession_name"`
+// 	Gender                   Gender         `json:"gender"`
+// 	City                     string         `json:"city,omitempty"`
+// 	Birthday                 string         `json:"birthday,omitempty"`
+// 	EducationLevel           EducationLevel `json:"education_level"`
+// 	EducationInstitutionName string         `json:"education_institution_name,omitempty"`
+// 	Division                 string         `json:"division,omitempty"`
+// 	MajorField               string         `json:"major_field,omitempty"`
+// 	GraduationYear           string         `json:"graduation_year,omitempty"`
+// 	OrganizationName         string         `json:"organization_name,omitempty"`
+// 	JobPosition              string         `json:"job_position,omitempty"`
+// 	StartDate                string         `json:"start_date,omitempty"`
+// 	EndDate                  string         `json:"end_date,omitempty"`
+// 	ExperienceDescription    string         `json:"experience_description,omitempty"`
+// 	Description              string         `json:"description,omitempty"`
+// 	Status                   Status         `json:"status,omitempty"`
+// }
 
 // func (cv *ApiCVUpdate) ToDb() *DbCV {
 // 	res := DbCV{

@@ -4,7 +4,6 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
 	"database/sql"
-	// "fmt"
 )
 
 type ICVRepository interface {
@@ -18,12 +17,16 @@ type ICVRepository interface {
 }
 
 type psqlCVRepository struct {
-	DB *sql.DB
+	DB       *sql.DB
+	expRepo  IExperienceRepository
+	instRepo IEducationInstitutionRepository
 }
 
 func NewPsqlCVRepository(db *sql.DB) ICVRepository {
 	return &psqlCVRepository{
-		DB: db,
+		DB:       db,
+		expRepo:  NewPsqlExperienceRepository(db),
+		instRepo: NewPsqlEducationInstitutionRepository(db),
 	}
 }
 
@@ -32,7 +35,14 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, error) {
 		id,
 		applicant_id,
 		profession,
+		first_name,
+		last_name,
+		middle_name,
+		gender,
+		birthday,
+		location,
 		description,
+		education_level,
 		status,
 		created_at,
 		updated_at
@@ -48,7 +58,14 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, error) {
 			&cvToReturn.ID,
 			&cvToReturn.ApplicantID,
 			&cvToReturn.ProfessionName,
+			&cvToReturn.FirstName,
+			&cvToReturn.LastName,
+			&cvToReturn.MiddleName,
+			&cvToReturn.Gender,
+			&cvToReturn.Birthday,
+			&cvToReturn.Location,
 			&cvToReturn.Description,
+			&cvToReturn.EducationLevel,
 			&cvToReturn.Status,
 			&cvToReturn.CreatedAt,
 			&cvToReturn.UpdatedAt,
@@ -69,16 +86,23 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
-	placeHolderString := queryUtils.QueryPlaceHolders(1, placeHolderValues...)
+	placeHolderString := queryUtils.QueryPlaceHolders(1, len(placeHolderValues))
 
 	query := `SELECT
-		id,
-		applicant_id,
-		profession,
-		description,
-		status,
-		created_at,
-		updated_at
+			id,
+			applicant_id,
+			profession,
+			first_name,
+			last_name,
+			middle_name,
+			gender,
+			birthday,
+			location,
+			description,
+			education_level,
+			status,
+			created_at,
+			updated_at
 	FROM
 		hnh_data.cv c
 	WHERE
@@ -97,7 +121,14 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 			&cv.ID,
 			&cv.ApplicantID,
 			&cv.ProfessionName,
+			&cv.FirstName,
+			&cv.LastName,
+			&cv.MiddleName,
+			&cv.Gender,
+			&cv.Birthday,
+			&cv.Location,
 			&cv.Description,
+			&cv.EducationLevel,
 			&cv.Status,
 			&cv.CreatedAt,
 			&cv.UpdatedAt,
@@ -114,12 +145,18 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 }
 
 func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) {
-	// fmt.Printf("userID: %v\n", userID)
 	query := `SELECT
 		c.id,
 		c.applicant_id,
 		c.profession,
+		c.first_name,
+		c.last_name,
+		c.middle_name,
+		c.gender,
+		c.birthday,
+		c.location,
 		c.description,
+		c.education_level,
 		c.status,
 		c.created_at,
 		c.updated_at
@@ -149,7 +186,14 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) 
 			&cv.ID,
 			&cv.ApplicantID,
 			&cv.ProfessionName,
+			&cv.FirstName,
+			&cv.LastName,
+			&cv.MiddleName,
+			&cv.Gender,
+			&cv.Birthday,
+			&cv.Location,
 			&cv.Description,
+			&cv.EducationLevel,
 			&cv.Status,
 			&cv.CreatedAt,
 			&cv.UpdatedAt,
@@ -175,7 +219,7 @@ func (repo *psqlCVRepository) AddCV(
 		return 0, txErr
 	}
 
-	cvInsertQuery := `INSERT
+	query := `INSERT
 		INTO
 		hnh_data.cv (
 			applicant_id,
@@ -199,7 +243,7 @@ func (repo *psqlCVRepository) AddCV(
 
 	var insertedCVID int
 	insertCvErr := tx.QueryRow(
-		cvInsertQuery,
+		query,
 		cv.ProfessionName,
 		cv.FirstName,
 		cv.LastName,
@@ -222,65 +266,17 @@ func (repo *psqlCVRepository) AddCV(
 		return 0, insertCvErr
 	}
 
-	// TODO: change to one query not in loop
-	insertExpQuery := `INSERT
-		INTO
-		hnh_data.experience (
-			cv_id,
-			organization_name,
-			"position",
-			description,
-			start_date,
-			end_date
-		)
-	VALUES 
-		($1, $2, $3, $4, $5, $6)`
-	for _, experience := range experiences {
-		_, insertExpErr := tx.Exec(
-			insertExpQuery,
-			insertedCVID,
-			experience.OrganizationName,
-			experience.Position,
-			experience.Description,
-			experience.StartDate,
-			experience.EndDate,
-		)
-		if insertExpErr == sql.ErrNoRows {
-			tx.Rollback()
-			return 0, ErrNotInserted
-		}
-		if insertExpErr != nil {
-			tx.Rollback()
-			return 0, insertExpErr
-		}
+
+	expErr := repo.expRepo.AddTxExperiences(tx, insertedCVID, experiences)
+	if expErr != nil {
+		tx.Rollback()
+		return 0, expErr
 	}
 
-	// TODO: change to one query not in loop
-	insertInstQuery := `INSERT
-		INTO
-		hnh_data.education_institution (
-			cv_id,
-			"name",
-			major_field,
-			graduation_year
-		)
-	VALUES ($1, $2, $3, $4)`
-	for _, institution := range insitutions {
-		_, insertInstErr := tx.Exec(
-			insertInstQuery,
-			insertedCVID,
-			institution.Name,
-			institution.MajorField,
-			institution.GraduationYear,
-		)
-		if insertInstErr == sql.ErrNoRows {
-			tx.Rollback()
-			return 0, ErrNotInserted
-		}
-		if insertInstErr != nil {
-			tx.Rollback()
-			return 0, insertInstErr
-		}
+	instErr := repo.instRepo.AddTxInstitutions(tx, insertedCVID, insitutions)
+	if instErr != nil {
+		tx.Rollback()
+		return 0, instErr
 	}
 
 	commitErr := tx.Commit()
@@ -296,7 +292,14 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, e
 		c.id,
 		c.applicant_id,
 		c.profession,
+		c.first_name,
+		c.last_name,
+		c.middle_name,
+		c.gender,
+		c.birthday,
+		c.location,
 		c.description,
+		c.education_level,
 		c.status,
 		c.created_at,
 		c.updated_at
@@ -324,7 +327,14 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, e
 			&cvToReturn.ID,
 			&cvToReturn.ApplicantID,
 			&cvToReturn.ProfessionName,
+			&cvToReturn.FirstName,
+			&cvToReturn.LastName,
+			&cvToReturn.MiddleName,
+			&cvToReturn.Gender,
+			&cvToReturn.Birthday,
+			&cvToReturn.Location,
 			&cvToReturn.Description,
+			&cvToReturn.EducationLevel,
 			&cvToReturn.Status,
 			&cvToReturn.CreatedAt,
 			&cvToReturn.UpdatedAt,

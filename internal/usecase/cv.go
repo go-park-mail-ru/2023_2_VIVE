@@ -10,7 +10,7 @@ import (
 type ICVUsecase interface {
 	GetCVById(sessionID string, cvID int) (*domain.DbCV, error)
 	GetCVList(sessionID string) ([]domain.DbCV, error)
-	AddNewCV(sessionID string, cv *domain.ApiCVCreate) (int, error)
+	AddNewCV(sessionID string, cv *domain.ApiCV) (int, error)
 	GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error)
 	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.DbCV) error
 	DeleteCVOfUserById(sessionID string, cvID int) error
@@ -128,7 +128,7 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.DbCV, error) {
 	return cvs, nil
 }
 
-func (cvUsecase *CVUsecase) getExperiences(apiCV *domain.ApiCVCreate) []domain.DbExperience {
+func (cvUsecase *CVUsecase) getExperiences(apiCV *domain.ApiCV) []domain.DbExperience {
 	res := []domain.DbExperience{}
 	for _, experience := range apiCV.Experience {
 		res = append(res, experience.ToDb())
@@ -136,7 +136,7 @@ func (cvUsecase *CVUsecase) getExperiences(apiCV *domain.ApiCVCreate) []domain.D
 	return res
 }
 
-func (cvUsecase *CVUsecase) getEducationInstitutions(apiCV *domain.ApiCVCreate) []domain.DbEducationInstitution {
+func (cvUsecase *CVUsecase) getEducationInstitutions(apiCV *domain.ApiCV) []domain.DbEducationInstitution {
 	res := []domain.DbEducationInstitution{}
 	for _, institution := range apiCV.EducationInstitutions {
 		res = append(res, institution.ToDb())
@@ -144,7 +144,7 @@ func (cvUsecase *CVUsecase) getEducationInstitutions(apiCV *domain.ApiCVCreate) 
 	return res
 }
 
-func (cvUsecase *CVUsecase) getDataFromApiCVCreate(apiCV *domain.ApiCVCreate) ([]domain.DbExperience, []domain.DbEducationInstitution, *domain.DbCV) {
+func (cvUsecase *CVUsecase) getDataFromApiCVCreate(apiCV *domain.ApiCV) ([]domain.DbExperience, []domain.DbEducationInstitution, *domain.DbCV) {
 	dbExperiences := cvUsecase.getExperiences(apiCV)
 	dbEducationInstitutions := cvUsecase.getEducationInstitutions(apiCV)
 	dbCV := apiCV.ToDb()
@@ -152,7 +152,7 @@ func (cvUsecase *CVUsecase) getDataFromApiCVCreate(apiCV *domain.ApiCVCreate) ([
 	return dbExperiences, dbEducationInstitutions, dbCV
 }
 
-func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCVCreate) (int, error) {
+func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	// fmt.Println(userID)
 	if validStatus != nil {

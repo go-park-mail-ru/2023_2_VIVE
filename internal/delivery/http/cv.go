@@ -119,7 +119,7 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	apiCV := new(domain.ApiCVCreate)
+	apiCV := new(domain.ApiCV)
 
 	readErr := json.NewDecoder(r.Body).Decode(apiCV)
 	if readErr != nil {

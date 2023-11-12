@@ -96,7 +96,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(items)
-	placeHolderString := queryUtils.QueryPlaceHolders(2, placeHolderValues...)
+	placeHolderString := queryUtils.QueryPlaceHolders(2, len(placeHolderValues))
 
 	query := `SELECT
 		v.id,
