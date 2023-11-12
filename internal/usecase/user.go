@@ -7,6 +7,7 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+
 	// "fmt"
 	"io/ioutil"
 
@@ -69,7 +70,7 @@ func (userUsecase *UserUsecase) SignUp(user *domain.ApiUserReg, expiryUnixSecond
 	}
 	// fmt.Printf("before add user to db\n")
 	if user.Type == domain.Employer {
-		organization := domain.Organization{
+		organization := domain.DbOrganization{
 			Name:        user.OrganizationName,
 			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
 			Location:    user.Location,

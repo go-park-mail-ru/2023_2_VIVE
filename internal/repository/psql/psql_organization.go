@@ -6,7 +6,7 @@ import (
 )
 
 type IOrganizationRepository interface {
-	AddOrganization(organization *domain.Organization) (int, error)
+	AddOrganization(organization *domain.DbOrganization) (int, error)
 	// CheckUser(user *domain.DbUser) error
 	// CheckPasswordById(id int, passwordToCheck string) error
 	// GetUserIdByEmail(email string) (int, error)
@@ -28,7 +28,7 @@ func NewPsqlOrganizationRepository(db *sql.DB) IOrganizationRepository {
 	}
 }
 
-func (repo *psqlOrganizationRepository) AddOrganization(organization *domain.Organization) (int, error) {
+func (repo *psqlOrganizationRepository) AddOrganization(organization *domain.DbOrganization) (int, error) {
 	query := `INSERT 
 	INTO hnh_data.organization 
 		("name", description, "location") 

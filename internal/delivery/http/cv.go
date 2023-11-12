@@ -54,9 +54,24 @@ func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.DbCV) []domain.DbCV {
 
 	for _, cv := range CVs {
 		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)
-		cv.Description = sanitizer.XSS.Sanitize(cv.Description)
-		// cv.FirstName = sanitizer.XSS.Sanitize(cv.FirstName)
-		// cv.LastName = sanitizer.XSS.Sanitize(cv.LastName)
+		if cv.Description != nil {
+			description := sanitizer.XSS.Sanitize(*cv.Description)
+			cv.Description = &description
+		}
+		cv.FirstName = sanitizer.XSS.Sanitize(cv.FirstName)
+		cv.LastName = sanitizer.XSS.Sanitize(cv.LastName)
+		if cv.MiddleName != nil {
+			middle_name := sanitizer.XSS.Sanitize(*cv.MiddleName)
+			cv.MiddleName = &middle_name
+		}
+		if cv.Birthday != nil {
+			birthday := sanitizer.XSS.Sanitize(*cv.Birthday)
+			cv.Birthday = &birthday
+		}
+		if cv.Location != nil {
+			location := sanitizer.XSS.Sanitize(*cv.Location)
+			cv.Location = &location
+		}
 
 		result = append(result, cv)
 	}
@@ -112,9 +127,9 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// fmt.Println(cv)
-	bdCV := apiCV.ToDb()
+	// bdCV := apiCV.ToDb()
 
-	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, bdCV)
+	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, apiCV)
 	if addErr != nil {
 		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
 		return
@@ -156,7 +171,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updatedCV := new(domain.ApiCVUpdate)
+	updatedCV := new(domain.DbCV)
 
 	decodeErr := json.NewDecoder(r.Body).Decode(updatedCV)
 	if decodeErr != nil {
@@ -164,9 +179,9 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dbCV := updatedCV.ToDb()
+	// dbCV := updatedCV.ToDb()
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID, dbCV)
+	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID, updatedCV)
 	if udpErr != nil {
 		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
 		return

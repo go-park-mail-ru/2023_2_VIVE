@@ -6,7 +6,7 @@ import (
 )
 
 type IOrganizationUsecase interface {
-	AddOrganization(organization *domain.Organization) (int, error)
+	AddOrganization(organization *domain.DbOrganization) (int, error)
 	// SignUp(user *domain.ApiUserReg, expiryUnixSeconds int64) (string, error)
 	// GetInfo(sessionID string) (*domain.DbUser, error)
 	// UpdateInfo(sessionID string, user *domain.UserUpdate) error
@@ -31,7 +31,7 @@ func NewOrganizationUsecase(organizationRepo psql.IOrganizationRepository) IOrga
 	}
 }
 
-func (orgUsecase *OrganizationUsecase) AddOrganization(organization *domain.Organization) (int, error) {
+func (orgUsecase *OrganizationUsecase) AddOrganization(organization *domain.DbOrganization) (int, error) {
 	orgID, err := orgUsecase.orgRepo.AddOrganization(organization)
 	return orgID, err
 }

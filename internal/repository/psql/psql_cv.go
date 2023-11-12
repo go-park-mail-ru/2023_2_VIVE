@@ -11,7 +11,7 @@ type ICVRepository interface {
 	GetCVById(cvID int) (*domain.DbCV, error)
 	GetCVsByIds(idList []int) ([]domain.DbCV, error)
 	GetCVsByUserId(userID int) ([]domain.DbCV, error)
-	AddCV(userID int, cv *domain.DbCV) (int, error)
+	AddCV(userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
 	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error)
 	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV) error
 	DeleteOneOfUsersCV(userID, cvID int) error
@@ -165,39 +165,127 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) 
 	return cvsToReturn, nil
 }
 
-func (repo *psqlCVRepository) AddCV(userID int, cv *domain.DbCV) (int, error) {
-	query := `INSERT
+func (repo *psqlCVRepository) AddCV(
+	userID int, cv *domain.DbCV,
+	experiences []domain.DbExperience,
+	insitutions []domain.DbEducationInstitution,
+) (int, error) {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return 0, txErr
+	}
+
+	cvInsertQuery := `INSERT
 		INTO
 		hnh_data.cv (
 			applicant_id,
 			profession,
-			description
+			first_name,
+			last_name,
+			middle_name,
+			gender,
+			birthday,
+			location,
+			description,
+			education_level
 		)
 	SELECT
-		a.id,
-		$1,
-		$2
+		a.id, $1, $2, $3, $4, $5, $6, $7, $8, $9
 	FROM
 		hnh_data.applicant a
 	WHERE
-		a.user_id = $3
+		a.user_id = $10
 	RETURNING id`
 
 	var insertedCVID int
-	err := repo.DB.QueryRow(
-		query,
+	insertCvErr := tx.QueryRow(
+		cvInsertQuery,
 		cv.ProfessionName,
+		cv.FirstName,
+		cv.LastName,
+		cv.MiddleName,
+		cv.Gender,
+		cv.Birthday,
+		cv.Location,
 		cv.Description,
-		// cv.Status,
+		cv.EducationLevel,
 		userID,
 	).
 		Scan(&insertedCVID)
 
-	if err == sql.ErrNoRows {
+	if insertCvErr == sql.ErrNoRows {
+		tx.Rollback()
 		return 0, ErrNotInserted
 	}
-	if err != nil {
-		return 0, err
+	if insertCvErr != nil {
+		tx.Rollback()
+		return 0, insertCvErr
+	}
+
+	// TODO: change to one query not in loop
+	insertExpQuery := `INSERT
+		INTO
+		hnh_data.experience (
+			cv_id,
+			organization_name,
+			"position",
+			description,
+			start_date,
+			end_date
+		)
+	VALUES 
+		($1, $2, $3, $4, $5, $6)`
+	for _, experience := range experiences {
+		_, insertExpErr := tx.Exec(
+			insertExpQuery,
+			insertedCVID,
+			experience.OrganizationName,
+			experience.Position,
+			experience.Description,
+			experience.StartDate,
+			experience.EndDate,
+		)
+		if insertExpErr == sql.ErrNoRows {
+			tx.Rollback()
+			return 0, ErrNotInserted
+		}
+		if insertExpErr != nil {
+			tx.Rollback()
+			return 0, insertExpErr
+		}
+	}
+
+	// TODO: change to one query not in loop
+	insertInstQuery := `INSERT
+		INTO
+		hnh_data.education_institution (
+			cv_id,
+			"name",
+			major_field,
+			graduation_year
+		)
+	VALUES ($1, $2, $3, $4)`
+	for _, institution := range insitutions {
+		_, insertInstErr := tx.Exec(
+			insertInstQuery,
+			insertedCVID,
+			institution.Name,
+			institution.MajorField,
+			institution.GraduationYear,
+		)
+		if insertInstErr == sql.ErrNoRows {
+			tx.Rollback()
+			return 0, ErrNotInserted
+		}
+		if insertInstErr != nil {
+			tx.Rollback()
+			return 0, insertInstErr
+		}
+	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return 0, commitErr
 	}
 
 	return insertedCVID, nil
