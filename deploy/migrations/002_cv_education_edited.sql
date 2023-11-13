@@ -1,11 +1,3 @@
-DROP TABLE hnh_data.education CASCADE;
-
-DROP TABLE hnh_data.institution_major_assign CASCADE;
-
-DROP TABLE hnh_data.education_institution CASCADE;
-
-DROP TABLE hnh_data.major_field CASCADE;
-
 CREATE TABLE hnh_data.education_institution (
     id serial PRIMARY KEY CONSTRAINT id_is_positive CHECK (id > 0),
     cv_id int REFERENCES cv ON DELETE CASCADE,
@@ -32,3 +24,12 @@ ADD
     COLUMN "location" TEXT DEFAULT NULL CONSTRAINT location_is_not_empty CHECK (length("location") > 0),
 ALTER COLUMN
     description DROP NOT NULL;
+
+
+DROP TABLE hnh_data.education CASCADE;
+
+DROP TABLE hnh_data.institution_major_assign CASCADE;
+
+DROP TABLE hnh_data.education_institution CASCADE;
+
+DROP TABLE hnh_data.major_field CASCADE;
