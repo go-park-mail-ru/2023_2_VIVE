@@ -26,10 +26,8 @@ func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.ApiV
 	for _, vac := range vacancies {
 		vac.VacancyName = sanitizer.XSS.Sanitize(vac.VacancyName)
 		vac.Description = sanitizer.XSS.Sanitize(vac.Description)
+		vac.Employment = domain.EmploymentType((sanitizer.XSS.Sanitize(string(vac.Employment))))
 
-		if vac.Employment != nil {
-			*vac.Employment = domain.EmploymentType((sanitizer.XSS.Sanitize(string(*vac.Employment))))
-		}
 		if vac.Location != nil {
 			*vac.Location = sanitizer.XSS.Sanitize(*vac.Location)
 		}

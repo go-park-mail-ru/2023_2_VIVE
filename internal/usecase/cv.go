@@ -144,15 +144,19 @@ func (cvUsecase *CVUsecase) combineDbCVs(cvs []domain.DbCV, exps []domain.DbExpe
 }
 
 func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.ApiCV, error) {
+
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
 	}
+	fmt.Printf("userID: %v\n", userID)
+	fmt.Println("before getting cvs")
 
 	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("after getting cvs")
 
 	apiCvs := cvUsecase.combineDbCVs(cvs, exps, insts)
 
@@ -223,7 +227,7 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *d
 	}
 
 	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
-	fmt.Printf("before update db\n")
+	// fmt.Printf("before update db\n")
 	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, dbCV, dbExperiences, dbEducationInstitutions)
 	if updStatus != nil {
 		return updStatus

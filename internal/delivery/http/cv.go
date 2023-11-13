@@ -109,6 +109,7 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	
 	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedCVs)

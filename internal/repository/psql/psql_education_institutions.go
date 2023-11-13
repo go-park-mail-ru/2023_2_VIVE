@@ -64,9 +64,9 @@ func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(tx *sql.Tx, cv
 		institutionsToReturn = append(institutionsToReturn, edInst)
 	}
 
-	if len(institutionsToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(institutionsToReturn) == 0 {
+	// 	return nil, ErrEntityNotFound
+	// }
 	return institutionsToReturn, nil
 }
 
@@ -107,9 +107,9 @@ func (repo *psqlEducationInstitutionRepository) GetTxExperiencesByIds(tx *sql.Tx
 		institutionsToReturn = append(institutionsToReturn, inst)
 	}
 
-	if len(institutionsToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(institutionsToReturn) == 0 {
+	// 	return []domain.DbEducationInstitution{}, nil
+	// }
 	return institutionsToReturn, nil
 }
 
@@ -125,6 +125,9 @@ func (repo *psqlEducationInstitutionRepository) convertToSlice(cvID int, institu
 }
 
 func (repo *psqlEducationInstitutionRepository) AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+	if len(institutions) == 0 {
+		return nil
+	}
 	query := `INSERT
 		INTO
 		hnh_data.education_institution (` +

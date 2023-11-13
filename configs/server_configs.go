@@ -21,10 +21,10 @@ var CORS = cors.New(cors.Options{
 		"http://localhost:8083",
 		"http://localhost:8084",
 		"http://localhost:8085",
-		// "http://212.233.90.231:8082",
-		// "http://212.233.90.231:8083",
-		// "http://212.233.90.231:8084",
-		// "http://212.233.90.231:8085",
+		"http://212.233.90.231:8082",
+		"http://212.233.90.231:8083",
+		"http://212.233.90.231:8084",
+		"http://212.233.90.231:8085",
 	},
 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	AllowCredentials: true,
@@ -39,7 +39,7 @@ var HnHRedisConfig = redisConfig{
 
 var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
-	password: "123",
+	password: "vive_password",
 	dbname:   "hnh",
 	host:     "localhost",
 	port:     "8054",

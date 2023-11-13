@@ -249,16 +249,23 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, []domai
 		return nil, nil, nil, ErrEntityNotFound
 	}
 
+	fmt.Printf("after cv select\n")
+	fmt.Printf("cvIDs: %v\n", cvIDs)
+
+
 	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(tx, cvIDs)
 	if expErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, expErr
 	}
+	fmt.Printf("after exp select\n")
+
 	instsToReturn, instErr := repo.instRepo.GetTxExperiencesByIds(tx, cvIDs)
 	if instErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, instErr
 	}
+	fmt.Printf("after inst select\n")
 
 	commitErr := tx.Commit()
 	if commitErr != nil {
@@ -324,16 +331,19 @@ func (repo *psqlCVRepository) AddCV(
 		tx.Rollback()
 		return 0, insertCvErr
 	}
+	fmt.Println("after cv insert")
 	expErr := repo.expRepo.AddTxExperiences(tx, insertedCVID, experiences)
 	if expErr != nil {
 		tx.Rollback()
 		return 0, expErr
 	}
+	fmt.Println("after exp insert")
 	instErr := repo.instRepo.AddTxInstitutions(tx, insertedCVID, insitutions)
 	if instErr != nil {
 		tx.Rollback()
 		return 0, instErr
 	}
+	fmt.Println("after inst insert")
 
 	commitErr := tx.Commit()
 	if commitErr != nil {

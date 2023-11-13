@@ -69,13 +69,14 @@ func (repo *psqlExperienceRepository) GetTxExperiences(tx *sql.Tx, cvID int) ([]
 		experiencesToReturn = append(experiencesToReturn, exp)
 	}
 
-	if len(experiencesToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(experiencesToReturn) == 0 {
+	// 	return nil, ErrEntityNotFound
+	// }
 	return experiencesToReturn, nil
 }
 
 func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error) {
+	fmt.Printf("cvIDs: %v\n", cvIDs)
 	if len(cvIDs) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -90,6 +91,8 @@ func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []
 	WHERE
 		e.cv_id IN (` + placeHolderString + `)`
 
+	fmt.Printf("query: %s\n", query)
+	fmt.Printf("placeHolderValues: %s\n", placeHolderValues)
 	rows, selErr := tx.Query(query, placeHolderValues...)
 	if selErr != nil {
 		return nil, selErr
@@ -98,6 +101,7 @@ func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []
 
 	experiencesToReturn := []domain.DbExperience{}
 	for rows.Next() {
+		fmt.Printf("iteration\n")
 		exp := domain.DbExperience{}
 		scanErr := rows.Scan(
 			&exp.ID,
@@ -113,10 +117,11 @@ func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []
 		}
 		experiencesToReturn = append(experiencesToReturn, exp)
 	}
+	fmt.Printf("experiencesToReturn: %v\n", experiencesToReturn)
 
-	if len(experiencesToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(experiencesToReturn) == 0 {
+	// 	return []domain.DbExperience{}, nil
+	// }
 	return experiencesToReturn, nil
 }
 
@@ -170,12 +175,17 @@ func (repo *psqlExperienceRepository) convertToSlice(cvID int, experiences []dom
 }
 
 func (repo *psqlExperienceRepository) AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+	if len(experiences) == 0 {
+		return nil
+	}
 	elementsToInsert := repo.convertToSlice(cvID, experiences)
 	query := `INSERT
 		INTO
 		hnh_data.experience (` +
 		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames, "id"), ", ") + `)
 	VALUES ` + queryUtils.QueryPlaceHoldersMultipleRows(1, 6, len(experiences))
+
+	fmt.Println(query)
 
 	result, insertErr := tx.Exec(query, elementsToInsert...)
 	if insertErr == sql.ErrNoRows {
@@ -221,6 +231,7 @@ func (repo *psqlExperienceRepository) getValues(cvID int, experiences []domain.D
 	return res
 }
 
+// TODO: check when chenging number of experiences in cv
 func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
 	ids := repo.getIDs(experiences)
 	// fmt.Printf("ids: %v\n", ids)

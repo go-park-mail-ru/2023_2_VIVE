@@ -34,3 +34,6 @@ ADD
     COLUMN "location" TEXT DEFAULT NULL CONSTRAINT location_is_not_empty CHECK (length("location") > 0),
 ALTER COLUMN
     description DROP NOT NULL;
+
+ALTER TABLE hnh_data.vacancy 
+    ALTER COLUMN employment SET DEFAULT 'none';

@@ -5,8 +5,6 @@ import (
 	"HnH/pkg/queryUtils"
 	"database/sql"
 	"errors"
-	"fmt"
-	// "fmt"
 )
 
 type IVacancyRepository interface {
@@ -61,14 +59,14 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.DbVacancy, error)
 		vacancy := domain.DbVacancy{}
 		err := rows.Scan(
 			&vacancy.ID,
-			&vacancy.Employer_id,
+			&vacancy.EmployerID,
 			&vacancy.VacancyName,
 			&vacancy.Description,
-			&vacancy.Salary_lower_bound,
-			&vacancy.Salary_upper_bound,
+			&vacancy.SalaryLowerBound,
+			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.Experience_lower_bound,
-			&vacancy.Experience_upper_bound,
+			&vacancy.ExperienceLowerBound,
+			&vacancy.ExperienceUpperBound,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -133,14 +131,14 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 		vacancy := domain.DbVacancy{}
 		err := rows.Scan(
 			&vacancy.ID,
-			&vacancy.Employer_id,
+			&vacancy.EmployerID,
 			&vacancy.VacancyName,
 			&vacancy.Description,
-			&vacancy.Salary_lower_bound,
-			&vacancy.Salary_upper_bound,
+			&vacancy.SalaryLowerBound,
+			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.Experience_lower_bound,
-			&vacancy.Experience_upper_bound,
+			&vacancy.ExperienceLowerBound,
+			&vacancy.ExperienceUpperBound,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -182,14 +180,14 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.DbVacancy,
 	err := repo.DB.QueryRow(query, vacancyID).
 		Scan(
 			&vacancyToReturn.ID,
-			&vacancyToReturn.Employer_id,
+			&vacancyToReturn.EmployerID,
 			&vacancyToReturn.VacancyName,
 			&vacancyToReturn.Description,
-			&vacancyToReturn.Salary_lower_bound,
-			&vacancyToReturn.Salary_upper_bound,
+			&vacancyToReturn.SalaryLowerBound,
+			&vacancyToReturn.SalaryUpperBound,
 			&vacancyToReturn.Employment,
-			&vacancyToReturn.Experience_lower_bound,
-			&vacancyToReturn.Experience_upper_bound,
+			&vacancyToReturn.ExperienceLowerBound,
+			&vacancyToReturn.ExperienceUpperBound,
 			&vacancyToReturn.EducationType,
 			&vacancyToReturn.Location,
 			&vacancyToReturn.CreatedAt,
@@ -246,14 +244,14 @@ func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.DbVaca
 
 		err := rows.Scan(
 			&vacancy.ID,
-			&vacancy.Employer_id,
+			&vacancy.EmployerID,
 			&vacancy.VacancyName,
 			&vacancy.Description,
-			&vacancy.Salary_lower_bound,
-			&vacancy.Salary_upper_bound,
+			&vacancy.SalaryLowerBound,
+			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.Experience_lower_bound,
-			&vacancy.Experience_upper_bound,
+			&vacancy.ExperienceLowerBound,
+			&vacancy.ExperienceUpperBound,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -380,26 +378,26 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVaca
 
 	var insertedVacancyID int
 
-	fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
-	fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
-	fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.Salary_lower_bound)
-	fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.Salary_upper_bound)
-	fmt.Printf("*vacancy.Employment: %v\n", *vacancy.Employment)
-	fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.Experience_lower_bound)
-	fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.Experience_upper_bound)
-	fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
-	fmt.Printf("*vacancy.Location: %v\n", *vacancy.Location)
-	fmt.Printf("userID: %v\n", userID)
+	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
+	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
+	// fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.Salary_lower_bound)
+	// fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.Salary_upper_bound)
+	// fmt.Printf("vacancy.Employment: %v\n", vacancy.Employment)
+	// fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.Experience_lower_bound)
+	// fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.Experience_upper_bound)
+	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
+	// fmt.Printf("*vacancy.Location: %v\n", *vacancy.Location)
+	// fmt.Printf("userID: %v\n", userID)
 
 	err := repo.DB.QueryRow(
 		query,
 		vacancy.VacancyName,
 		vacancy.Description,
-		vacancy.Salary_lower_bound,
-		vacancy.Salary_upper_bound,
+		vacancy.SalaryLowerBound,
+		vacancy.SalaryUpperBound,
 		vacancy.Employment,
-		vacancy.Experience_lower_bound,
-		vacancy.Experience_upper_bound,
+		vacancy.ExperienceLowerBound,
+		vacancy.ExperienceUpperBound,
 		vacancy.EducationType,
 		vacancy.Location,
 		userID,
@@ -453,11 +451,11 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacanc
 		query,
 		vacancy.VacancyName,
 		vacancy.Description,
-		vacancy.Salary_lower_bound,
-		vacancy.Salary_upper_bound,
+		vacancy.SalaryLowerBound,
+		vacancy.SalaryUpperBound,
 		vacancy.Employment,
-		vacancy.Experience_lower_bound,
-		vacancy.Experience_upper_bound,
+		vacancy.ExperienceLowerBound,
+		vacancy.ExperienceUpperBound,
 		vacancy.EducationType,
 		vacancy.Location,
 		vacancyID,

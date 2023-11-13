@@ -5,7 +5,6 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
-	"fmt"
 )
 
 type IVacancyUsecase interface {
@@ -109,7 +108,7 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 		return 0, validStatus
 	}
 
-	fmt.Printf("vacancy: %v\n", vacancy)
+	// fmt.Printf("vacancy: %v\n", vacancy)
 
 	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(userOrgID, vacancy)
 	if addStatus != nil {
@@ -164,6 +163,7 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]doma
 	if err != nil {
 		return nil, err
 	}
+	// fmt.Printf("vacancies: %v\n", vacanciesList)
 
 	return vacancyUsecase.collectApiVacs(vacanciesList), nil
 }

@@ -74,8 +74,8 @@ type ApiCV struct {
 	Birthday              *string                   `json:"birthday,omitempty"`
 	EducationLevel        EducationLevel            `json:"education_level"`
 	Status                Status                    `json:"status,omitempty"`
-	EducationInstitutions []ApiEducationInstitution `json:"institutions,omitempty"`
-	Experience            []ApiExperience           `json:"companies,omitempty"`
+	EducationInstitutions []ApiEducationInstitution `json:"institutions"`
+	Experience            []ApiExperience           `json:"companies"`
 	Description           *string                   `json:"description,omitempty"`
 	CreatedAt             time.Time                 `json:"created_at,omitempty"`
 	UpdatedAt             time.Time                 `json:"updated_at,omitempty"`
