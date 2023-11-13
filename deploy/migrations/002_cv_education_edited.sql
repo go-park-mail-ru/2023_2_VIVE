@@ -1,6 +1,16 @@
+DROP TABLE IF EXISTS hnh_data.education CASCADE;
+
+DROP TABLE IF EXISTS hnh_data.institution_major_assign CASCADE;
+
+DROP TABLE IF EXISTS hnh_data.education_institution CASCADE;
+
+DROP TABLE IF EXISTS hnh_data.major_field CASCADE;
+
+DROP TABLE IF EXISTS hnh_data.education_institution CASCADE;
+
 CREATE TABLE hnh_data.education_institution (
     id serial PRIMARY KEY CONSTRAINT id_is_positive CHECK (id > 0),
-    cv_id int REFERENCES cv ON DELETE CASCADE,
+    cv_id int REFERENCES hnh_data.cv ON DELETE CASCADE,
     "name" TEXT NOT NULL CONSTRAINT name_is_not_empty CHECK (length("name") > 0),
     major_field TEXT NOT NULL CONSTRAINT major_field_is_not_empty CHECK (length(major_field) > 0),
     graduation_year CHARACTER(4) NOT NULL CONSTRAINT valid_graduation_year CHECK (length(graduation_year) = 4)
@@ -24,13 +34,3 @@ ADD
     COLUMN "location" TEXT DEFAULT NULL CONSTRAINT location_is_not_empty CHECK (length("location") > 0),
 ALTER COLUMN
     description DROP NOT NULL;
-
----- create above / drop below ----
-
-DROP TABLE hnh_data.education CASCADE;
-
-DROP TABLE hnh_data.institution_major_assign CASCADE;
-
-DROP TABLE hnh_data.institution CASCADE;
-
-DROP TABLE hnh_data.major_field CASCADE;
