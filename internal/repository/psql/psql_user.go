@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+
 	// "fmt"
 
 	"database/sql"
@@ -14,10 +15,10 @@ import (
 type IUserRepository interface {
 	CheckUser(user *domain.DbUser) error
 	CheckPasswordById(id int, passwordToCheck string) error
-	AddUser(user *domain.ApiUserReg, hasher authUtils.HashGenerator) error
+	AddUser(user *domain.ApiUser, hasher authUtils.HashGenerator) error
 	GetUserIdByEmail(email string) (int, error)
 	GetRoleById(userID int) (domain.Role, error)
-	GetUserInfo(userID int) (*domain.DbUser, error)
+	GetUserInfo(userID int) (*domain.DbUser, *int, *int, error)
 	UpdateUserInfo(userID int, user *domain.UserUpdate) error
 	GetUserOrgId(userID int) (int, error)
 	UploadAvatarByUserID(userID int, path string) error
@@ -126,7 +127,7 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
-func (p *psqlUserRepository) AddUser(user *domain.ApiUserReg, hasher authUtils.HashGenerator) error {
+func (p *psqlUserRepository) AddUser(user *domain.ApiUser, hasher authUtils.HashGenerator) error {
 	// fmt.Printf("user to put to db: %v\n", *user)
 	var exists bool
 
@@ -200,23 +201,53 @@ func (p *psqlUserRepository) AddUser(user *domain.ApiUserReg, hasher authUtils.H
 	return nil
 }
 
-func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, error) {
+func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, *int, *int, error) {
+	query := `SELECT
+		up.id,
+		a.id,
+		e.id,
+		up.email,
+		up.first_name,
+		up.last_name,
+		up.birthday,
+		up.phone_number,
+		up."location",
+		up.avatar_path
+	FROM
+		hnh_data.user_profile up
+	LEFT JOIN hnh_data.applicant a ON
+		a.user_id = up.id
+	LEFT JOIN hnh_data.employer e ON
+		e.user_id = up.id
+	WHERE
+		up.id = $1`
 	user := &domain.DbUser{}
 
-	err := p.userStorage.QueryRow(`SELECT email, first_name, last_name, birthday, phone_number, location, avatar_path `+
-		`FROM hnh_data.user_profile WHERE id = $1`, userID).
-		Scan(&user.Email, &user.FirstName, &user.LastName, &user.Birthday, &user.PhoneNumber, &user.Location, &user.AvatarPath)
+	var appId, empID *int
+	err := p.userStorage.QueryRow(query, userID).
+		Scan(
+			&user.ID,
+			appId,
+			empID,
+			&user.Email,
+			&user.FirstName,
+			&user.LastName,
+			&user.Birthday,
+			&user.PhoneNumber,
+			&user.Location,
+			&user.AvatarPath,
+		)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	} else if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	role, err := p.GetRoleById(userID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, serverErrors.INTERNAL_SERVER_ERROR
+		return nil, nil, nil, serverErrors.INTERNAL_SERVER_ERROR
 	} else if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	user.Type = role
 
@@ -226,7 +257,7 @@ func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, error) {
 		*user.PhoneNumber = strings.TrimSpace(*user.PhoneNumber)
 	}
 
-	return user, nil
+	return user, appId, empID, nil
 }
 
 func (p *psqlUserRepository) GetUserIdByEmail(email string) (int, error) {

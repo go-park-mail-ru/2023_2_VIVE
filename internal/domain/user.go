@@ -11,8 +11,10 @@ func (r Role) IsRole() bool {
 	return r == Applicant || r == Employer
 }
 
-type ApiUserReg struct {
-	// ID          int     `json:"id,omitempty"`
+type ApiUser struct {
+	ID               int     `json:"id,omitempty"`
+	EmployerID       *int    `json:"employer_id,omitempty"`
+	ApplicantID      *int    `json:"applicant_id,omitempty"`
 	Email            string  `json:"email"`
 	Password         string  `json:"password,omitempty"`
 	FirstName        string  `json:"first_name,omitempty"`
@@ -25,9 +27,20 @@ type ApiUserReg struct {
 	// AvatarPath  *string `json:"avatar,omitempty"`
 }
 
-// func (user *ApiUserReg) ToDb() *DbUser {
-// 	res :=
-// }
+func (u *ApiUser) ToDb() *DbUser {
+	return &DbUser{
+		ID:          u.ID,
+		Email:       u.Email,
+		Password:    u.Password,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Birthday:    u.Birthday,
+		PhoneNumber: u.PhoneNumber,
+		Location:    u.Location,
+		Type:        u.Type,
+		// AvatarPath: u.,
+	}
+}
 
 type DbUser struct {
 	ID          int     `json:"id,omitempty"`
@@ -40,6 +53,23 @@ type DbUser struct {
 	Location    *string `json:"location,omitempty"`
 	Type        Role    `json:"role,omitempty"`
 	AvatarPath  *string `json:"avatar,omitempty"`
+}
+
+func (u *DbUser) ToAPI(empID, appID *int) *ApiUser {
+	return &ApiUser{
+		ID:          u.ID,
+		EmployerID:  empID,
+		ApplicantID: appID,
+		Email:       u.Email,
+		Password:    u.Password,
+		FirstName:   u.FirstName,
+		LastName:    u.LastName,
+		Birthday:    u.Birthday,
+		PhoneNumber: u.PhoneNumber,
+		Location:    u.Location,
+		Type:        u.Type,
+		// OrganizationName: u.OrganizationName,
+	}
 }
 
 type UserUpdate struct {

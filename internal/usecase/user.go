@@ -15,8 +15,8 @@ import (
 )
 
 type IUserUsecase interface {
-	SignUp(user *domain.ApiUserReg, expiryUnixSeconds int64) (string, error)
-	GetInfo(sessionID string) (*domain.DbUser, error)
+	SignUp(user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
+	GetInfo(sessionID string) (*domain.ApiUser, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 	UploadAvatar(sessionID, path string) error
 	GetAvatar(sessionID string) ([]byte, error)
@@ -54,7 +54,7 @@ func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (i
 	return userID, nil
 }
 
-func (userUsecase *UserUsecase) SignUp(user *domain.ApiUserReg, expiryUnixSeconds int64) (string, error) {
+func (userUsecase *UserUsecase) SignUp(user *domain.ApiUser, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus
@@ -101,18 +101,20 @@ func (userUsecase *UserUsecase) SignUp(user *domain.ApiUserReg, expiryUnixSecond
 	return sessionID, nil
 }
 
-func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.DbUser, error) {
+func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.ApiUser, error) {
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	user, getErr := userUsecase.userRepo.GetUserInfo(userID)
+	user, appID, empID, getErr := userUsecase.userRepo.GetUserInfo(userID)
 	if getErr != nil {
 		return nil, getErr
 	}
 
-	return user, nil
+	apiUser := user.ToAPI(empID, appID)
+
+	return apiUser, nil
 }
 
 func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUpdate) error {

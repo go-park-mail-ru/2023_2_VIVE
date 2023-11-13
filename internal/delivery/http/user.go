@@ -48,7 +48,7 @@ func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase, sessionU
 		Methods("GET")
 }
 
-func (userHandler *UserHandler) sanitizeUser(user *domain.DbUser) {
+func (userHandler *UserHandler) sanitizeUser(user *domain.ApiUser) {
 	user.Email = sanitizer.XSS.Sanitize(user.Email)
 	user.FirstName = sanitizer.XSS.Sanitize(user.FirstName)
 	user.LastName = sanitizer.XSS.Sanitize(user.LastName)
@@ -69,7 +69,7 @@ func (userHandler *UserHandler) sanitizeUser(user *domain.DbUser) {
 func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	newUser := new(domain.ApiUserReg)
+	newUser := new(domain.ApiUser)
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
