@@ -112,7 +112,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 		v.created_at,
 		v.updated_at
 	FROM
-		vacancy v
+		hnh_data.vacancy v
 	JOIN employer e ON
 		v.employer_id = e.id
 	WHERE
