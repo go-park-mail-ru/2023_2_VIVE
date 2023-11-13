@@ -44,7 +44,26 @@ type DbCV struct {
 	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
+func (cv *DbCV) ToAPI() *ApiCV {
+	return &ApiCV{
+		ID:             cv.ID,
+		ProfessionName: cv.ProfessionName,
+		FirstName:      cv.FirstName,
+		LastName:       cv.LastName,
+		MiddleName:     cv.MiddleName,
+		Gender:         cv.Gender,
+		Birthday:       cv.Birthday,
+		Location:       cv.Location,
+		Description:    cv.Description,
+		Status:         cv.Status,
+		EducationLevel: cv.EducationLevel,
+		CreatedAt:      cv.CreatedAt,
+		UpdatedAt:      cv.UpdatedAt,
+	}
+}
+
 type ApiCV struct {
+	ID                    int                       `json:"id"`
 	FirstName             string                    `json:"first_name"`            // имя
 	LastName              string                    `json:"last_name"`             // фамилия
 	MiddleName            *string                   `json:"middle_name,omitempty"` // отчество
@@ -57,10 +76,13 @@ type ApiCV struct {
 	EducationInstitutions []ApiEducationInstitution `json:"institutions,omitempty"`
 	Experience            []ApiExperience           `json:"companies,omitempty"`
 	Description           *string                   `json:"description,omitempty"`
+	CreatedAt             time.Time                 `json:"created_at,omitempty"`
+	UpdatedAt             time.Time                 `json:"updated_at,omitempty"`
 }
 
 func (cv *ApiCV) ToDb() *DbCV {
-	res := DbCV{
+	return &DbCV{
+		ID:             cv.ID,
 		ProfessionName: cv.ProfessionName,
 		FirstName:      cv.FirstName,
 		LastName:       cv.LastName,
@@ -71,8 +93,9 @@ func (cv *ApiCV) ToDb() *DbCV {
 		Description:    cv.Description,
 		Status:         cv.Status,
 		EducationLevel: cv.EducationLevel,
+		CreatedAt:      cv.CreatedAt,
+		UpdatedAt:      cv.UpdatedAt,
 	}
-	return &res
 }
 
 // type ApiCVUpdate struct {

@@ -9,6 +9,8 @@ import (
 )
 
 type IEducationInstitutionRepository interface {
+	GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error)
+	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error)
 	AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
 	UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
 	DeleteTxExperiences(tx *sql.Tx, cvID int) error
@@ -30,6 +32,85 @@ func NewPsqlEducationInstitutionRepository(db *sql.DB) IEducationInstitutionRepo
 			"graduation_year",
 		},
 	}
+}
+
+func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error) {
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
+		hnh_data.education_institution ei
+	WHERE
+		ei.cv_id = $1`
+
+	rows, selErr := tx.Query(query, cvID)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	institutionsToReturn := []domain.DbEducationInstitution{}
+	for rows.Next() {
+		edInst := domain.DbEducationInstitution{}
+		scanErr := rows.Scan(
+			&edInst.ID,
+			&edInst.CvID,
+			&edInst.Name,
+			&edInst.MajorField,
+			&edInst.GraduationYear,
+		)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		institutionsToReturn = append(institutionsToReturn, edInst)
+	}
+
+	if len(institutionsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return institutionsToReturn, nil
+}
+
+func (repo *psqlEducationInstitutionRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error) {
+	if len(cvIDs) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	placeHolderValues := *queryUtils.IntToAnySlice(cvIDs)
+	placeHolderString := queryUtils.QueryPlaceHolders(1, len(placeHolderValues))
+
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
+		hnh_data.education_institution ei
+	WHERE
+		ei.cv_id IN (` + placeHolderString + `)`
+
+	rows, selErr := tx.Query(query, placeHolderValues...)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	institutionsToReturn := []domain.DbEducationInstitution{}
+	for rows.Next() {
+		inst := domain.DbEducationInstitution{}
+		scanErr := rows.Scan(
+			&inst.ID,
+			&inst.CvID,
+			&inst.Name,
+			&inst.MajorField,
+			&inst.GraduationYear,
+		)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		institutionsToReturn = append(institutionsToReturn, inst)
+	}
+
+	if len(institutionsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return institutionsToReturn, nil
 }
 
 func (repo *psqlEducationInstitutionRepository) convertToSlice(cvID int, institutions []domain.DbEducationInstitution) []any {

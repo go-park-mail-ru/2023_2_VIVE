@@ -5,22 +5,24 @@ import (
 	"HnH/pkg/queryUtils"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 type ICVRepository interface {
-	GetCVById(cvID int) (*domain.DbCV, error)
-	GetCVsByIds(idList []int) ([]domain.DbCV, error)
-	GetCVsByUserId(userID int) ([]domain.DbCV, error)
+	GetCVById(cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetCVsByIds(idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetCVsByUserId(userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	AddCV(userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
-	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error)
+	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) error
 	DeleteOneOfUsersCV(userID, cvID int) error
 }
 
 type psqlCVRepository struct {
-	DB       *sql.DB
-	expRepo  IExperienceRepository
-	instRepo IEducationInstitutionRepository
+	DB          *sql.DB
+	expRepo     IExperienceRepository
+	instRepo    IEducationInstitutionRepository
+	ColumnNames []string
 }
 
 func NewPsqlCVRepository(db *sql.DB) ICVRepository {
@@ -28,33 +30,40 @@ func NewPsqlCVRepository(db *sql.DB) ICVRepository {
 		DB:       db,
 		expRepo:  NewPsqlExperienceRepository(db),
 		instRepo: NewPsqlEducationInstitutionRepository(db),
+		ColumnNames: []string{
+			"id",
+			"applicant_id",
+			"profession",
+			"first_name",
+			"last_name",
+			"middle_name",
+			"gender",
+			"birthday",
+			"location",
+			"description",
+			"education_level",
+			"status",
+			"created_at",
+			"updated_at",
+		},
 	}
 }
 
-func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, error) {
-	query := `SELECT
-		id,
-		applicant_id,
-		profession,
-		first_name,
-		last_name,
-		middle_name,
-		gender,
-		birthday,
-		location,
-		description,
-		education_level,
-		status,
-		created_at,
-		updated_at
-	FROM
+func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return nil, nil, nil, txErr
+	}
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
 		hnh_data.cv c
 	WHERE
 		c.id = $1`
 
 	cvToReturn := domain.DbCV{}
 
-	err := repo.DB.QueryRow(query, cvID).
+	err := tx.QueryRow(query, cvID).
 		Scan(
 			&cvToReturn.ID,
 			&cvToReturn.ApplicantID,
@@ -72,53 +81,62 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, error) {
 			&cvToReturn.UpdatedAt,
 		)
 	if err == sql.ErrNoRows {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	return &cvToReturn, nil
+	expToReturn, expErr := repo.expRepo.GetTxExperiences(tx, cvID)
+	if expErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, expErr
+	}
+
+	edInstToReturn, instErr := repo.instRepo.GetTxInstitutions(tx, cvID)
+	if instErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, instErr
+	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return nil, nil, nil, commitErr
+	}
+
+	return &cvToReturn, expToReturn, edInstToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
+func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return nil, nil, nil, txErr
+	}
 	if len(idList) == 0 {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
 	placeHolderString := queryUtils.QueryPlaceHolders(1, len(placeHolderValues))
 
-	query := `SELECT
-			id,
-			applicant_id,
-			profession,
-			first_name,
-			last_name,
-			middle_name,
-			gender,
-			birthday,
-			location,
-			description,
-			education_level,
-			status,
-			created_at,
-			updated_at
-	FROM
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
 		hnh_data.cv c
 	WHERE
 		c.id IN (` + placeHolderString + `)`
 
-	rows, err := repo.DB.Query(query, placeHolderValues...)
+	cvRows, err := tx.Query(query, placeHolderValues...)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	defer rows.Close()
+	defer cvRows.Close()
 
 	cvsToReturn := []domain.DbCV{}
-	for rows.Next() {
+	cvIDs := []int{}
+	for cvRows.Next() {
 		cv := domain.DbCV{}
-		err := rows.Scan(
+		err := cvRows.Scan(
 			&cv.ID,
 			&cv.ApplicantID,
 			&cv.ProfessionName,
@@ -135,17 +153,39 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, error) {
 			&cv.UpdatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
+		cvIDs = append(cvIDs, cv.ID)
 		cvsToReturn = append(cvsToReturn, cv)
 	}
 	if len(cvsToReturn) == 0 {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	}
-	return cvsToReturn, nil
+
+	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(tx, cvIDs)
+	if expErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, expErr
+	}
+	instsToReturn, instErr := repo.instRepo.GetTxExperiencesByIds(tx, cvIDs)
+	if instErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, instErr
+	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return nil, nil, nil, commitErr
+	}
+
+	return cvsToReturn, expsToReturn, instsToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) {
+func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return nil, nil, nil, txErr
+	}
 	query := `SELECT
 		c.id,
 		c.applicant_id,
@@ -173,14 +213,14 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) 
 		) AS w ON
 		c.applicant_id = w.id`
 
-	rows, err := repo.DB.Query(query, userID)
+	rows, err := tx.Query(query, userID)
 	if err != nil {
-		// fmt.Printf("err: %v\n", err)
-		return nil, err
+		return nil, nil, nil, err
 	}
 	defer rows.Close()
 
 	cvsToReturn := []domain.DbCV{}
+	cvIDs := []int{}
 	for rows.Next() {
 		cv := domain.DbCV{}
 		err := rows.Scan(
@@ -200,14 +240,32 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, error) 
 			&cv.UpdatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
+		cvIDs = append(cvIDs, cv.ID)
 		cvsToReturn = append(cvsToReturn, cv)
 	}
 	if len(cvsToReturn) == 0 {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	}
-	return cvsToReturn, nil
+
+	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(tx, cvIDs)
+	if expErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, expErr
+	}
+	instsToReturn, instErr := repo.instRepo.GetTxExperiencesByIds(tx, cvIDs)
+	if instErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, instErr
+	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return nil, nil, nil, commitErr
+	}
+
+	return cvsToReturn, expsToReturn, instsToReturn, nil
 }
 
 func (repo *psqlCVRepository) AddCV(
@@ -271,7 +329,6 @@ func (repo *psqlCVRepository) AddCV(
 		tx.Rollback()
 		return 0, expErr
 	}
-
 	instErr := repo.instRepo.AddTxInstitutions(tx, insertedCVID, insitutions)
 	if instErr != nil {
 		tx.Rollback()
@@ -286,7 +343,11 @@ func (repo *psqlCVRepository) AddCV(
 	return insertedCVID, nil
 }
 
-func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error) {
+func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return nil, nil, nil, txErr
+	}
 	query := `SELECT
 		c.id,
 		c.applicant_id,
@@ -340,13 +401,30 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, e
 		)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrEntityNotFound
+		return nil, nil, nil, ErrEntityNotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	return &cvToReturn, nil
+	exps, expErr := repo.expRepo.GetTxExperiences(tx, cvID)
+	if expErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, expErr
+	}
+
+	insts, instErr := repo.instRepo.GetTxInstitutions(tx, cvID)
+	if instErr != nil {
+		tx.Rollback()
+		return nil, nil, nil, instErr
+	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return nil, nil, nil, commitErr
+	}
+
+	return &cvToReturn, exps, insts, nil
 }
 
 func (repo *psqlCVRepository) UpdateOneOfUsersCV(
@@ -459,14 +537,14 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
 		tx.Rollback()
 		return expErr
 	}
-	fmt.Printf("after update exp\n")
+	// fmt.Printf("after update exp\n")
 
 	instErr := repo.instRepo.DeleteTxExperiences(tx, cvID)
 	if instErr != nil {
 		tx.Rollback()
 		return instErr
 	}
-	fmt.Printf("after update inst\n")
+	// fmt.Printf("after update inst\n")
 
 	commitErr := tx.Commit()
 	if commitErr != nil {

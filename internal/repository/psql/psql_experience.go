@@ -9,6 +9,8 @@ import (
 )
 
 type IExperienceRepository interface {
+	GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error)
+	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error)
 	AddExperience(cvID int, experience domain.DbExperience) (int, error)
 	AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
 	UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
@@ -33,6 +35,89 @@ func NewPsqlExperienceRepository(db *sql.DB) IExperienceRepository {
 			"end_date",
 		},
 	}
+}
+
+func (repo *psqlExperienceRepository) GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error) {
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
+		hnh_data.experience e
+	WHERE
+		e.cv_id = $1`
+
+	rows, selErr := tx.Query(query, cvID)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	experiencesToReturn := []domain.DbExperience{}
+	for rows.Next() {
+		exp := domain.DbExperience{}
+		scanErr := rows.Scan(
+			&exp.ID,
+			&exp.CvID,
+			&exp.OrganizationName,
+			&exp.Position,
+			&exp.Description,
+			&exp.StartDate,
+			&exp.EndDate,
+		)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		experiencesToReturn = append(experiencesToReturn, exp)
+	}
+
+	if len(experiencesToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return experiencesToReturn, nil
+}
+
+func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error) {
+	if len(cvIDs) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	placeHolderValues := *queryUtils.IntToAnySlice(cvIDs)
+	placeHolderString := queryUtils.QueryPlaceHolders(1, len(placeHolderValues))
+
+	query := `SELECT ` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
+		` FROM
+		hnh_data.experience e
+	WHERE
+		e.cv_id IN (` + placeHolderString + `)`
+
+	rows, selErr := tx.Query(query, placeHolderValues...)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	experiencesToReturn := []domain.DbExperience{}
+	for rows.Next() {
+		exp := domain.DbExperience{}
+		scanErr := rows.Scan(
+			&exp.ID,
+			&exp.CvID,
+			&exp.OrganizationName,
+			&exp.Position,
+			&exp.Description,
+			&exp.StartDate,
+			&exp.EndDate,
+		)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		experiencesToReturn = append(experiencesToReturn, exp)
+	}
+
+	if len(experiencesToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return experiencesToReturn, nil
 }
 
 func (repo *psqlExperienceRepository) AddExperience(cvID int, experience domain.DbExperience) (int, error) {

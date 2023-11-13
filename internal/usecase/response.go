@@ -98,7 +98,7 @@ func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vaca
 		return nil, err
 	}
 
-	CVs, err := responseUsecase.cvRepo.GetCVsByIds(cvIDs)
+	CVs, _, _, err := responseUsecase.cvRepo.GetCVsByIds(cvIDs)
 	if err != nil {
 		return nil, err
 	}

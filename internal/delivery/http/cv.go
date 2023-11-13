@@ -49,8 +49,8 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		Methods("DELETE")
 }
 
-func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.DbCV) []domain.DbCV {
-	result := make([]domain.DbCV, 0, len(CVs))
+func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.ApiCV) []domain.ApiCV {
+	result := make([]domain.ApiCV, 0, len(CVs))
 
 	for _, cv := range CVs {
 		cv.ProfessionName = sanitizer.XSS.Sanitize(cv.ProfessionName)

@@ -9,10 +9,10 @@ import (
 )
 
 type ICVUsecase interface {
-	GetCVById(sessionID string, cvID int) (*domain.DbCV, error)
-	GetCVList(sessionID string) ([]domain.DbCV, error)
+	GetCVById(sessionID string, cvID int) (*domain.ApiCV, error)
+	GetCVList(sessionID string) ([]domain.ApiCV, error)
 	AddNewCV(sessionID string, cv *domain.ApiCV) (int, error)
-	GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error)
+	GetCVOfUserById(sessionID string, cvID int) (*domain.ApiCV, error)
 	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(sessionID string, cvID int) error
 }
@@ -69,9 +69,26 @@ func (cvUsecase *CVUsecase) validateRoleAndGetUserId(sessionID string, requiredR
 	return userID, nil
 }
 
-// TODO: make in one query for response
+func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExperience, edInsts []domain.DbEducationInstitution) *domain.ApiCV {
+	apiCV := cv.ToAPI()
+
+	apiInsts := make([]domain.ApiEducationInstitution, len(edInsts))
+	for i := range edInsts {
+		apiInsts[i] = *edInsts[i].ToAPI()
+	}
+	apiCV.EducationInstitutions = apiInsts
+
+	apiExps := make([]domain.ApiExperience, len(exps))
+	for i := range exps {
+		apiExps[i] = *exps[i].ToAPI()
+	}
+	apiCV.Experience = apiExps
+
+	return apiCV
+}
+
 // Finds cv that responded to one of the current user's vacancy
-func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.DbCV, error) {
+func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.ApiCV, error) {
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Employer)
 	if validStatus != nil {
 		return nil, validStatus
@@ -95,44 +112,57 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.DbCV,
 		return nil, err
 	}
 
-	// found := false
-	// for _, vac := range vacList {
-	// 	if vac.CompanyID == userOrgID {	// FIXME: remove this vac.CompanyID
-	// 		found = true
-	// 		break
-	// 	}
-	// }
-
-	// if !found {
-	// 	return nil, serverErrors.FORBIDDEN
-	// }
-
-	cv, err := cvUsecase.cvRepo.GetCVById(cvID)
+	cv, exps, edInsts, err := cvUsecase.cvRepo.GetCVById(cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	return cv, nil
+	apiCV := cvUsecase.constructApiCV(cv, exps, edInsts)
+
+	return apiCV, nil
 }
 
-func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.DbCV, error) {
+func (cvUsecase *CVUsecase) combineDbCVs(cvs []domain.DbCV, exps []domain.DbExperience, insts []domain.DbEducationInstitution) []domain.ApiCV {
+	res := []domain.ApiCV{}
+	for _, cv := range cvs {
+		cvID := cv.ID
+		cvExps := []domain.DbExperience{}
+		for _, exp := range exps {
+			if exp.CvID == cvID {
+				cvExps = append(cvExps, exp)
+			}
+		}
+		cvInsts := []domain.DbEducationInstitution{}
+		for _, inst := range insts {
+			if inst.CvID == cvID {
+				cvInsts = append(cvInsts, inst)
+			}
+		}
+		res = append(res, *cvUsecase.constructApiCV(&cv, cvExps, cvInsts))
+	}
+	return res
+}
+
+func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.ApiCV, error) {
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	cvs, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
+	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return cvs, nil
+	apiCvs := cvUsecase.combineDbCVs(cvs, exps, insts)
+
+	return apiCvs, nil
 }
 
 func (cvUsecase *CVUsecase) getExperiences(apiCV *domain.ApiCV) []domain.DbExperience {
 	res := []domain.DbExperience{}
 	for _, experience := range apiCV.Experience {
-		res = append(res, experience.ToDb())
+		res = append(res, *experience.ToDb())
 	}
 	return res
 }
@@ -140,7 +170,7 @@ func (cvUsecase *CVUsecase) getExperiences(apiCV *domain.ApiCV) []domain.DbExper
 func (cvUsecase *CVUsecase) getEducationInstitutions(apiCV *domain.ApiCV) []domain.DbEducationInstitution {
 	res := []domain.DbEducationInstitution{}
 	for _, institution := range apiCV.EducationInstitutions {
-		res = append(res, institution.ToDb())
+		res = append(res, *institution.ToDb())
 	}
 	return res
 }
@@ -170,18 +200,20 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, e
 	return cvID, nil
 }
 
-func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error) {
+func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.ApiCV, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	cv, err := cvUsecase.cvRepo.GetOneOfUsersCV(userID, cvID)
+	cv, exps, insts, err := cvUsecase.cvRepo.GetOneOfUsersCV(userID, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	return cv, nil
+	apiCv := cvUsecase.constructApiCV(cv, exps, insts)
+
+	return apiCv, nil
 }
 
 func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error {
