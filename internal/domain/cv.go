@@ -17,6 +17,7 @@ const (
 )
 
 const (
+	Nothing          EducationLevel = "nothing"
 	Secondary        EducationLevel = "secondary"         // среднее
 	SecondarySpecial EducationLevel = "secondary_special" // средне профессиональное
 	IncompleteHigher EducationLevel = "incomplete_higher" // неоконченное высшее
