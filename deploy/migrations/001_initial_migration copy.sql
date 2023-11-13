@@ -152,9 +152,9 @@ CREATE TABLE cv_language_assign (
     PRIMARY KEY (cv_id, language_id)
 );
 
-DROP TABLE IF EXISTS education_institution CASCADE;
+DROP TABLE IF EXISTS institution CASCADE;
 
-CREATE TABLE education_institution (
+CREATE TABLE institution (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
     "name" TEXT NOT NULL
@@ -178,7 +178,7 @@ DROP TABLE IF EXISTS institution_major_assign CASCADE;
 CREATE TABLE institution_major_assign (
     id serial PRIMARY KEY
         CONSTRAINT id_is_positive CHECK (id > 0),
-    institution_id int REFERENCES education_institution ON DELETE CASCADE,
+    institution_id int REFERENCES institution ON DELETE CASCADE,
     major_field_id int REFERENCES major_field ON DELETE CASCADE,
     UNIQUE (institution_id, major_field_id)
 );

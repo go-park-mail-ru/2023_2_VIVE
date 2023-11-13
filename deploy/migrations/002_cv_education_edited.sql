@@ -25,7 +25,7 @@ ADD
 ALTER COLUMN
     description DROP NOT NULL;
 
-
+---- create above / drop below ----
 DROP TABLE hnh_data.education CASCADE;
 
 DROP TABLE hnh_data.institution_major_assign CASCADE;
