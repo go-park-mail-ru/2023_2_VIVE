@@ -8,14 +8,16 @@ type DbEducationInstitution struct {
 	GraduationYear string `json:"graduation_year"`
 }
 
-type ApiEducationInstitutionFromCV struct {
+type ApiEducationInstitution struct {
+	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	MajorField     string `json:"major_field"`
 	GraduationYear string `json:"graduation_year"`
 }
 
-func (apiEdInst *ApiEducationInstitutionFromCV) ToDb() DbEducationInstitution {
+func (apiEdInst *ApiEducationInstitution) ToDb() DbEducationInstitution {
 	return DbEducationInstitution{
+		ID:             apiEdInst.ID,
 		Name:           apiEdInst.Name,
 		MajorField:     apiEdInst.MajorField,
 		GraduationYear: apiEdInst.GraduationYear,

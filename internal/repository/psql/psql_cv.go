@@ -4,6 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
 	"database/sql"
+	"fmt"
 )
 
 type ICVRepository interface {
@@ -12,7 +13,7 @@ type ICVRepository interface {
 	GetCVsByUserId(userID int) ([]domain.DbCV, error)
 	AddCV(userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
 	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, error)
-	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV) error
+	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) error
 	DeleteOneOfUsersCV(userID, cvID int) error
 }
 
@@ -265,8 +266,6 @@ func (repo *psqlCVRepository) AddCV(
 		tx.Rollback()
 		return 0, insertCvErr
 	}
-
-
 	expErr := repo.expRepo.AddTxExperiences(tx, insertedCVID, experiences)
 	if expErr != nil {
 		tx.Rollback()
@@ -350,25 +349,48 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, e
 	return &cvToReturn, nil
 }
 
-func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV) error {
+func (repo *psqlCVRepository) UpdateOneOfUsersCV(
+	userID, cvID int,
+	cv *domain.DbCV,
+	experiences []domain.DbExperience,
+	insitutions []domain.DbEducationInstitution,
+) error {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return txErr
+	}
 	query := `UPDATE
 		hnh_data.cv c
 	SET 
-		profession = $1, 
-		description = $2, 
-		status = $3,
+		profession = $1,
+		first_name = $2,
+		last_name = $3,
+		middle_name = $4,
+		gender = $5,
+		birthday = $6,
+		location = $7,
+		description = $8, 
+		status = $9,
+		education_level = $10,
 		updated_at = now()
 	FROM hnh_data.applicant a
 	WHERE 
-		c.id = $4
-		AND a.user_id = $5
+		c.id = $11
+		AND a.user_id = $12
 		AND c.applicant_id = a.id`
 
-	result, err := repo.DB.Exec(
+	result, err := tx.Exec(
 		query,
 		cv.ProfessionName,
+		cv.FirstName,
+		cv.LastName,
+		cv.MiddleName,
+		cv.Gender,
+		cv.Birthday,
+		cv.Location,
 		cv.Description,
 		cv.Status,
+		cv.EducationLevel,
 		cvID,
 		userID,
 	)
@@ -378,10 +400,29 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(userID, cvID int, cv *domain.Db
 	if err != nil {
 		return err
 	}
-
 	_, err = result.RowsAffected()
 	if err != nil {
 		return err
+	}
+	fmt.Printf("after update cv\n")
+
+	expErr := repo.expRepo.UpdateTxExperiences(tx, cvID, experiences)
+	if expErr != nil {
+		tx.Rollback()
+		return expErr
+	}
+	fmt.Printf("after update exp\n")
+
+	instErr := repo.instRepo.UpdateTxInstitutions(tx, cvID, insitutions)
+	if instErr != nil {
+		tx.Rollback()
+		return instErr
+	}
+	fmt.Printf("after update inst\n")
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return commitErr
 	}
 
 	return nil

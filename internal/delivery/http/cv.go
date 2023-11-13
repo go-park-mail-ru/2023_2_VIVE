@@ -171,17 +171,15 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updatedCV := new(domain.DbCV)
+	cv := new(domain.ApiCV)
 
-	decodeErr := json.NewDecoder(r.Body).Decode(updatedCV)
+	decodeErr := json.NewDecoder(r.Body).Decode(cv)
 	if decodeErr != nil {
 		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
 		return
 	}
 
-	// dbCV := updatedCV.ToDb()
-
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID, updatedCV)
+	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID, cv)
 	if udpErr != nil {
 		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
 		return

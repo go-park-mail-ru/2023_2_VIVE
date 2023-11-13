@@ -19,7 +19,8 @@ type DbExperience struct {
 	EndDate          *string `json:"end_date,omitempty"`
 }
 
-type ApiExperienceFromCV struct {
+type ApiExperience struct {
+	ID               int     `json:"id"`
 	OrganizationName string  `json:"name"`
 	JobPosition      string  `json:"job_position"`
 	Description      string  `json:"description"`
@@ -27,8 +28,9 @@ type ApiExperienceFromCV struct {
 	EndDate          *string `json:"end_date,omitempty"`
 }
 
-func (apiExp *ApiExperienceFromCV) ToDb() DbExperience {
+func (apiExp *ApiExperience) ToDb() DbExperience {
 	dbExp := DbExperience{
+		ID: apiExp.ID,
 		OrganizationName: apiExp.OrganizationName,
 		Position:         apiExp.JobPosition,
 		Description:      apiExp.Description,

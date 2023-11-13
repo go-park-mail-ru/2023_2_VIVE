@@ -5,6 +5,7 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
+	"fmt"
 )
 
 type ICVUsecase interface {
@@ -12,7 +13,7 @@ type ICVUsecase interface {
 	GetCVList(sessionID string) ([]domain.DbCV, error)
 	AddNewCV(sessionID string, cv *domain.ApiCV) (int, error)
 	GetCVOfUserById(sessionID string, cvID int) (*domain.DbCV, error)
-	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.DbCV) error
+	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(sessionID string, cvID int) error
 }
 
@@ -144,7 +145,7 @@ func (cvUsecase *CVUsecase) getEducationInstitutions(apiCV *domain.ApiCV) []doma
 	return res
 }
 
-func (cvUsecase *CVUsecase) getDataFromApiCVCreate(apiCV *domain.ApiCV) ([]domain.DbExperience, []domain.DbEducationInstitution, *domain.DbCV) {
+func (cvUsecase *CVUsecase) getDataFromApiCV(apiCV *domain.ApiCV) ([]domain.DbExperience, []domain.DbEducationInstitution, *domain.DbCV) {
 	dbExperiences := cvUsecase.getExperiences(apiCV)
 	dbEducationInstitutions := cvUsecase.getEducationInstitutions(apiCV)
 	dbCV := apiCV.ToDb()
@@ -159,7 +160,7 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, e
 		return 0, validStatus
 	}
 
-	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCVCreate(cv)
+	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
 
 	cvID, addErr := cvUsecase.cvRepo.AddCV(userID, dbCV, dbExperiences, dbEducationInstitutions)
 	if addErr != nil {
@@ -183,13 +184,15 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain
 	return cv, nil
 }
 
-func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.DbCV) error {
+func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, cv)
+	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
+	fmt.Printf("before update db\n")
+	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, dbCV, dbExperiences, dbEducationInstitutions)
 	if updStatus != nil {
 		return updStatus
 	}

@@ -45,17 +45,18 @@ type DbCV struct {
 }
 
 type ApiCV struct {
-	FirstName             string                          `json:"first_name"`            // имя
-	LastName              string                          `json:"last_name"`             // фамилия
-	MiddleName            *string                         `json:"middle_name,omitempty"` // отчество
-	ProfessionName        string                          `json:"profession_name"`
-	Gender                Gender                          `json:"gender"`
-	Location              *string                         `json:"city,omitempty"`
-	Birthday              *string                         `json:"birthday,omitempty"`
-	EducationLevel        EducationLevel                  `json:"education_level"`
-	EducationInstitutions []ApiEducationInstitutionFromCV `json:"institutions,omitempty"`
-	Experience            []ApiExperienceFromCV           `json:"companies,omitempty"`
-	Description           *string                         `json:"description,omitempty"`
+	FirstName             string                    `json:"first_name"`            // имя
+	LastName              string                    `json:"last_name"`             // фамилия
+	MiddleName            *string                   `json:"middle_name,omitempty"` // отчество
+	ProfessionName        string                    `json:"profession_name"`
+	Gender                Gender                    `json:"gender"`
+	Location              *string                   `json:"city,omitempty"`
+	Birthday              *string                   `json:"birthday,omitempty"`
+	EducationLevel        EducationLevel            `json:"education_level"`
+	Status                Status                    `json:"status,omitempty"`
+	EducationInstitutions []ApiEducationInstitution `json:"institutions,omitempty"`
+	Experience            []ApiExperience           `json:"companies,omitempty"`
+	Description           *string                   `json:"description,omitempty"`
 }
 
 func (cv *ApiCV) ToDb() *DbCV {
@@ -68,6 +69,7 @@ func (cv *ApiCV) ToDb() *DbCV {
 		Birthday:       cv.Birthday,
 		Location:       cv.Location,
 		Description:    cv.Description,
+		Status:         cv.Status,
 		EducationLevel: cv.EducationLevel,
 	}
 	return &res

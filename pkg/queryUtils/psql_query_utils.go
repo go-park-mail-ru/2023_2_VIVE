@@ -34,3 +34,40 @@ func QueryPlaceHoldersMultipleRows(startIndex, elementsPerRow, rowsNum int) stri
 	}
 	return strings.Join(rows, ", ")
 }
+
+func QueryCase(startIndex int, columnName, caseCondition string, caseConditionValues []string) string {
+	lines := []string{}
+	lines = append(lines, fmt.Sprintf("%s = CASE %s", columnName, caseCondition))
+	for i, caseCondition := range caseConditionValues {
+		lines = append(lines, fmt.Sprintf("WHEN %s THEN $%d", caseCondition, startIndex+i))
+	}
+	lines = append(lines, fmt.Sprintf("ELSE %s", columnName))
+	lines = append(lines, "END")
+
+	return strings.Join(lines, "\n")
+}
+
+func QueryCases(startIndex int, columnNames, caseConditionValues []string, caseCondition string) string {
+	blocks := []string{}
+	for i, columnName := range columnNames {
+		blocks = append(blocks, QueryCase(i*len(caseConditionValues)+startIndex, columnName, caseCondition, caseConditionValues))
+	}
+	return strings.Join(blocks, ",\n")
+}
+
+func GetColumnNames(columnNames []string, except ...string) []string {
+	res := []string{}
+	for _, name := range columnNames {
+		excluded := false
+		for _, exceptName := range except {
+			if exceptName == name {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			res = append(res, name)
+		}
+	}
+	return res
+}

@@ -4,34 +4,41 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/queryUtils"
 	"database/sql"
+	"fmt"
+	"strings"
 )
 
 type IExperienceRepository interface {
 	AddExperience(cvID int, experience domain.DbExperience) (int, error)
 	AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
+	UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
 }
 
 type psqlExperienceRepository struct {
-	DB *sql.DB
+	DB          *sql.DB
+	ColumnNames []string
 }
 
 func NewPsqlExperienceRepository(db *sql.DB) IExperienceRepository {
 	return &psqlExperienceRepository{
 		DB: db,
+		ColumnNames: []string{
+			"id",
+			"cv_id",
+			"organization_name",
+			`"position"`,
+			"description",
+			"start_date",
+			"end_date",
+		},
 	}
 }
 
 func (repo *psqlExperienceRepository) AddExperience(cvID int, experience domain.DbExperience) (int, error) {
 	query := `INSERT
 		INTO
-		hnh_data.experience (
-			cv_id,
-			organization_name,
-			"position",
-			description,
-			start_date,
-			end_date
-		)
+		hnh_data.experience (` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames, "id"), ", ") + `)
 	VALUES 
 		($1, $2, $3, $4, $5, $6)
 	RETURNING id`
@@ -80,14 +87,8 @@ func (repo *psqlExperienceRepository) AddTxExperiences(tx *sql.Tx, cvID int, exp
 	elementsToInsert := repo.convertToSlice(cvID, experiences)
 	query := `INSERT
 		INTO
-		hnh_data.experience (
-			cv_id,
-			organization_name,
-			"position",
-			description,
-			start_date,
-			end_date
-		)
+		hnh_data.experience (` +
+		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames, "id"), ", ") + `)
 	VALUES ` + queryUtils.QueryPlaceHoldersMultipleRows(1, 6, len(experiences))
 
 	result, insertErr := tx.Exec(query, elementsToInsert...)
@@ -100,6 +101,72 @@ func (repo *psqlExperienceRepository) AddTxExperiences(tx *sql.Tx, cvID int, exp
 	_, insertErr = result.RowsAffected()
 	if insertErr != nil {
 		return insertErr
+	}
+
+	return nil
+}
+
+func (repo *psqlExperienceRepository) getIDs(experiences []domain.DbExperience) []string {
+	res := []string{}
+	for _, experience := range experiences {
+		res = append(res, fmt.Sprint(experience.ID))
+	}
+	return res
+}
+
+func (repo *psqlExperienceRepository) getValues(cvID int, experiences []domain.DbExperience) []any {
+	res := []any{}
+	valuesMap := map[string][]any{}
+
+	for _, experience := range experiences {
+		valuesMap["organization_name"] = append(valuesMap["organization_name"], experience.OrganizationName)
+		valuesMap[`"position"`] = append(valuesMap[`"position"`], experience.Position)
+		valuesMap["description"] = append(valuesMap["description"], experience.Description)
+		valuesMap["start_date"] = append(valuesMap["start_date"], experience.StartDate)
+		valuesMap["end_date"] = append(valuesMap["end_date"], experience.EndDate)
+	}
+
+	res = append(res, cvID)
+	res = append(res, valuesMap["organization_name"]...)
+	res = append(res, valuesMap[`"position"`]...)
+	res = append(res, valuesMap["description"]...)
+	res = append(res, valuesMap["start_date"]...)
+	res = append(res, valuesMap["end_date"]...)
+	return res
+}
+
+func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+	ids := repo.getIDs(experiences)
+	fmt.Printf("ids: %v\n", ids)
+	query := `UPDATE hnh_data.experience e
+	SET ` + queryUtils.QueryCases(
+		2,
+		[]string{
+			"organization_name",
+			`"position"`,
+			"description",
+			"start_date",
+			"end_date",
+		},
+		ids,
+		"id") + ` WHERE e.cv_id = $1`
+
+	fmt.Println(query)
+	// newPlaceHolderValues := make([]any, len())
+	result, updErr := tx.Exec(
+		query,
+		repo.getValues(cvID, experiences)...,
+	)
+
+	if updErr == sql.ErrNoRows {
+		return ErrNoRowsUpdated
+	}
+	if updErr != nil {
+		return updErr
+	}
+	_, updErr = result.RowsAffected()
+	if updErr != nil {
+		return updErr
 	}
 
 	return nil
