@@ -1,11 +1,3 @@
-DROP TABLE hnh_data.education CASCADE;
-
-DROP TABLE hnh_data.institution_major_assign CASCADE;
-
-DROP TABLE hnh_data.institution CASCADE;
-
-DROP TABLE hnh_data.major_field CASCADE;
-
 CREATE TABLE hnh_data.education_institution (
     id serial PRIMARY KEY CONSTRAINT id_is_positive CHECK (id > 0),
     cv_id int REFERENCES cv ON DELETE CASCADE,
@@ -35,3 +27,10 @@ ALTER COLUMN
 
 ---- create above / drop below ----
 
+DROP TABLE hnh_data.education CASCADE;
+
+DROP TABLE hnh_data.institution_major_assign CASCADE;
+
+DROP TABLE hnh_data.institution CASCADE;
+
+DROP TABLE hnh_data.major_field CASCADE;
