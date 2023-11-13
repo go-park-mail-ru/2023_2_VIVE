@@ -5,15 +5,15 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
+	"fmt"
 )
 
 type IVacancyUsecase interface {
-	GetAllVacancies() ([]domain.DbVacancy, error)
-
-	GetVacancy(vacancyID int) (*domain.DbVacancy, error)
-	GetUserVacancies(sessionID string) ([]domain.DbVacancy, error)
+	GetAllVacancies() ([]domain.ApiVacancy, error)
+	GetVacancy(vacancyID int) (*domain.ApiVacancy, error)
+	GetUserVacancies(sessionID string) ([]domain.ApiVacancy, error)
 	AddVacancy(sessionID string, vacancy *domain.DbVacancy) (int, error)
-	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.DbVacancy) error
+	UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(sessionID string, vacancyID int) error
 }
 
@@ -77,23 +77,30 @@ func (vacancyUsecase *VacancyUsecase) validateEmployer(sessionID string, vacancy
 	return userOrgID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.DbVacancy, error) {
-	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies()
+func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []domain.ApiVacancy {
+	res := []domain.ApiVacancy{}
+	for _, vac := range vacs {
+		res = append(res, *vac.ToAPI())
+	}
+	return res
+}
 
+func (vacancyUsecase *VacancyUsecase) GetAllVacancies() ([]domain.ApiVacancy, error) {
+	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies()
 	if getErr != nil {
 		return nil, getErr
 	}
 
-	return vacancies, nil
+	return vacancyUsecase.collectApiVacs(vacancies), nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.DbVacancy, error) {
+func (vacancyUsecase *VacancyUsecase) GetVacancy(vacancyID int) (*domain.ApiVacancy, error) {
 	vacancy, err := vacancyUsecase.vacancyRepo.GetVacancy(vacancyID)
 	if err != nil {
 		return nil, err
 	}
 
-	return vacancy, nil
+	return vacancy.ToAPI(), nil
 }
 
 func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *domain.DbVacancy) (int, error) {
@@ -102,9 +109,7 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 		return 0, validStatus
 	}
 
-	// if userOrgID != vacancy.CompanyID {
-	// 	return 0, serverErrors.FORBIDDEN
-	// }
+	fmt.Printf("vacancy: %v\n", vacancy)
 
 	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(userOrgID, vacancy)
 	if addStatus != nil {
@@ -114,13 +119,13 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(sessionID string, vacancy *doma
 	return vacancyID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.DbVacancy) error {
+func (vacancyUsecase *VacancyUsecase) UpdateVacancy(sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error {
 	orgID, validStatus := vacancyUsecase.validateEmployer(sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	updStatus := vacancyUsecase.vacancyRepo.UpdateOrgVacancy(orgID, vacancyID, vacancy)
+	updStatus := vacancyUsecase.vacancyRepo.UpdateOrgVacancy(orgID, vacancyID, vacancy.ToDb())
 	if updStatus != nil {
 		return updStatus
 	}
@@ -140,7 +145,7 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(sessionID string, vacancyID 
 	return nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]domain.DbVacancy, error) {
+func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]domain.ApiVacancy, error) {
 	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
 	if err != nil {
 		return nil, serverErrors.AUTH_REQUIRED
@@ -160,5 +165,5 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(sessionID string) ([]doma
 		return nil, err
 	}
 
-	return vacanciesList, nil
+	return vacancyUsecase.collectApiVacs(vacanciesList), nil
 }

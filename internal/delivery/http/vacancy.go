@@ -20,8 +20,8 @@ type VacancyHandler struct {
 	vacancyUsecase usecase.IVacancyUsecase
 }
 
-func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.DbVacancy) []domain.DbVacancy {
-	result := make([]domain.DbVacancy, 0, len(vacancies))
+func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.ApiVacancy) []domain.ApiVacancy {
+	result := make([]domain.ApiVacancy, 0, len(vacancies))
 
 	for _, vac := range vacancies {
 		vac.VacancyName = sanitizer.XSS.Sanitize(vac.VacancyName)
@@ -73,7 +73,7 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies()
 
 	if getErr == psql.ErrEntityNotFound {
-		vacancies = []domain.DbVacancy{}
+		vacancies = []domain.ApiVacancy{}
 	} else if getErr != nil {
 		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
 		return
@@ -108,7 +108,7 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 
 	defer r.Body.Close()
 
-	apiVac := new(domain.ApiVacancyCreate)
+	apiVac := new(domain.ApiVacancy)
 
 	readErr := json.NewDecoder(r.Body).Decode(apiVac)
 	if readErr != nil {
@@ -143,7 +143,7 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 
 	defer r.Body.Close()
 
-	updatedVac := new(domain.ApiVacancyUpdate)
+	updatedVac := new(domain.ApiVacancy)
 
 	readErr := json.NewDecoder(r.Body).Decode(updatedVac)
 	if readErr != nil {
@@ -151,11 +151,7 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// fmt.Printf("updatedVac: %v\n", updatedVac)
-	vacToDb := updatedVac.ToDb()
-	// fmt.Printf("vacToDb: %v\n", vacToDb)
-
-	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(cookie.Value, vacancyID, vacToDb)
+	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(cookie.Value, vacancyID, updatedVac)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
