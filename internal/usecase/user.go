@@ -7,8 +7,6 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
-
-	// "fmt"
 	"io/ioutil"
 
 	"github.com/google/uuid"
@@ -111,6 +109,7 @@ func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.ApiUser, erro
 	if getErr != nil {
 		return nil, getErr
 	}
+	// fmt.Printf("")
 
 	apiUser := user.ToAPI(empID, appID)
 

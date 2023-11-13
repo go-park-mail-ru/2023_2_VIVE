@@ -5,8 +5,6 @@ import (
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
 
-	// "fmt"
-
 	"database/sql"
 	"errors"
 	"strings"
@@ -128,7 +126,6 @@ func (p *psqlUserRepository) CheckPasswordById(id int, passwordToCheck string) e
 }
 
 func (p *psqlUserRepository) AddUser(user *domain.ApiUser, hasher authUtils.HashGenerator) error {
-	// fmt.Printf("user to put to db: %v\n", *user)
 	var exists bool
 
 	err := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
@@ -160,7 +157,6 @@ func (p *psqlUserRepository) AddUser(user *domain.ApiUser, hasher authUtils.Hash
 		}
 	} else if user.Type == domain.Employer {
 		var userID int
-		// fmt.Printf("before putting employer to db\n")
 
 		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
 			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
@@ -221,14 +217,15 @@ func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, *int, *int
 		e.user_id = up.id
 	WHERE
 		up.id = $1`
+
 	user := &domain.DbUser{}
 
 	var appId, empID *int
 	err := p.userStorage.QueryRow(query, userID).
 		Scan(
 			&user.ID,
-			appId,
-			empID,
+			&appId,
+			&empID,
 			&user.Email,
 			&user.FirstName,
 			&user.LastName,
