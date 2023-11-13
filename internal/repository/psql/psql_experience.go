@@ -12,6 +12,7 @@ type IExperienceRepository interface {
 	AddExperience(cvID int, experience domain.DbExperience) (int, error)
 	AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
 	UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
+	DeleteTxExperiences(tx *sql.Tx, cvID int) error
 }
 
 type psqlExperienceRepository struct {
@@ -137,7 +138,7 @@ func (repo *psqlExperienceRepository) getValues(cvID int, experiences []domain.D
 
 func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
 	ids := repo.getIDs(experiences)
-	fmt.Printf("ids: %v\n", ids)
+	// fmt.Printf("ids: %v\n", ids)
 	query := `UPDATE hnh_data.experience e
 	SET ` + queryUtils.QueryCases(
 		2,
@@ -151,7 +152,7 @@ func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, 
 		ids,
 		"id") + ` WHERE e.cv_id = $1`
 
-	fmt.Println(query)
+	// fmt.Println(query)
 	// newPlaceHolderValues := make([]any, len())
 	result, updErr := tx.Exec(
 		query,
@@ -167,6 +168,31 @@ func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, 
 	_, updErr = result.RowsAffected()
 	if updErr != nil {
 		return updErr
+	}
+
+	return nil
+}
+
+func (repo *psqlExperienceRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) error {
+	query := `DELETE
+	FROM
+		hnh_data.experience e
+	WHERE
+		e.cv_id = $1`
+
+	// fmt.Println(query)
+	// newPlaceHolderValues := make([]any, len())
+	result, delErr := tx.Exec(query, cvID)
+
+	if delErr == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if delErr != nil {
+		return delErr
+	}
+	_, delErr = result.RowsAffected()
+	if delErr != nil {
+		return delErr
 	}
 
 	return nil

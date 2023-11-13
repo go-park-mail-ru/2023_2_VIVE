@@ -11,6 +11,7 @@ import (
 type IEducationInstitutionRepository interface {
 	AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
 	UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
+	DeleteTxExperiences(tx *sql.Tx, cvID int) error
 }
 
 type psqlEducationInstitutionRepository struct {
@@ -113,6 +114,29 @@ func (repo *psqlEducationInstitutionRepository) UpdateTxInstitutions(tx *sql.Tx,
 	_, updErr = result.RowsAffected()
 	if updErr != nil {
 		return updErr
+	}
+
+	return nil
+}
+
+func (repo *psqlEducationInstitutionRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) error {
+	query := `DELETE
+	FROM
+		hnh_data.education_institution ei
+	WHERE
+		ei.cv_id = $1`
+
+	result, delErr := tx.Exec(query, cvID)
+
+	if delErr == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if delErr != nil {
+		return delErr
+	}
+	_, delErr = result.RowsAffected()
+	if delErr != nil {
+		return delErr
 	}
 
 	return nil

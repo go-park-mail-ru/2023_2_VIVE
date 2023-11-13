@@ -429,6 +429,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 }
 
 func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
+	tx, txErr := repo.DB.Begin()
+	if txErr != nil {
+		return txErr
+	}
 	query := `DELETE
 	FROM
 		hnh_data.cv c
@@ -438,17 +442,35 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
 		AND a.user_id = $2
 		AND c.applicant_id = a.id`
 
-	result, err := repo.DB.Exec(query, cvID, userID)
+	result, err := tx.Exec(query, cvID, userID)
 	if err == sql.ErrNoRows {
 		return ErrNoRowsDeleted
 	}
 	if err != nil {
 		return err
 	}
-
 	_, err = result.RowsAffected()
 	if err != nil {
 		return err
+	}
+
+	expErr := repo.expRepo.DeleteTxExperiences(tx, cvID)
+	if expErr != nil {
+		tx.Rollback()
+		return expErr
+	}
+	fmt.Printf("after update exp\n")
+
+	instErr := repo.instRepo.DeleteTxExperiences(tx, cvID)
+	if instErr != nil {
+		tx.Rollback()
+		return instErr
+	}
+	fmt.Printf("after update inst\n")
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return commitErr
 	}
 
 	return nil

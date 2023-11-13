@@ -30,7 +30,7 @@ type ApiExperience struct {
 
 func (apiExp *ApiExperience) ToDb() DbExperience {
 	dbExp := DbExperience{
-		ID: apiExp.ID,
+		ID:               apiExp.ID,
 		OrganizationName: apiExp.OrganizationName,
 		Position:         apiExp.JobPosition,
 		Description:      apiExp.Description,

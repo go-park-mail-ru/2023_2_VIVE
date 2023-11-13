@@ -32,7 +32,7 @@ type DbVacancy struct {
 }
 
 type ApiVacancyCreate struct {
-	VacancyName        string         `json:"vacancy_name"`
+	VacancyName        string         `json:"name"`
 	Salary_lower_bound int            `json:"salary_lower_bound,omitempty"`
 	Salary_upper_bound int            `json:"salary_upper_bound,omitempty"`
 	Experience         ExperienceTime `json:"experience,omitempty"`
