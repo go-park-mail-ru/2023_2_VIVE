@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Role string
 
 const (
@@ -28,18 +30,28 @@ type ApiUser struct {
 }
 
 func (u *ApiUser) ToDb() *DbUser {
-	return &DbUser{
+	res := DbUser{
 		ID:          u.ID,
 		Email:       u.Email,
 		Password:    u.Password,
 		FirstName:   u.FirstName,
 		LastName:    u.LastName,
-		Birthday:    u.Birthday,
 		PhoneNumber: u.PhoneNumber,
 		Location:    u.Location,
 		Type:        u.Type,
+		// Birthday:    u.Birthday,
 		// AvatarPath: u.,
 	}
+
+	if u.Birthday != nil {
+		birthday, birthdayErr := time.Parse(time.RFC3339, *u.Birthday)
+		if birthdayErr == nil {
+			birthdayStr := birthday.Format(time.DateOnly)
+			res.Birthday = &birthdayStr
+		}
+	}
+
+	return &res
 }
 
 type DbUser struct {

@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
+
+const DATE_FORMAT = "2006-01-02"
 
 type Status string
 type Gender string
@@ -46,21 +50,31 @@ type DbCV struct {
 }
 
 func (cv *DbCV) ToAPI() *ApiCV {
-	return &ApiCV{
+	res := ApiCV{
 		ID:             cv.ID,
 		ProfessionName: cv.ProfessionName,
 		FirstName:      cv.FirstName,
 		LastName:       cv.LastName,
 		MiddleName:     cv.MiddleName,
 		Gender:         cv.Gender,
-		Birthday:       cv.Birthday,
 		Location:       cv.Location,
 		Description:    cv.Description,
 		Status:         cv.Status,
 		EducationLevel: cv.EducationLevel,
 		CreatedAt:      cv.CreatedAt,
 		UpdatedAt:      cv.UpdatedAt,
+		// Birthday:       cv.Birthday,
 	}
+
+	if cv.Birthday != nil {
+		birthday, birthdayErr := time.Parse(time.RFC3339, *cv.Birthday)
+		if birthdayErr == nil {
+			birthdayStr := birthday.Format(time.DateOnly)
+			res.Birthday = &birthdayStr
+		}
+	}
+
+	return &res
 }
 
 type ApiCV struct {
