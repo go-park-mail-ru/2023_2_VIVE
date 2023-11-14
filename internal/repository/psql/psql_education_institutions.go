@@ -207,6 +207,9 @@ func (repo *psqlEducationInstitutionRepository) getValues(cvID int, institutions
 }
 
 func (repo *psqlEducationInstitutionRepository) UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+	if len(institutions) == 0 {
+		return nil
+	}
 	ids := repo.getIDs(institutions)
 	query := `UPDATE hnh_data.education_institution ei
 	SET ` + queryUtils.QueryCases(

@@ -61,7 +61,10 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(sessionID string, vacan
 		return INAPPROPRIATE_ROLE
 	}
 
-	responseUsecase.responseRepo.RespondToVacancy(vacancyID, cvID)
+	respErr := responseUsecase.responseRepo.RespondToVacancy(vacancyID, cvID)
+	if respErr != nil {
+		return respErr
+	}
 	return nil
 }
 

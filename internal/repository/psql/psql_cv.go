@@ -492,6 +492,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	if err != nil {
 		return err
 	}
+	// fmt.Printf("after update cv\n")
 
 	// updating experiences
 	expUpdErr := repo.expRepo.UpdateTxExperiences(tx, cvID, experiencesToUpdate)
@@ -499,6 +500,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return expUpdErr
 	}
+	// fmt.Printf("after update experiences\n")
 
 	// deleting experiences
 	expDelErr := repo.expRepo.DeleteTxExperiencesByIDs(tx, experiencesIDsToDelete)
@@ -506,6 +508,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return expDelErr
 	}
+	// fmt.Printf("after deleting experiences\n")
 
 	// inserting experiences
 	expInsErr := repo.expRepo.AddTxExperiences(tx, cvID, experiencesToInsert)
@@ -513,6 +516,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return expInsErr
 	}
+	// fmt.Printf("after inserting experiences\n")
 
 	// updating institutions
 	instUpdErr := repo.instRepo.UpdateTxInstitutions(tx, cvID, insitutionsToUpdate)
@@ -520,6 +524,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return instUpdErr
 	}
+	// fmt.Printf("after updating institutions\n")
 
 	// deleting institutions
 	instDelErr := repo.instRepo.DeleteTxExperiencesByIDs(tx, insitutionsIDsToDelete)
@@ -527,6 +532,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return instDelErr
 	}
+	// fmt.Printf("after deleting institutions\n")
 
 	// inserting institutions
 	instInsErr := repo.instRepo.AddTxInstitutions(tx, cvID, insitutionsToInsert)
@@ -534,6 +540,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		tx.Rollback()
 		return instInsErr
 	}
+	// fmt.Printf("after inserting institutions\n")
 
 	commitErr := tx.Commit()
 	if commitErr != nil {

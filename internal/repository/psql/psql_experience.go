@@ -258,6 +258,9 @@ func (repo *psqlExperienceRepository) getValues(cvID int, experiences []domain.D
 
 // TODO: check when chenging number of experiences in cv
 func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+	if len(experiences) == 0 {
+		return nil
+	}
 	ids := repo.getIDs(experiences)
 	query := `UPDATE hnh_data.experience e
 	SET ` + queryUtils.QueryCases(

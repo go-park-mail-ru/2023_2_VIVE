@@ -22,7 +22,14 @@ func NewPsqlResponseRepository(db *sql.DB) IResponseRepository {
 }
 
 func (p *psqlResponseRepository) RespondToVacancy(vacancyID, cvID int) error {
-	err := p.responseStorage.QueryRow(`INSERT INTO hnh_data.response ("vacancy_id", "cv_id") VALUES ($1, $2)`, vacancyID, cvID).Err()
+	result, err := p.responseStorage.Exec(`INSERT INTO hnh_data.response ("vacancy_id", "cv_id") VALUES ($1, $2)`, vacancyID, cvID)
+	if err == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if err != nil {
+		return err
+	}
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
 	}
