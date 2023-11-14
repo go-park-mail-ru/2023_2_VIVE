@@ -5,7 +5,7 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
-	"fmt"
+	"HnH/pkg/utils"
 )
 
 type ICVUsecase interface {
@@ -19,19 +19,27 @@ type ICVUsecase interface {
 
 type CVUsecase struct {
 	cvRepo       psql.ICVRepository
+	expRepo      psql.IExperienceRepository
+	instRepo     psql.IEducationInstitutionRepository
 	sessionRepo  redisRepo.ISessionRepository
 	userRepo     psql.IUserRepository
 	responseRepo psql.IResponseRepository
 	vacancyRepo  psql.IVacancyRepository
 }
 
-func NewCVUsecase(cvRepository psql.ICVRepository,
+func NewCVUsecase(
+	cvRepository psql.ICVRepository,
+	expRepository psql.IExperienceRepository,
+	instRepository psql.IEducationInstitutionRepository,
 	sessionRepository redisRepo.ISessionRepository,
 	userRepository psql.IUserRepository,
 	responseRepository psql.IResponseRepository,
-	vacancyRepository psql.IVacancyRepository) ICVUsecase {
+	vacancyRepository psql.IVacancyRepository,
+) ICVUsecase {
 	return &CVUsecase{
 		cvRepo:       cvRepository,
+		expRepo:      expRepository,
+		instRepo:     instRepository,
 		sessionRepo:  sessionRepository,
 		userRepo:     userRepository,
 		responseRepo: responseRepository,
@@ -149,14 +157,14 @@ func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.ApiCV, error) 
 	if validStatus != nil {
 		return nil, validStatus
 	}
-	fmt.Printf("userID: %v\n", userID)
-	fmt.Println("before getting cvs")
+	// fmt.Printf("userID: %v\n", userID)
+	// fmt.Println("before getting cvs")
 
 	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("after getting cvs")
+	// fmt.Println("after getting cvs")
 
 	apiCvs := cvUsecase.combineDbCVs(cvs, exps, insts)
 
@@ -220,15 +228,65 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain
 	return apiCv, nil
 }
 
+func (cvUsecase *CVUsecase) getExpsBatches(
+	expsFromApi []domain.DbExperience,
+	expIDsFromDB []int,
+) (toDeleteIDs []int, toUpdate, toInsert []domain.DbExperience) {
+	var idsToUpdate []int
+	for _, exp := range expsFromApi {
+		if !utils.Contains(exp.ID, expIDsFromDB) {
+			toInsert = append(toInsert, exp)
+		} else {
+			toUpdate = append(toUpdate, exp)
+			idsToUpdate = append(idsToUpdate, exp.ID)
+		}
+	}
+	toDeleteIDs = utils.Difference(expIDsFromDB, idsToUpdate)
+	return
+}
+
+func (cvUsecase *CVUsecase) getInstsBatches(
+	instsFromApi []domain.DbEducationInstitution,
+	instIDsFromDB []int,
+) (toDeleteIDs []int, toUpdate, toInsert []domain.DbEducationInstitution) {
+	var idsToUpdate []int
+	for _, inst := range instsFromApi {
+		if !utils.Contains(inst.ID, instIDsFromDB) {
+			toInsert = append(toInsert, inst)
+		} else {
+			toUpdate = append(toUpdate, inst)
+			idsToUpdate = append(idsToUpdate, inst.ID)
+		}
+	}
+	toDeleteIDs = utils.Difference(instIDsFromDB, idsToUpdate)
+	return
+}
+
 func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
+
+	expIDs, expErr := cvUsecase.expRepo.GetCVExperiencesIDs(cvID)
+	if expErr != nil && expErr != psql.ErrEntityNotFound {
+		return expErr
+	}
+	instIDs, instErr := cvUsecase.instRepo.GetCVInstitutionsIDs(cvID)
+	if instErr != nil && instErr != psql.ErrEntityNotFound {
+		return instErr
+	}
 	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
-	// fmt.Printf("before update db\n")
-	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, dbCV, dbExperiences, dbEducationInstitutions)
+
+	expsIDsToDelete, expsToUpdate, expsToInsert := cvUsecase.getExpsBatches(dbExperiences, expIDs)
+	
+	instsIDsToDelete, instsToUpdate, instsToInsert := cvUsecase.getInstsBatches(dbEducationInstitutions, instIDs)
+
+	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, dbCV,
+		expsIDsToDelete, expsToUpdate, expsToInsert,
+		instsIDsToDelete, instsToUpdate, instsToInsert,
+	)
 	if updStatus != nil {
 		return updStatus
 	}

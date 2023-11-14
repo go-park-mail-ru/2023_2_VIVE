@@ -9,11 +9,13 @@ import (
 )
 
 type IEducationInstitutionRepository interface {
+	GetCVInstitutionsIDs(cvID int) ([]int, error)
 	GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error)
 	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error)
 	AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
 	UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
 	DeleteTxExperiences(tx *sql.Tx, cvID int) error
+	DeleteTxExperiencesByIDs(tx *sql.Tx, instIDs []int) error
 }
 
 type psqlEducationInstitutionRepository struct {
@@ -32,6 +34,35 @@ func NewPsqlEducationInstitutionRepository(db *sql.DB) IEducationInstitutionRepo
 			"graduation_year",
 		},
 	}
+}
+
+func (repo *psqlEducationInstitutionRepository) GetCVInstitutionsIDs(cvID int) ([]int, error) {
+	query := `SELECT 
+		ei.id
+	FROM
+		hnh_data.education_institution ei
+	WHERE
+		ei.cv_id = $1`
+
+	rows, selErr := repo.DB.Query(query, cvID)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	instIDsToReturn := []int{}
+	for rows.Next() {
+		var instID int
+		scanErr := rows.Scan(&instID)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		instIDsToReturn = append(instIDsToReturn, instID)
+	}
+	if len(instIDsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return instIDsToReturn, nil
 }
 
 func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error) {
@@ -211,6 +242,36 @@ func (repo *psqlEducationInstitutionRepository) DeleteTxExperiences(tx *sql.Tx, 
 		ei.cv_id = $1`
 
 	result, delErr := tx.Exec(query, cvID)
+
+	if delErr == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if delErr != nil {
+		return delErr
+	}
+	_, delErr = result.RowsAffected()
+	if delErr != nil {
+		return delErr
+	}
+
+	return nil
+}
+
+func (repo *psqlEducationInstitutionRepository) DeleteTxExperiencesByIDs(tx *sql.Tx, instIDs []int) error {
+	if len(instIDs) == 0 {
+		return nil
+	}
+
+	placeHoldersValues := *queryUtils.IntToAnySlice(instIDs)
+	queryPlaceHolders := queryUtils.QueryPlaceHolders(1, len(instIDs))
+
+	query := `DELETE
+	FROM
+		hnh_data.education_institution ei
+	WHERE
+		ei.id IN (` + queryPlaceHolders + `)`
+
+	result, delErr := tx.Exec(query, placeHoldersValues...)
 
 	if delErr == sql.ErrNoRows {
 		return ErrNoRowsDeleted

@@ -9,12 +9,14 @@ import (
 )
 
 type IExperienceRepository interface {
+	GetCVExperiencesIDs(cvID int) ([]int, error)
 	GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error)
 	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error)
 	AddExperience(cvID int, experience domain.DbExperience) (int, error)
 	AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
 	UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
 	DeleteTxExperiences(tx *sql.Tx, cvID int) error
+	DeleteTxExperiencesByIDs(tx *sql.Tx, expIds []int) error
 }
 
 type psqlExperienceRepository struct {
@@ -35,6 +37,36 @@ func NewPsqlExperienceRepository(db *sql.DB) IExperienceRepository {
 			"end_date",
 		},
 	}
+}
+
+func (repo *psqlExperienceRepository) GetCVExperiencesIDs(cvID int) ([]int, error) {
+	query := `SELECT 
+		e.id
+	FROM
+		hnh_data.experience e
+	WHERE
+		e.cv_id = $1`
+
+	rows, selErr := repo.DB.Query(query, cvID)
+	if selErr != nil {
+		return nil, selErr
+	}
+	defer rows.Close()
+
+	expIDsToReturn := []int{}
+	for rows.Next() {
+		// exp := domain.DbExperience{}
+		var expID int
+		scanErr := rows.Scan(&expID)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		expIDsToReturn = append(expIDsToReturn, expID)
+	}
+	if len(expIDsToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return expIDsToReturn, nil
 }
 
 func (repo *psqlExperienceRepository) GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error) {
@@ -279,6 +311,36 @@ func (repo *psqlExperienceRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) 
 	// fmt.Println(query)
 	// newPlaceHolderValues := make([]any, len())
 	result, delErr := tx.Exec(query, cvID)
+
+	if delErr == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if delErr != nil {
+		return delErr
+	}
+	_, delErr = result.RowsAffected()
+	if delErr != nil {
+		return delErr
+	}
+
+	return nil
+}
+
+func (repo *psqlExperienceRepository) DeleteTxExperiencesByIDs(tx *sql.Tx, expIds []int) error {
+	if len(expIds) == 0 {
+		return nil
+	}
+
+	placeHoldersValues := *queryUtils.IntToAnySlice(expIds)
+	queryPlaceHolders := queryUtils.QueryPlaceHolders(1, len(expIds))
+
+	query := `DELETE
+	FROM
+		hnh_data.experience e
+	WHERE
+		e.id IN (` + queryPlaceHolders + `)`
+
+	result, delErr := tx.Exec(query, placeHoldersValues...)
 
 	if delErr == sql.ErrNoRows {
 		return ErrNoRowsDeleted

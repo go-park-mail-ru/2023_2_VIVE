@@ -43,11 +43,13 @@ func Run() error {
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
 	responseRepo := psql.NewPsqlResponseRepository(db)
+	experienceRepo := psql.NewPsqlExperienceRepository(db)
+	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
-	cvUsecase := usecase.NewCVUsecase(cvRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)
 
 	router := mux.NewRouter()
