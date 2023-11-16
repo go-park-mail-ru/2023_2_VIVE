@@ -102,7 +102,7 @@ func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vaca
 	}
 
 	CVs, _, _, err := responseUsecase.cvRepo.GetCVsByIds(cvIDs)
-	if err != nil {
+	if err != nil && err != psql.ErrEntityNotFound {
 		return nil, err
 	}
 

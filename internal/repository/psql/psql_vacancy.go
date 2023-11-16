@@ -380,11 +380,11 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVaca
 
 	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
 	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
-	// fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.Salary_lower_bound)
-	// fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.Salary_upper_bound)
+	// fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.SalaryLowerBound)
+	// fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.SalaryUpperBound)
 	// fmt.Printf("vacancy.Employment: %v\n", vacancy.Employment)
-	// fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.Experience_lower_bound)
-	// fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.Experience_upper_bound)
+	// fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.ExperienceLowerBound)
+	// fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.ExperienceUpperBound)
 	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
 	// fmt.Printf("*vacancy.Location: %v\n", *vacancy.Location)
 	// fmt.Printf("userID: %v\n", userID)
@@ -405,11 +405,14 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVaca
 		Scan(&insertedVacancyID)
 
 	if err == sql.ErrNoRows {
+		// fmt.Printf("err: %s\n", err)
 		return 0, ErrNotInserted
 	}
 	if err != nil {
+		// fmt.Printf("err: %s\n", err)
 		return 0, err
 	}
+	// fmt.Printf("after inserting vacancy in db\n")
 
 	return insertedVacancyID, nil
 }
