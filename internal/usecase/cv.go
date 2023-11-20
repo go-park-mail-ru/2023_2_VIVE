@@ -4,9 +4,12 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"HnH/pkg/utils"
 	"context"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ICVUsecase interface {
@@ -162,7 +165,13 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]
 	// fmt.Println("before getting cvs")
 
 	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(ctx, userID)
-	if err != nil {
+	if err != nil && err != psql.ErrEntityNotFound {
+		contextLogger := contextUtils.GetContextLogger(ctx)
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+			"user_id": userID,
+		}).
+		Debug("got 'err' while trying to get all user's cvs by 'user_id'")
 		return nil, err
 	}
 	// fmt.Println("after getting cvs")
