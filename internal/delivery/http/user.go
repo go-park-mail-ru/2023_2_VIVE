@@ -5,6 +5,7 @@ import (
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/logging"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 	"HnH/pkg/serverErrors"
@@ -101,7 +102,16 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	user, err := userHandler.userUsecase.GetInfo(cookie.Value)
+	// logger := r.Context().Value(middleware.LOGGER_KEY).(*logrus.Entry)
+	// logger.Info("got request")
+
+	requesID, requestID := middleware.GetRequestIDCtx(r.Context())
+	logging.Logger.WithField(requesID, requestID).
+		Info("got request")
+
+	// logging.Logger.Info("got request")
+
+	user, err := userHandler.userUsecase.GetInfo(r.Context(), cookie.Value)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
 		return

@@ -23,7 +23,7 @@ func Run() error {
 	}
 	defer logFile.Close()
 
-	logger := logging.InitLogger(logFile)
+	logging.InitLogger(logFile)
 
 	db, err := getPostgres()
 	if err != nil {
@@ -64,13 +64,14 @@ func Run() error {
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
-	loggedRouter := middleware.AccessLogMiddleware(logger, corsRouter)
-	finalRouter := middleware.PanicRecoverMiddleware(logger, loggedRouter)
+	loggedRouter := middleware.AccessLogMiddleware(/* logging.Logger,  */corsRouter)
+	requestIDRouter := middleware.RequestID(loggedRouter)
+	finalRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
 
 	http.Handle("/", finalRouter)
 
 	fmt.Printf("\tstarting server at %s\n", configs.PORT)
-	logger.Infof("starting server at %s", configs.PORT)
+	logging.Logger.Infof("starting server at %s", configs.PORT)
 
 	err = http.ListenAndServe(configs.PORT, nil)
 	if err != nil {

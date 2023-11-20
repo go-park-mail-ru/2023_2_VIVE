@@ -3,6 +3,7 @@ package psql
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/authUtils"
+	"HnH/pkg/logging"
 	"HnH/pkg/serverErrors"
 
 	"database/sql"
@@ -198,6 +199,7 @@ func (p *psqlUserRepository) AddUser(user *domain.ApiUser, hasher authUtils.Hash
 }
 
 func (p *psqlUserRepository) GetUserInfo(userID int) (*domain.DbUser, *int, *int, error) {
+	logging.Logger.Info("trying to get user's info from postgres")
 	query := `SELECT
 		up.id,
 		a.id,

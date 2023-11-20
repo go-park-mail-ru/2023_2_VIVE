@@ -7,6 +7,7 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
+	"context"
 	"io/ioutil"
 
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ import (
 
 type IUserUsecase interface {
 	SignUp(user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
-	GetInfo(sessionID string) (*domain.ApiUser, error)
+	GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error)
 	UpdateInfo(sessionID string, user *domain.UserUpdate) error
 	UploadAvatar(sessionID, path string) error
 	GetAvatar(sessionID string) ([]byte, error)
@@ -99,7 +100,7 @@ func (userUsecase *UserUsecase) SignUp(user *domain.ApiUser, expiryUnixSeconds i
 	return sessionID, nil
 }
 
-func (userUsecase *UserUsecase) GetInfo(sessionID string) (*domain.ApiUser, error) {
+func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error) {
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
