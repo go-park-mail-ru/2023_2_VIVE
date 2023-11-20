@@ -2,21 +2,23 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/queryUtils"
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 )
 
 type IExperienceRepository interface {
-	GetCVExperiencesIDs(cvID int) ([]int, error)
-	GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error)
-	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error)
-	AddExperience(cvID int, experience domain.DbExperience) (int, error)
-	AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
-	UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
-	DeleteTxExperiences(tx *sql.Tx, cvID int) error
-	DeleteTxExperiencesByIDs(tx *sql.Tx, expIds []int) error
+	GetCVExperiencesIDs(ctx context.Context, cvID int) ([]int, error)
+	GetTxExperiences(ctx context.Context, tx *sql.Tx, cvID int) ([]domain.DbExperience, error)
+	GetTxExperiencesByIds(ctx context.Context, tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error)
+	AddExperience(ctx context.Context, cvID int, experience domain.DbExperience) (int, error)
+	AddTxExperiences(ctx context.Context, tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
+	UpdateTxExperiences(ctx context.Context, tx *sql.Tx, cvID int, experiences []domain.DbExperience) error
+	DeleteTxExperiences(ctx context.Context, tx *sql.Tx, cvID int) error
+	DeleteTxExperiencesByIDs(ctx context.Context, tx *sql.Tx, expIds []int) error
 }
 
 type psqlExperienceRepository struct {
@@ -39,7 +41,10 @@ func NewPsqlExperienceRepository(db *sql.DB) IExperienceRepository {
 	}
 }
 
-func (repo *psqlExperienceRepository) GetCVExperiencesIDs(cvID int) ([]int, error) {
+func (repo *psqlExperienceRepository) GetCVExperiencesIDs(ctx context.Context, cvID int) ([]int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting experiences by 'cv_id'")
 	query := `SELECT 
 		e.id
 	FROM
@@ -69,7 +74,10 @@ func (repo *psqlExperienceRepository) GetCVExperiencesIDs(cvID int) ([]int, erro
 	return expIDsToReturn, nil
 }
 
-func (repo *psqlExperienceRepository) GetTxExperiences(tx *sql.Tx, cvID int) ([]domain.DbExperience, error) {
+func (repo *psqlExperienceRepository) GetTxExperiences(ctx context.Context, tx *sql.Tx, cvID int) ([]domain.DbExperience, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting experiences by 'cv_id' in transaction")
 	query := `SELECT ` +
 		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
 		` FROM
@@ -107,7 +115,10 @@ func (repo *psqlExperienceRepository) GetTxExperiences(tx *sql.Tx, cvID int) ([]
 	return experiencesToReturn, nil
 }
 
-func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error) {
+func (repo *psqlExperienceRepository) GetTxExperiencesByIds(ctx context.Context, tx *sql.Tx, cvIDs []int) ([]domain.DbExperience, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting experiences by 'cv_id' list in transaction")
 	if len(cvIDs) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -152,7 +163,10 @@ func (repo *psqlExperienceRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []
 	return experiencesToReturn, nil
 }
 
-func (repo *psqlExperienceRepository) AddExperience(cvID int, experience domain.DbExperience) (int, error) {
+func (repo *psqlExperienceRepository) AddExperience(ctx context.Context, cvID int, experience domain.DbExperience) (int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("adding new experience by 'cv_id'")
 	query := `INSERT
 		INTO
 		hnh_data.experience (` +
@@ -201,7 +215,10 @@ func (repo *psqlExperienceRepository) convertToSlice(cvID int, experiences []dom
 	return res
 }
 
-func (repo *psqlExperienceRepository) AddTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+func (repo *psqlExperienceRepository) AddTxExperiences(ctx context.Context, tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("adding new experiences by 'cv_id' in transaction")
 	if len(experiences) == 0 {
 		return nil
 	}
@@ -257,7 +274,10 @@ func (repo *psqlExperienceRepository) getValues(cvID int, experiences []domain.D
 }
 
 // TODO: check when chenging number of experiences in cv
-func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+func (repo *psqlExperienceRepository) UpdateTxExperiences(ctx context.Context, tx *sql.Tx, cvID int, experiences []domain.DbExperience) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("updating experiences by 'cv_id' in transaction")
 	if len(experiences) == 0 {
 		return nil
 	}
@@ -296,7 +316,10 @@ func (repo *psqlExperienceRepository) UpdateTxExperiences(tx *sql.Tx, cvID int, 
 	return nil
 }
 
-func (repo *psqlExperienceRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) error {
+func (repo *psqlExperienceRepository) DeleteTxExperiences(ctx context.Context, tx *sql.Tx, cvID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("deleting experiences by 'cv_id' in transaction")
 	query := `DELETE
 	FROM
 		hnh_data.experience e
@@ -321,7 +344,10 @@ func (repo *psqlExperienceRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) 
 	return nil
 }
 
-func (repo *psqlExperienceRepository) DeleteTxExperiencesByIDs(tx *sql.Tx, expIds []int) error {
+func (repo *psqlExperienceRepository) DeleteTxExperiencesByIDs(ctx context.Context, tx *sql.Tx, expIds []int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("deleting experiences by 'cv_id' list in transaction")
 	if len(expIds) == 0 {
 		return nil
 	}

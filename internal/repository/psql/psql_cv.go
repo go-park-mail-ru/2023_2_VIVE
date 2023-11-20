@@ -2,22 +2,24 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/queryUtils"
+	"context"
 	"database/sql"
 	"strings"
 )
 
 type ICVRepository interface {
-	GetCVById(cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
-	GetCVsByIds(idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
-	GetCVsByUserId(userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
-	AddCV(userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
-	GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
-	UpdateOneOfUsersCV(userID, cvID int, cv *domain.DbCV,
+	GetCVById(ctx context.Context, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetCVsByIds(ctx context.Context, idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetCVsByUserId(ctx context.Context, userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	AddCV(ctx context.Context, userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
+	GetOneOfUsersCV(ctx context.Context, userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	UpdateOneOfUsersCV(ctx context.Context, userID, cvID int, cv *domain.DbCV,
 		experiencesIDsToDelete []int, experiencesToUpdate, experiencesToInsert []domain.DbExperience,
 		insitutionsIDsToDelete []int, insitutionsToUpdate, insitutionsToInsert []domain.DbEducationInstitution,
 	) error
-	DeleteOneOfUsersCV(userID, cvID int) error
+	DeleteOneOfUsersCV(ctx context.Context, userID, cvID int) error
 }
 
 type psqlCVRepository struct {
@@ -51,7 +53,11 @@ func NewPsqlCVRepository(db *sql.DB) ICVRepository {
 	}
 }
 
-func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+func (repo *psqlCVRepository) GetCVById(ctx context.Context, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting cv by 'cv_id'")
+
+	contextLogger.Debug("starting transaction")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return nil, nil, nil, txErr
@@ -89,13 +95,13 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, []domain.DbExpe
 		return nil, nil, nil, err
 	}
 
-	expToReturn, expErr := repo.expRepo.GetTxExperiences(tx, cvID)
+	expToReturn, expErr := repo.expRepo.GetTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, expErr
 	}
 
-	edInstToReturn, instErr := repo.instRepo.GetTxInstitutions(tx, cvID)
+	edInstToReturn, instErr := repo.instRepo.GetTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, instErr
@@ -105,11 +111,14 @@ func (repo *psqlCVRepository) GetCVById(cvID int) (*domain.DbCV, []domain.DbExpe
 	if commitErr != nil {
 		return nil, nil, nil, commitErr
 	}
+	contextLogger.Debug("commiting transaction")
 
 	return &cvToReturn, expToReturn, edInstToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+func (repo *psqlCVRepository) GetCVsByIds(ctx context.Context, idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting cv list by 'cv_id' list")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return nil, nil, nil, txErr
@@ -164,12 +173,12 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, []domain
 		return nil, nil, nil, ErrEntityNotFound
 	}
 
-	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(tx, cvIDs)
+	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(ctx, tx, cvIDs)
 	if expErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, expErr
 	}
-	instsToReturn, instErr := repo.instRepo.GetTxExperiencesByIds(tx, cvIDs)
+	instsToReturn, instErr := repo.instRepo.GetTxInstitutionsByIds(ctx, tx, cvIDs)
 	if instErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, instErr
@@ -183,7 +192,9 @@ func (repo *psqlCVRepository) GetCVsByIds(idList []int) ([]domain.DbCV, []domain
 	return cvsToReturn, expsToReturn, instsToReturn, nil
 }
 
-func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting user's cv list")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return nil, nil, nil, txErr
@@ -254,14 +265,14 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, []domai
 	// fmt.Printf("after cv select\n")
 	// fmt.Printf("cvIDs: %v\n", cvIDs)
 
-	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(tx, cvIDs)
+	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(ctx, tx, cvIDs)
 	if expErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, expErr
 	}
 	// fmt.Printf("after exp select\n")
 
-	instsToReturn, instErr := repo.instRepo.GetTxExperiencesByIds(tx, cvIDs)
+	instsToReturn, instErr := repo.instRepo.GetTxInstitutionsByIds(ctx, tx, cvIDs)
 	if instErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, instErr
@@ -276,11 +287,13 @@ func (repo *psqlCVRepository) GetCVsByUserId(userID int) ([]domain.DbCV, []domai
 	return cvsToReturn, expsToReturn, instsToReturn, nil
 }
 
-func (repo *psqlCVRepository) AddCV(
+func (repo *psqlCVRepository) AddCV(ctx context.Context,
 	userID int, cv *domain.DbCV,
 	experiences []domain.DbExperience,
 	insitutions []domain.DbEducationInstitution,
 ) (int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("adding new cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return 0, txErr
@@ -333,13 +346,13 @@ func (repo *psqlCVRepository) AddCV(
 		return 0, insertCvErr
 	}
 	// fmt.Println("after cv insert")
-	expErr := repo.expRepo.AddTxExperiences(tx, insertedCVID, experiences)
+	expErr := repo.expRepo.AddTxExperiences(ctx, tx, insertedCVID, experiences)
 	if expErr != nil {
 		tx.Rollback()
 		return 0, expErr
 	}
 	// fmt.Println("after exp insert")
-	instErr := repo.instRepo.AddTxInstitutions(tx, insertedCVID, insitutions)
+	instErr := repo.instRepo.AddTxInstitutions(ctx, tx, insertedCVID, insitutions)
 	if instErr != nil {
 		tx.Rollback()
 		return 0, instErr
@@ -354,7 +367,9 @@ func (repo *psqlCVRepository) AddCV(
 	return insertedCVID, nil
 }
 
-func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+func (repo *psqlCVRepository) GetOneOfUsersCV(ctx context.Context, userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting one of the user's cv by 'user_id' and 'cv_id'")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return nil, nil, nil, txErr
@@ -418,13 +433,13 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, [
 		return nil, nil, nil, err
 	}
 
-	exps, expErr := repo.expRepo.GetTxExperiences(tx, cvID)
+	exps, expErr := repo.expRepo.GetTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, expErr
 	}
 
-	insts, instErr := repo.instRepo.GetTxInstitutions(tx, cvID)
+	insts, instErr := repo.instRepo.GetTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
 		tx.Rollback()
 		return nil, nil, nil, instErr
@@ -439,10 +454,12 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(userID, cvID int) (*domain.DbCV, [
 }
 
 func (repo *psqlCVRepository) UpdateOneOfUsersCV(
-	userID, cvID int, cv *domain.DbCV,
+	ctx context.Context, userID, cvID int, cv *domain.DbCV,
 	experiencesIDsToDelete []int, experiencesToUpdate, experiencesToInsert []domain.DbExperience,
 	insitutionsIDsToDelete []int, insitutionsToUpdate, insitutionsToInsert []domain.DbEducationInstitution,
 ) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("updating one of the user's cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return txErr
@@ -495,7 +512,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after update cv\n")
 
 	// updating experiences
-	expUpdErr := repo.expRepo.UpdateTxExperiences(tx, cvID, experiencesToUpdate)
+	expUpdErr := repo.expRepo.UpdateTxExperiences(ctx, tx, cvID, experiencesToUpdate)
 	if expUpdErr != nil {
 		tx.Rollback()
 		return expUpdErr
@@ -503,7 +520,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after update experiences\n")
 
 	// deleting experiences
-	expDelErr := repo.expRepo.DeleteTxExperiencesByIDs(tx, experiencesIDsToDelete)
+	expDelErr := repo.expRepo.DeleteTxExperiencesByIDs(ctx, tx, experiencesIDsToDelete)
 	if expDelErr != nil {
 		tx.Rollback()
 		return expDelErr
@@ -511,7 +528,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after deleting experiences\n")
 
 	// inserting experiences
-	expInsErr := repo.expRepo.AddTxExperiences(tx, cvID, experiencesToInsert)
+	expInsErr := repo.expRepo.AddTxExperiences(ctx, tx, cvID, experiencesToInsert)
 	if expInsErr != nil {
 		tx.Rollback()
 		return expInsErr
@@ -519,7 +536,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after inserting experiences\n")
 
 	// updating institutions
-	instUpdErr := repo.instRepo.UpdateTxInstitutions(tx, cvID, insitutionsToUpdate)
+	instUpdErr := repo.instRepo.UpdateTxInstitutions(ctx, tx, cvID, insitutionsToUpdate)
 	if instUpdErr != nil {
 		tx.Rollback()
 		return instUpdErr
@@ -527,7 +544,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after updating institutions\n")
 
 	// deleting institutions
-	instDelErr := repo.instRepo.DeleteTxExperiencesByIDs(tx, insitutionsIDsToDelete)
+	instDelErr := repo.instRepo.DeleteTxInstitutionsByIDs(ctx, tx, insitutionsIDsToDelete)
 	if instDelErr != nil {
 		tx.Rollback()
 		return instDelErr
@@ -535,7 +552,7 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// fmt.Printf("after deleting institutions\n")
 
 	// inserting institutions
-	instInsErr := repo.instRepo.AddTxInstitutions(tx, cvID, insitutionsToInsert)
+	instInsErr := repo.instRepo.AddTxInstitutions(ctx, tx, cvID, insitutionsToInsert)
 	if instInsErr != nil {
 		tx.Rollback()
 		return instInsErr
@@ -550,7 +567,9 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	return nil
 }
 
-func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
+func (repo *psqlCVRepository) DeleteOneOfUsersCV(ctx context.Context, userID, cvID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("deleting one of the user's cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
 		return txErr
@@ -576,13 +595,13 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(userID, cvID int) error {
 		return err
 	}
 
-	expErr := repo.expRepo.DeleteTxExperiences(tx, cvID)
+	expErr := repo.expRepo.DeleteTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
 		tx.Rollback()
 		return expErr
 	}
 
-	instErr := repo.instRepo.DeleteTxExperiences(tx, cvID)
+	instErr := repo.instRepo.DeleteTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
 		tx.Rollback()
 		return instErr

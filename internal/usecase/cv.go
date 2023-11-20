@@ -6,15 +6,16 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
 	"HnH/pkg/utils"
+	"context"
 )
 
 type ICVUsecase interface {
-	GetCVById(sessionID string, cvID int) (*domain.ApiCV, error)
-	GetCVList(sessionID string) ([]domain.ApiCV, error)
-	AddNewCV(sessionID string, cv *domain.ApiCV) (int, error)
-	GetCVOfUserById(sessionID string, cvID int) (*domain.ApiCV, error)
-	UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error
-	DeleteCVOfUserById(sessionID string, cvID int) error
+	GetCVById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error)
+	GetCVList(ctx context.Context, sessionID string) ([]domain.ApiCV, error)
+	AddNewCV(ctx context.Context, sessionID string, cv *domain.ApiCV) (int, error)
+	GetCVOfUserById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error)
+	UpdateCVOfUserById(ctx context.Context, sessionID string, cvID int, cv *domain.ApiCV) error
+	DeleteCVOfUserById(ctx context.Context, sessionID string, cvID int) error
 }
 
 type CVUsecase struct {
@@ -61,13 +62,13 @@ func (cvUsecase *CVUsecase) validateSessionAndGetUserId(sessionID string) (int, 
 	return userID, nil
 }
 
-func (cvUsecase *CVUsecase) validateRoleAndGetUserId(sessionID string, requiredRole domain.Role) (int, error) {
+func (cvUsecase *CVUsecase) validateRoleAndGetUserId(ctx context.Context, sessionID string, requiredRole domain.Role) (int, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userRole, err := cvUsecase.userRepo.GetRoleById(userID)
+	userRole, err := cvUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
 		return 0, err
 	} else if userRole != requiredRole {
@@ -96,23 +97,23 @@ func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExpe
 }
 
 // Finds cv that responded to one of the current user's vacancy
-func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.ApiCV, error) {
-	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Employer)
+func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error) {
+	userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Employer)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(cvID)
+	vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	userOrgID, err := cvUsecase.userRepo.GetUserOrgId(userID)
+	userOrgID, err := cvUsecase.userRepo.GetUserOrgId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = cvUsecase.vacancyRepo.GetVacanciesByIds(userOrgID, vacIdsList)
+	_, err = cvUsecase.vacancyRepo.GetVacanciesByIds(ctx, userOrgID, vacIdsList)
 	if err == psql.ErrEntityNotFound {
 		return nil, serverErrors.FORBIDDEN
 	}
@@ -120,7 +121,7 @@ func (cvUsecase *CVUsecase) GetCVById(sessionID string, cvID int) (*domain.ApiCV
 		return nil, err
 	}
 
-	cv, exps, edInsts, err := cvUsecase.cvRepo.GetCVById(cvID)
+	cv, exps, edInsts, err := cvUsecase.cvRepo.GetCVById(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,16 +152,16 @@ func (cvUsecase *CVUsecase) combineDbCVs(cvs []domain.DbCV, exps []domain.DbExpe
 	return res
 }
 
-func (cvUsecase *CVUsecase) GetCVList(sessionID string) ([]domain.ApiCV, error) {
+func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]domain.ApiCV, error) {
 
-	userID, validStatus := cvUsecase.validateRoleAndGetUserId(sessionID, domain.Applicant)
+	userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 	// fmt.Printf("userID: %v\n", userID)
 	// fmt.Println("before getting cvs")
 
-	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(userID)
+	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +196,7 @@ func (cvUsecase *CVUsecase) getDataFromApiCV(apiCV *domain.ApiCV) ([]domain.DbEx
 	return dbExperiences, dbEducationInstitutions, dbCV
 }
 
-func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, error) {
+func (cvUsecase *CVUsecase) AddNewCV(ctx context.Context, sessionID string, cv *domain.ApiCV) (int, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	// fmt.Println(userID)
 	if validStatus != nil {
@@ -204,7 +205,7 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, e
 
 	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
 
-	cvID, addErr := cvUsecase.cvRepo.AddCV(userID, dbCV, dbExperiences, dbEducationInstitutions)
+	cvID, addErr := cvUsecase.cvRepo.AddCV(ctx, userID, dbCV, dbExperiences, dbEducationInstitutions)
 	if addErr != nil {
 		return 0, addErr
 	}
@@ -212,13 +213,13 @@ func (cvUsecase *CVUsecase) AddNewCV(sessionID string, cv *domain.ApiCV) (int, e
 	return cvID, nil
 }
 
-func (cvUsecase *CVUsecase) GetCVOfUserById(sessionID string, cvID int) (*domain.ApiCV, error) {
+func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error) {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	cv, exps, insts, err := cvUsecase.cvRepo.GetOneOfUsersCV(userID, cvID)
+	cv, exps, insts, err := cvUsecase.cvRepo.GetOneOfUsersCV(ctx, userID, cvID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,18 +263,18 @@ func (cvUsecase *CVUsecase) getInstsBatches(
 	return
 }
 
-func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *domain.ApiCV) error {
+func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID string, cvID int, cv *domain.ApiCV) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
 
-	expIDs, expErr := cvUsecase.expRepo.GetCVExperiencesIDs(cvID)
+	expIDs, expErr := cvUsecase.expRepo.GetCVExperiencesIDs(ctx, cvID)
 	if expErr != nil && expErr != psql.ErrEntityNotFound {
 		return expErr
 	}
-	instIDs, instErr := cvUsecase.instRepo.GetCVInstitutionsIDs(cvID)
+	instIDs, instErr := cvUsecase.instRepo.GetCVInstitutionsIDs(ctx, cvID)
 	if instErr != nil && instErr != psql.ErrEntityNotFound {
 		return instErr
 	}
@@ -283,7 +284,7 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *d
 	
 	instsIDsToDelete, instsToUpdate, instsToInsert := cvUsecase.getInstsBatches(dbEducationInstitutions, instIDs)
 
-	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(userID, cvID, dbCV,
+	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(ctx, userID, cvID, dbCV,
 		expsIDsToDelete, expsToUpdate, expsToInsert,
 		instsIDsToDelete, instsToUpdate, instsToInsert,
 	)
@@ -294,13 +295,13 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(sessionID string, cvID int, cv *d
 	return nil
 }
 
-func (cvUsecase *CVUsecase) DeleteCVOfUserById(sessionID string, cvID int) error {
+func (cvUsecase *CVUsecase) DeleteCVOfUserById(ctx context.Context, sessionID string, cvID int) error {
 	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	delStatus := cvUsecase.cvRepo.DeleteOneOfUsersCV(userID, cvID)
+	delStatus := cvUsecase.cvRepo.DeleteOneOfUsersCV(ctx, userID, cvID)
 	if delStatus != nil {
 		return delStatus
 	}

@@ -6,6 +6,7 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
 	"io/ioutil"
@@ -14,11 +15,11 @@ import (
 )
 
 type IUserUsecase interface {
-	SignUp(user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
+	SignUp(ctx context.Context, user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
 	GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error)
-	UpdateInfo(sessionID string, user *domain.UserUpdate) error
-	UploadAvatar(sessionID, path string) error
-	GetAvatar(sessionID string) ([]byte, error)
+	UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error
+	UploadAvatar(ctx context.Context, sessionID, path string) error
+	GetAvatar(ctx context.Context, sessionID string) ([]byte, error)
 }
 
 type UserUsecase struct {
@@ -53,18 +54,25 @@ func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (i
 	return userID, nil
 }
 
-func (userUsecase *UserUsecase) SignUp(user *domain.ApiUser, expiryUnixSeconds int64) (string, error) {
+func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser, expiryUnixSeconds int64) (string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("validating email")
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
+		contextLogger.Info("validating email failed")
 		return "", validEmailStatus
 	}
 
+	contextLogger.Info("validating password")
 	validPassStatus := authUtils.ValidatePassword(user.Password)
 	if validPassStatus != nil {
+		contextLogger.Info("validating password failed")
 		return "", validPassStatus
 	}
 
+	contextLogger.Info("validating role")
 	if !user.Type.IsRole() {
+		contextLogger.Info("validating role failed")
 		return "", serverErrors.INVALID_ROLE
 	}
 	// fmt.Printf("before add user to db\n")
@@ -74,24 +82,28 @@ func (userUsecase *UserUsecase) SignUp(user *domain.ApiUser, expiryUnixSeconds i
 			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
 			Location:    user.Location,
 		}
-		_, addOrgErr := userUsecase.orgRepo.AddOrganization(&organization)
+		contextLogger.Info("adding organization for employer")
+		_, addOrgErr := userUsecase.orgRepo.AddOrganization(ctx, &organization)
 		if addOrgErr != nil {
 			return "", addOrgErr
 		}
 	}
-	addStatus := userUsecase.userRepo.AddUser(user, authUtils.GenerateHash)
+	contextLogger.Info("adding user")
+	addStatus := userUsecase.userRepo.AddUser(ctx, user, authUtils.GenerateHash)
 	if addStatus != nil {
 		return "", addStatus
 	}
 	// fmt.Printf("after add user to db\n")
 
-	userID, err := userUsecase.userRepo.GetUserIdByEmail(user.Email)
+	contextLogger.Info("getting user by email")
+	userID, err := userUsecase.userRepo.GetUserIdByEmail(ctx, user.Email)
 	if err != nil {
 		return "", err
 	}
 
 	sessionID := uuid.NewString()
 
+	contextLogger.Info("adding session")
 	addErr := userUsecase.sessionRepo.AddSession(sessionID, userID, expiryUnixSeconds)
 	if addErr != nil {
 		return "", addErr
@@ -101,12 +113,14 @@ func (userUsecase *UserUsecase) SignUp(user *domain.ApiUser, expiryUnixSeconds i
 }
 
 func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	user, appID, empID, getErr := userUsecase.userRepo.GetUserInfo(userID)
+	contextLogger.Info("getting user information")
+	user, appID, empID, getErr := userUsecase.userRepo.GetUserInfo(ctx, userID)
 	if getErr != nil {
 		return nil, getErr
 	}
@@ -117,18 +131,19 @@ func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (
 	return apiUser, nil
 }
 
-func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUpdate) error {
+func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	validPassStatus := userUsecase.userRepo.CheckPasswordById(userID, user.Password)
+	validPassStatus := userUsecase.userRepo.CheckPasswordById(ctx, userID, user.Password)
 	if validPassStatus != nil {
 		return validPassStatus
 	}
-
-	updStatus := userUsecase.userRepo.UpdateUserInfo(userID, user)
+	contextLogger.Info("updating user info")
+	updStatus := userUsecase.userRepo.UpdateUserInfo(ctx, userID, user)
 	if updStatus != nil {
 		return updStatus
 	}
@@ -136,13 +151,15 @@ func (userUsecase *UserUsecase) UpdateInfo(sessionID string, user *domain.UserUp
 	return nil
 }
 
-func (userUsecase *UserUsecase) UploadAvatar(sessionID, path string) error {
+func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID, path string) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	err := userUsecase.userRepo.UploadAvatarByUserID(userID, path)
+	contextLogger.Info("uploading avatar")
+	err := userUsecase.userRepo.UploadAvatarByUserID(ctx, userID, path)
 	if err != nil {
 		return err
 	}
@@ -150,13 +167,16 @@ func (userUsecase *UserUsecase) UploadAvatar(sessionID, path string) error {
 	return nil
 }
 
-func (userUsecase *UserUsecase) GetAvatar(sessionID string) ([]byte, error) {
+func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string) ([]byte, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	path, err := userUsecase.userRepo.GetAvatarByUserID(userID)
+	contextLogger.Info("getting user's avatar")
+	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
 
 	if path == "" {
 		return nil, nil

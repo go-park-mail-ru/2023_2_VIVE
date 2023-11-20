@@ -65,7 +65,7 @@ func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r 
 		return
 	}
 
-	createStatus := responseHandler.responseUsecase.RespondToVacancy(cookie.Value, vacancyID, cvID)
+	createStatus := responseHandler.responseUsecase.RespondToVacancy(r.Context(), cookie.Value, vacancyID, cvID)
 	if createStatus != nil {
 		responseTemplates.SendErrorMessage(w, createStatus, http.StatusBadRequest)
 		return
@@ -85,7 +85,7 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 		return
 	}
 
-	applicantsList, err := responseHandler.responseUsecase.GetApplicantsList(cookie.Value, vacancyID)
+	applicantsList, err := responseHandler.responseUsecase.GetApplicantsList(r.Context(), cookie.Value, vacancyID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return

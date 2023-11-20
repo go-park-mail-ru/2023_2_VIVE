@@ -5,14 +5,15 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
+	"context"
 
 	"github.com/google/uuid"
 )
 
 type ISessionUsecase interface {
-	Login(user *domain.DbUser, expiryUnixSeconds int64) (string, error)
-	Logout(sessionID string) error
-	CheckLogin(sessionID string) error
+	Login(ctx context.Context, user *domain.DbUser, expiryUnixSeconds int64) (string, error)
+	Logout(ctx context.Context, sessionID string) error
+	CheckLogin(ctx context.Context, sessionID string) error
 }
 
 type SessionUsecase struct {
@@ -27,7 +28,7 @@ func NewSessionUsecase(sessionRepository redisRepo.ISessionRepository, userRepos
 	}
 }
 
-func (sessionUsecase *SessionUsecase) Login(user *domain.DbUser, expiryUnixSeconds int64) (string, error) {
+func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.DbUser, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus
@@ -38,12 +39,12 @@ func (sessionUsecase *SessionUsecase) Login(user *domain.DbUser, expiryUnixSecon
 		return "", validPasswordStatus
 	}
 
-	loginErr := sessionUsecase.userRepo.CheckUser(user)
+	loginErr := sessionUsecase.userRepo.CheckUser(ctx, user)
 	if loginErr != nil {
 		return "", loginErr
 	}
 
-	userID, err := sessionUsecase.userRepo.GetUserIdByEmail(user.Email)
+	userID, err := sessionUsecase.userRepo.GetUserIdByEmail(ctx, user.Email)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +59,7 @@ func (sessionUsecase *SessionUsecase) Login(user *domain.DbUser, expiryUnixSecon
 	return sessionID, nil
 }
 
-func (sessionUsecase *SessionUsecase) Logout(sessionID string) error {
+func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID string) error {
 	deleteErr := sessionUsecase.sessionRepo.DeleteSession(sessionID)
 	if deleteErr != nil {
 		return deleteErr
@@ -67,7 +68,7 @@ func (sessionUsecase *SessionUsecase) Logout(sessionID string) error {
 	return nil
 }
 
-func (sessionUsecase *SessionUsecase) CheckLogin(sessionID string) error {
+func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context, sessionID string) error {
 	sessionErr := sessionUsecase.sessionRepo.ValidateSession(sessionID)
 	if sessionErr != nil {
 		return sessionErr

@@ -2,21 +2,25 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/queryUtils"
+	"context"
 	"database/sql"
 	"errors"
+
+	"github.com/sirupsen/logrus"
 )
 
 type IVacancyRepository interface {
-	GetAllVacancies() ([]domain.DbVacancy, error)
-	GetVacanciesByIds(orgID int, idList []int) ([]domain.DbVacancy, error)
-	GetVacancy(vacancyID int) (*domain.DbVacancy, error)
-	GetUserVacancies(userID int) ([]domain.DbVacancy, error)
+	GetAllVacancies(ctx context.Context) ([]domain.DbVacancy, error)
+	GetVacanciesByIds(ctx context.Context, orgID int, idList []int) ([]domain.DbVacancy, error)
+	GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error)
+	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
-	GetOrgId(vacancyID int) (int, error)
-	AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error)
-	UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.DbVacancy) error
-	DeleteOrgVacancy(orgID, vacancyID int) error
+	GetOrgId(ctx context.Context, vacancyID int) (int, error)
+	AddVacancy(ctx context.Context, userID int, vacancy *domain.DbVacancy) (int, error)
+	UpdateOrgVacancy(ctx context.Context, orgID, vacancyID int, vacancy *domain.DbVacancy) error
+	DeleteOrgVacancy(ctx context.Context, orgID, vacancyID int) error
 }
 
 type psqlVacancyRepository struct {
@@ -29,7 +33,10 @@ func NewPsqlVacancyRepository(db *sql.DB) IVacancyRepository {
 	}
 }
 
-func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetAllVacancies(ctx context.Context) ([]domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting all vacancies from postgres")
 	query := `SELECT
 	    id,
 	    employer_id,
@@ -83,7 +90,14 @@ func (repo *psqlVacancyRepository) GetAllVacancies() ([]domain.DbVacancy, error)
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([]domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, orgID int, idList []int) ([]domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"id_list": idList,
+		"org_id":  orgID,
+	}).
+		Info("getting vacancies by 'id_list' and 'org_id' from postgres")
 	if len(idList) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -155,7 +169,13 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(orgID int, idList []int) ([
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+	}).
+		Info("getting vacanciy by 'vacancy_id' from postgres")
 	query := `SELECT
 		id,
 		employer_id,
@@ -203,8 +223,14 @@ func (repo *psqlVacancyRepository) GetVacancy(vacancyID int) (*domain.DbVacancy,
 	return &vacancyToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error) {
 	var empID int
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"id_list": userID,
+	}).
+		Info("getting vacancies by 'user_id' from postgres")
 
 	empErr := repo.DB.QueryRow(`SELECT id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&empID)
 	if empErr != nil {
@@ -319,7 +345,13 @@ func (repo *psqlVacancyRepository) GetUserVacancies(userID int) ([]domain.DbVaca
 // 	return &vacancyToReturn, nil
 // }
 
-func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
+func (repo *psqlVacancyRepository) GetOrgId(ctx context.Context, vacancyID int) (int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+	}).
+		Info("getting organization id by 'vacancy_id' from postgres")
 	query := `SELECT
 		organization_id
 	FROM
@@ -352,7 +384,13 @@ func (repo *psqlVacancyRepository) GetOrgId(vacancyID int) (int, error) {
 }
 
 // Add new vacancy and return new id if successful
-func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVacancy) (int, error) {
+func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, vacancy *domain.DbVacancy) (int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("adding new vacancy  by 'user_id' in postgres")
 	// fmt.Printf("before inserting vacancy in db: %v\n", vacancy)
 	query := `INSERT
 		INTO
@@ -417,7 +455,15 @@ func (repo *psqlVacancyRepository) AddVacancy(userID int, vacancy *domain.DbVaca
 	return insertedVacancyID, nil
 }
 
-func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacancy *domain.DbVacancy) error {
+func (repo *psqlVacancyRepository) UpdateOrgVacancy(ctx context.Context, orgID, vacancyID int, vacancy *domain.DbVacancy) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id":      vacancyID,
+		"organization_id": orgID,
+	}).
+		Info("updating vacancy by 'vacancy_id' and 'organization_id' in postgres")
+
 	query := `UPDATE
 		hnh_data.vacancy v
 	SET
@@ -479,7 +525,15 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(orgID, vacancyID int, vacanc
 	return nil
 }
 
-func (repo *psqlVacancyRepository) DeleteOrgVacancy(orgID, vacancyID int) error {
+func (repo *psqlVacancyRepository) DeleteOrgVacancy(ctx context.Context, orgID, vacancyID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id":      vacancyID,
+		"organization_id": orgID,
+	}).
+		Info("deleting vacancy by 'vacancy_id' and 'organization_id' in postgres")
+
 	query := `DELETE
 	FROM
 		hnh_data.vacancy v

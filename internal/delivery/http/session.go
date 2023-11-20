@@ -48,7 +48,7 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 
 	expiryTime := time.Now().Add(10 * time.Hour)
 
-	sessionID, loginErr := sessionHandler.sessionUsecase.Login(user, expiryTime.Unix())
+	sessionID, loginErr := sessionHandler.sessionUsecase.Login(r.Context(), user, expiryTime.Unix())
 	if loginErr != nil {
 		responseTemplates.SendErrorMessage(w, loginErr, http.StatusBadRequest)
 		return
@@ -70,7 +70,7 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	deleteErr := sessionHandler.sessionUsecase.Logout(cookie.Value)
+	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context(), cookie.Value)
 	if deleteErr != nil {
 		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusUnauthorized)
 		return
@@ -85,7 +85,7 @@ func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Requ
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	sessionErr := sessionHandler.sessionUsecase.CheckLogin(cookie.Value)
+	sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context(), cookie.Value)
 	if sessionErr != nil {
 		responseTemplates.SendErrorMessage(w, sessionErr, http.StatusUnauthorized)
 		return

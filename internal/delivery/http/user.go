@@ -5,7 +5,6 @@ import (
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
-	"HnH/pkg/logging"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 	"HnH/pkg/serverErrors"
@@ -80,7 +79,7 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	expiryTime := time.Now().Add(10 * time.Hour)
 
-	sessionID, err := userHandler.userUsecase.SignUp(newUser, expiryTime.Unix())
+	sessionID, err := userHandler.userUsecase.SignUp(r.Context(), newUser, expiryTime.Unix())
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
@@ -103,11 +102,11 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 	cookie, _ := r.Cookie("session")
 
 	// logger := r.Context().Value(middleware.LOGGER_KEY).(*logrus.Entry)
-	// logger.Info("got request")
+	// logger.Info("GOT REQUEST")
 
-	requesID, requestID := middleware.GetRequestIDCtx(r.Context())
-	logging.Logger.WithField(requesID, requestID).
-		Info("got request")
+	// requesID, requestID := middleware.GetRequestIDCtx(r.Context())
+	// logging.Logger.WithField(requesID, requestID).
+	// 	Info("got request")
 
 	// logging.Logger.Info("got request")
 
@@ -135,7 +134,7 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updStatus := userHandler.userUsecase.UpdateInfo(cookie.Value, updateInfo)
+	updStatus := userHandler.userUsecase.UpdateInfo(r.Context(), cookie.Value, updateInfo)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
@@ -165,7 +164,7 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 
 	cookie, _ := r.Cookie("session")
 
-	uplErr := userHandler.userUsecase.UploadAvatar(cookie.Value, configs.UPLOADS_DIR+handler.Filename)
+	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), cookie.Value, configs.UPLOADS_DIR+handler.Filename)
 	if uplErr != nil {
 		responseTemplates.SendErrorMessage(w, uplErr, http.StatusInternalServerError)
 		return
@@ -177,7 +176,7 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	file, err := userHandler.userUsecase.GetAvatar(cookie.Value)
+	file, err := userHandler.userUsecase.GetAvatar(r.Context(), cookie.Value)
 	if file == nil && err == nil {
 		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		return

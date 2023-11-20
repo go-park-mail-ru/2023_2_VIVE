@@ -68,7 +68,7 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
-	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies()
+	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies(r.Context())
 
 	if getErr == psql.ErrEntityNotFound {
 		vacancies = []domain.ApiVacancy{}
@@ -90,7 +90,7 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	vacancy, err := vacancyHandler.vacancyUsecase.GetVacancy(vacancyID)
+	vacancy, err := vacancyHandler.vacancyUsecase.GetVacancy(r.Context(), vacancyID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
@@ -118,7 +118,7 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 	dbVac := apiVac.ToDb()
 	// fmt.Printf("dbVac: %v\n", dbVac)
 
-	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(cookie.Value, dbVac)
+	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(r.Context(), cookie.Value, dbVac)
 	if addStatus != nil {
 		responseTemplates.SendErrorMessage(w, addStatus, http.StatusBadRequest)
 		return
@@ -149,7 +149,7 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 		return
 	}
 
-	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(cookie.Value, vacancyID, updatedVac)
+	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(r.Context(), cookie.Value, vacancyID, updatedVac)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
@@ -168,7 +168,7 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 		return
 	}
 
-	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(cookie.Value, vacancyID)
+	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(r.Context(), cookie.Value, vacancyID)
 	if delStatus != nil {
 		responseTemplates.SendErrorMessage(w, delStatus, http.StatusBadRequest)
 		return
@@ -180,7 +180,7 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(cookie.Value)
+	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(r.Context(), cookie.Value)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return

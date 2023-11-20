@@ -20,7 +20,7 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 			return
 		}
 
-		authErr := sessionUsecase.CheckLogin(cookie.Value)
+		authErr := sessionUsecase.CheckLogin(r.Context(), cookie.Value)
 		if authErr != nil {
 			responseTemplates.SendErrorMessage(w, authErr, http.StatusUnauthorized)
 			return

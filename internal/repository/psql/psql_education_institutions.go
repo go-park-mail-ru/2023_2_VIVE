@@ -2,20 +2,22 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/queryUtils"
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 )
 
 type IEducationInstitutionRepository interface {
-	GetCVInstitutionsIDs(cvID int) ([]int, error)
-	GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error)
-	GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error)
-	AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
-	UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
-	DeleteTxExperiences(tx *sql.Tx, cvID int) error
-	DeleteTxExperiencesByIDs(tx *sql.Tx, instIDs []int) error
+	GetCVInstitutionsIDs(ctx context.Context, cvID int) ([]int, error)
+	GetTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error)
+	GetTxInstitutionsByIds(ctx context.Context, tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error)
+	AddTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
+	UpdateTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error
+	DeleteTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int) error
+	DeleteTxInstitutionsByIDs(ctx context.Context, tx *sql.Tx, instIDs []int) error
 }
 
 type psqlEducationInstitutionRepository struct {
@@ -36,7 +38,10 @@ func NewPsqlEducationInstitutionRepository(db *sql.DB) IEducationInstitutionRepo
 	}
 }
 
-func (repo *psqlEducationInstitutionRepository) GetCVInstitutionsIDs(cvID int) ([]int, error) {
+func (repo *psqlEducationInstitutionRepository) GetCVInstitutionsIDs(ctx context.Context, cvID int) ([]int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting intitutions by 'cv_id'")
 	query := `SELECT 
 		ei.id
 	FROM
@@ -65,7 +70,10 @@ func (repo *psqlEducationInstitutionRepository) GetCVInstitutionsIDs(cvID int) (
 	return instIDsToReturn, nil
 }
 
-func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error) {
+func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int) ([]domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting intitutions by 'cv_id' in transaction")
 	query := `SELECT ` +
 		strings.Join(queryUtils.GetColumnNames(repo.ColumnNames), ", ") +
 		` FROM
@@ -101,7 +109,10 @@ func (repo *psqlEducationInstitutionRepository) GetTxInstitutions(tx *sql.Tx, cv
 	return institutionsToReturn, nil
 }
 
-func (repo *psqlEducationInstitutionRepository) GetTxExperiencesByIds(tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error) {
+func (repo *psqlEducationInstitutionRepository) GetTxInstitutionsByIds(ctx context.Context, tx *sql.Tx, cvIDs []int) ([]domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting intitutions list by 'cv_id' list in transaction")
 	if len(cvIDs) == 0 {
 		return nil, ErrEntityNotFound
 	}
@@ -155,7 +166,10 @@ func (repo *psqlEducationInstitutionRepository) convertToSlice(cvID int, institu
 	return res
 }
 
-func (repo *psqlEducationInstitutionRepository) AddTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+func (repo *psqlEducationInstitutionRepository) AddTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("adding new intitutions by 'cv_id' in transaction")
 	if len(institutions) == 0 {
 		return nil
 	}
@@ -206,7 +220,10 @@ func (repo *psqlEducationInstitutionRepository) getValues(cvID int, institutions
 	return res
 }
 
-func (repo *psqlEducationInstitutionRepository) UpdateTxInstitutions(tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+func (repo *psqlEducationInstitutionRepository) UpdateTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int, institutions []domain.DbEducationInstitution) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("updating intitutions by 'cv_id' in transaction")
 	if len(institutions) == 0 {
 		return nil
 	}
@@ -237,7 +254,10 @@ func (repo *psqlEducationInstitutionRepository) UpdateTxInstitutions(tx *sql.Tx,
 	return nil
 }
 
-func (repo *psqlEducationInstitutionRepository) DeleteTxExperiences(tx *sql.Tx, cvID int) error {
+func (repo *psqlEducationInstitutionRepository) DeleteTxInstitutions(ctx context.Context, tx *sql.Tx, cvID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("deleting intitutions by 'cv_id' in transaction")
 	query := `DELETE
 	FROM
 		hnh_data.education_institution ei
@@ -260,7 +280,10 @@ func (repo *psqlEducationInstitutionRepository) DeleteTxExperiences(tx *sql.Tx, 
 	return nil
 }
 
-func (repo *psqlEducationInstitutionRepository) DeleteTxExperiencesByIDs(tx *sql.Tx, instIDs []int) error {
+func (repo *psqlEducationInstitutionRepository) DeleteTxInstitutionsByIDs(ctx context.Context, tx *sql.Tx, instIDs []int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("deleting intitutions by 'cv_id' list in transaction")
 	if len(instIDs) == 0 {
 		return nil
 	}

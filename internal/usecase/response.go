@@ -5,11 +5,12 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
+	"context"
 )
 
 type IResponseUsecase interface {
-	RespondToVacancy(sessionID string, vacancyID, cvID int) error
-	GetApplicantsList(sessionID string, vacancyID int) ([]domain.ApplicantInfo, error)
+	RespondToVacancy(ctx context.Context, sessionID string, vacancyID, cvID int) error
+	GetApplicantsList(ctx context.Context, sessionID string, vacancyID int) ([]domain.ApplicantInfo, error)
 }
 
 type ResponseUsecase struct {
@@ -48,40 +49,40 @@ func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(sessionID st
 	return userID, nil
 }
 
-func (responseUsecase *ResponseUsecase) RespondToVacancy(sessionID string, vacancyID, cvID int) error {
+func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, sessionID string, vacancyID, cvID int) error {
 	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	userRole, err := responseUsecase.userRepo.GetRoleById(userID)
+	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
 		return err
 	} else if userRole != domain.Applicant {
 		return INAPPROPRIATE_ROLE
 	}
 
-	respErr := responseUsecase.responseRepo.RespondToVacancy(vacancyID, cvID)
+	respErr := responseUsecase.responseRepo.RespondToVacancy(ctx, vacancyID, cvID)
 	if respErr != nil {
 		return respErr
 	}
 	return nil
 }
 
-func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vacancyID int) ([]domain.ApplicantInfo, error) {
+func (responseUsecase *ResponseUsecase) GetApplicantsList(ctx context.Context, sessionID string, vacancyID int) ([]domain.ApplicantInfo, error) {
 	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
 
-	userRole, err := responseUsecase.userRepo.GetRoleById(userID)
+	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
 		return nil, err
 	} else if userRole != domain.Employer {
 		return nil, INAPPROPRIATE_ROLE
 	}
 
-	userOrgID, err := responseUsecase.userRepo.GetUserOrgId(userID)
+	userOrgID, err := responseUsecase.userRepo.GetUserOrgId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -91,17 +92,17 @@ func (responseUsecase *ResponseUsecase) GetApplicantsList(sessionID string, vaca
 	// 	return nil, err
 	// }
 
-	orgID, _ := responseUsecase.vacancyRepo.GetOrgId(vacancyID)
+	orgID, _ := responseUsecase.vacancyRepo.GetOrgId(ctx, vacancyID)
 	if orgID != userOrgID {
 		return nil, serverErrors.FORBIDDEN
 	}
 
-	cvIDs, err := responseUsecase.responseRepo.GetAttachedCVs(vacancyID)
+	cvIDs, err := responseUsecase.responseRepo.GetAttachedCVs(ctx, vacancyID)
 	if err != nil {
 		return nil, err
 	}
 
-	CVs, _, _, err := responseUsecase.cvRepo.GetCVsByIds(cvIDs)
+	CVs, _, _, err := responseUsecase.cvRepo.GetCVsByIds(ctx, cvIDs)
 	if err != nil && err != psql.ErrEntityNotFound {
 		return nil, err
 	}
@@ -114,7 +115,7 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.DbCV) []domain.
 
 	for _, cv := range CVs {
 		info := domain.ApplicantInfo{
-			CVid:      cv.ID,
+			CVid: cv.ID,
 			// FirstName: cv.FirstName,
 			// LastName:  cv.LastName,
 			// Skills:    cv.Skills,	// FIXME: remove this field

@@ -2,11 +2,13 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/pkg/contextUtils"
+	"context"
 	"database/sql"
 )
 
 type IOrganizationRepository interface {
-	AddOrganization(organization *domain.DbOrganization) (int, error)
+	AddOrganization(ctx context.Context, organization *domain.DbOrganization) (int, error)
 	// CheckUser(user *domain.DbUser) error
 	// CheckPasswordById(id int, passwordToCheck string) error
 	// GetUserIdByEmail(email string) (int, error)
@@ -28,7 +30,10 @@ func NewPsqlOrganizationRepository(db *sql.DB) IOrganizationRepository {
 	}
 }
 
-func (repo *psqlOrganizationRepository) AddOrganization(organization *domain.DbOrganization) (int, error) {
+func (repo *psqlOrganizationRepository) AddOrganization(ctx context.Context, organization *domain.DbOrganization) (int, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("adding new organization")
 	query := `INSERT 
 	INTO hnh_data.organization 
 		("name", description, "location") 

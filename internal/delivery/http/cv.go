@@ -89,7 +89,7 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVById(cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cookie.Value, cvID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return
@@ -103,13 +103,12 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("session")
 
-	cvs, err := cvHandler.cvUsecase.GetCVList(cookie.Value)
+	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context(), cookie.Value)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	
 	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedCVs)
@@ -130,7 +129,7 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println(cv)
 	// bdCV := apiCV.ToDb()
 
-	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(cookie.Value, apiCV)
+	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), cookie.Value, apiCV)
 	if addErr != nil {
 		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
 		return
@@ -151,7 +150,7 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVOfUserById(cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cookie.Value, cvID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
@@ -180,7 +179,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(cookie.Value, cvID, cv)
+	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cookie.Value, cvID, cv)
 	if udpErr != nil {
 		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
 		return
@@ -199,7 +198,7 @@ func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(cookie.Value, cvID)
+	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cookie.Value, cvID)
 	if deleteErr != nil {
 		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusBadRequest)
 		return

@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/logging"
 	"HnH/pkg/responseTemplates"
+	"context"
 
 	"encoding/json"
 	"net/http"
@@ -11,9 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	LOGGER_KEY = ContextKey("logger")
-)
+// const (
+// 	LOGGER_KEY = ContextKey("logger")
+// )
 
 type responseWriter struct {
 	http.ResponseWriter
@@ -54,27 +56,36 @@ func AccessLogMiddleware( /* logger *logrus.Logger,  */ next http.Handler) http.
 		start := time.Now()
 		wrappedWriter := newResponseWriterWrapper(w)
 
-		requestID := r.Context().Value(REQUEST_ID_KEY)
+		// requestID := r.Context().Value(REQUEST_ID_KEY)
+		requestID := contextUtils.GetRequestIDCtx(r.Context())
 		logging.Logger = logging.Logger.WithField("request_id", requestID).Logger
 
+		// next.ServeHTTP(wrappedWriter, r)
+
 		contextLogger := logging.Logger.WithFields(logrus.Fields{
-			"status":         wrappedWriter.status,
-			"method":         r.Method,
-			"URL":            r.URL.Path,
-			"endpoint":       r.RemoteAddr,
-			"execution_time": time.Since(start).String(),
-			"request_id":     requestID,
+			"method":     r.Method,
+			"URL":        r.URL.Path,
+			"endpoint":   r.RemoteAddr,
+			"request_id": requestID,
+			// "status":         wrappedWriter.status,
+			// "execution_time": time.Since(start).String(),
 		})
 
-		// ctx := context.WithValue(r.Context(), LOGGER_KEY, contextLogger)
+		ctx := context.WithValue(r.Context(), contextUtils.LOGGER_KEY, contextLogger)
 
-		// next.ServeHTTP(wrappedWriter, r.WithContext(ctx))
-		next.ServeHTTP(wrappedWriter, r)
+		next.ServeHTTP(wrappedWriter, r.WithContext(ctx))
+
+		toLog := contextLogger.WithFields(logrus.Fields{
+			"status":         wrappedWriter.status,
+			"execution_time": time.Since(start).String(),
+		})
 
 		if wrappedWriter.body != "" {
-			contextLogger.Error(wrappedWriter.body)
+			toLog.Error(wrappedWriter.body)
 		} else {
-			contextLogger.Info("HTTP Request")
+			toLog.Info("HTTP Request")
 		}
 	})
 }
+
+
