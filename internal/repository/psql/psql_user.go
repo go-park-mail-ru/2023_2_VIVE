@@ -29,11 +29,13 @@ type IUserRepository interface {
 
 type psqlUserRepository struct {
 	userStorage *sql.DB
+	orgRepo     IOrganizationRepository
 }
 
 func NewPsqlUserRepository(db *sql.DB) IUserRepository {
 	return &psqlUserRepository{
 		userStorage: db,
+		orgRepo:     NewPsqlOrganizationRepository(db),
 	}
 }
 
@@ -135,52 +137,97 @@ func (p *psqlUserRepository) CheckPasswordById(ctx context.Context, id int, pass
 }
 
 func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, hasher authUtils.HashGenerator) error {
-	var exists bool
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
-	contextLogger.Info("adding user to postgres")
-	err := p.userStorage.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
+	tx, txErr := p.userStorage.Begin()
+	if txErr != nil {
+		return txErr
+	}
+
+	contextLogger.Info("started transaction for adding new user")
+
+	var exists bool
+
+	contextLogger.Info("checking user in postgres")
+	err := tx.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
 	if exists {
+		tx.Rollback()
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	} else if err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	hashedPass, salt, err := hasher(user.Password)
 	if err != nil {
+		tx.Rollback()
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
+	contextLogger.WithFields(logrus.Fields{
+		"email":      user.Email,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
+		"role":       user.Type,
+	}).
+		Debug("new user fields")
 	if user.Type == domain.Applicant {
 		var userID int
 		contextLogger.Info("adding applicant to postgres")
-		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
+		addErr := tx.QueryRow(`INSERT INTO hnh_data.user_profile `+
 			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
 			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
 			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
 			Scan(&userID)
+
 		if addErr != nil {
+			tx.Rollback()
 			return addErr
 		}
 
-		_, appErr := p.userStorage.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
+		contextLogger.WithFields(logrus.Fields{
+			"inserted_user_id": userID,
+		}).
+			Debug("inserted new user")
+
+		_, appErr := tx.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
 		if appErr != nil {
+			tx.Rollback()
 			return appErr
 		}
 	} else if user.Type == domain.Employer {
 		var userID int
 
+		organization := domain.DbOrganization{
+			Name:        user.OrganizationName,
+			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
+			Location:    user.Location,
+		}
+		contextLogger.Info("adding organization for employer")
+		orgID, addOrgErr := p.orgRepo.AddTxOrganization(ctx, tx, &organization)
+		if addOrgErr != nil {
+			tx.Rollback()
+			return addOrgErr
+		}
+
 		contextLogger.Info("adding employer to postgres")
-		addErr := p.userStorage.QueryRow(`INSERT INTO hnh_data.user_profile `+
+		addErr := tx.QueryRow(`INSERT INTO hnh_data.user_profile `+
 			`("email", "pswd", "salt", "first_name", "last_name", "birthday", "phone_number", "location") `+
 			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
 			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location).
 			Scan(&userID)
+
 		if addErr != nil {
+			tx.Rollback()
 			return addErr
 		}
 
-		_, empErr := p.userStorage.Exec(`INSERT
+		contextLogger.WithFields(logrus.Fields{
+			"inserted_user_id": userID,
+		}).
+			Debug("inserted new user")
+
+		result, empErr := tx.Exec(`INSERT
 				INTO
 				hnh_data.employer (
 					user_id,
@@ -188,24 +235,39 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 				)
 			VALUES (
 				$1,
-				(
-					SELECT
-						id
-					FROM
-						hnh_data.organization o
-					WHERE
-						o.name = $2
-				)
+				$2
 			);`,
 			userID,
-			user.OrganizationName,
+			orgID,
 		)
 		if empErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error": empErr,
+			}).
+				Error("adding employer failed")
+			tx.Rollback()
 			return empErr
 		}
+		_, err = result.RowsAffected()
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error": err,
+			}).
+				Error("adding employer failed")
+			tx.Rollback()
+			return err
+		}
 	} else {
+		tx.Rollback()
 		return serverErrors.INVALID_ROLE
 	}
+
+	commitErr := tx.Commit()
+	if commitErr != nil {
+		return commitErr
+	}
+
+	contextLogger.Info("transaction successful")
 
 	return nil
 }

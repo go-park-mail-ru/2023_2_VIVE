@@ -76,23 +76,25 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 		return "", serverErrors.INVALID_ROLE
 	}
 	// fmt.Printf("before add user to db\n")
-	if user.Type == domain.Employer {
-		organization := domain.DbOrganization{
-			Name:        user.OrganizationName,
-			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
-			Location:    user.Location,
-		}
-		contextLogger.Info("adding organization for employer")
-		_, addOrgErr := userUsecase.orgRepo.AddOrganization(ctx, &organization)
-		if addOrgErr != nil {
-			return "", addOrgErr
-		}
-	}
+	// if user.Type == domain.Employer {
+	// 	organization := domain.DbOrganization{
+	// 		Name:        user.OrganizationName,
+	// 		Description: "описание организации", // TODO: изменить описание организации по-умолчанию
+	// 		Location:    user.Location,
+	// 	}
+	// 	contextLogger.Info("adding organization for employer")
+	// 	_, addOrgErr := userUsecase.orgRepo.AddOrganization(ctx, &organization)
+	// 	if addOrgErr != nil {
+	// 		return "", addOrgErr
+	// 	}
+	// }
+	
 	contextLogger.Info("adding user")
 	addStatus := userUsecase.userRepo.AddUser(ctx, user, authUtils.GenerateHash)
 	if addStatus != nil {
 		return "", addStatus
 	}
+	contextLogger.Info("user added")
 	// fmt.Printf("after add user to db\n")
 
 	contextLogger.Info("getting user by email")
