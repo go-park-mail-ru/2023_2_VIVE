@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/serverErrors"
@@ -15,21 +16,27 @@ type IVacancyUsecase interface {
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
+	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int) ([]domain.ApiVacancy, error)
 }
 
 type VacancyUsecase struct {
 	vacancyRepo psql.IVacancyRepository
 	sessionRepo redisRepo.ISessionRepository
 	userRepo    psql.IUserRepository
+	searchEngine grpc.ISearchEngineRepository
 }
 
-func NewVacancyUsecase(vacancyRepository psql.IVacancyRepository,
+func NewVacancyUsecase(
+	vacancyRepository psql.IVacancyRepository,
 	sessionRepository redisRepo.ISessionRepository,
-	userRepository psql.IUserRepository) IVacancyUsecase {
+	userRepository psql.IUserRepository,
+	searchEngineRepository grpc.ISearchEngineRepository,
+) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo: vacancyRepository,
 		sessionRepo: sessionRepository,
 		userRepo:    userRepository,
+		searchEngine: searchEngineRepository,
 	}
 }
 
@@ -167,4 +174,10 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 	// fmt.Printf("vacancies: %v\n", vacanciesList)
 
 	return vacancyUsecase.collectApiVacs(vacanciesList), nil
+}
+
+func (vacancyUsecase *VacancyUsecase) SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int) ([]domain.ApiVacancy, error) {
+	
+
+	return []domain.ApiVacancy{}, nil
 }

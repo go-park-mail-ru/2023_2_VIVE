@@ -17,7 +17,7 @@ func InitLogger(logFile *os.File) {
 	Logger.SetOutput(logFile)
 	Logger.SetFormatter(jsonFormatter)
 	Logger.SetLevel(logrus.DebugLevel)
-	Logger = Logger.WithFields(logrus.Fields{"app_name": "app"}).Logger
+	// Logger = Logger.WithFields(logrus.Fields{"app_name": "app"}).Logger
 
 	// return Logger
 }

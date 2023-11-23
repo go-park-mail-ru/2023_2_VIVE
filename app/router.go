@@ -4,17 +4,37 @@ import (
 	"HnH/configs"
 	deliveryHTTP "HnH/internal/delivery/http"
 	"HnH/internal/delivery/http/middleware"
+	repoGrpc "HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
+	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
 	"os"
 
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
+
+func initSearchEngineClient(config configs.SearchEngineConfig) (pb.SearchEngineClient, error) {
+	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+
+	opts := []grpc.DialOption{}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	conn, err := grpc.Dial(connAddr, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := pb.NewSearchEngineClient(conn)
+	return client, nil
+
+}
 
 func Run() error {
 	logFile, err := os.OpenFile(configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -46,9 +66,15 @@ func Run() error {
 	experienceRepo := psql.NewPsqlExperienceRepository(db)
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 
+	searchEngineClient, err := initSearchEngineClient(configs.HnHSearchEngineConfig)
+	if err != nil {
+		return err
+	}
+	searchEngineClientRepo := repoGrpc.NewGrpcSearchEngineRepository(searchEngineClient)
+
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
-	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo, searchEngineClientRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)
 
@@ -64,7 +90,7 @@ func Run() error {
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
-	loggedRouter := middleware.AccessLogMiddleware(/* logging.Logger,  */corsRouter)
+	loggedRouter := middleware.AccessLogMiddleware( /* logging.Logger,  */ corsRouter)
 	requestIDRouter := middleware.RequestID(loggedRouter)
 	finalRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
 

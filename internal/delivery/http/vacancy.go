@@ -16,6 +16,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	SEARCH_QUERY_KEY           = "q"
+	PAGE_NUM_QUERY_KEY         = "page_num"
+	RESULTS_PER_PAGE_QUERY_KEY = "results_per_page"
+)
+
 type VacancyHandler struct {
 	vacancyUsecase usecase.IVacancyUsecase
 }
@@ -47,6 +53,9 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		handler.GetVacancies).
 		Methods("GET")
 
+	router.HandleFunc("/vacancies/search", handler.SearchVacancies).
+		Methods("GET")
+
 	router.Handle("/vacancies",
 		middleware.JSONBodyValidationMiddleware(middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.AddVacancy)))).
 		Methods("POST")
@@ -65,6 +74,7 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 	router.Handle("/vacancies/{vacancyID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
+
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +90,46 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+}
+
+func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
+	// vars := mux.Vars(r)
+	query := r.URL.Query()
+	searchQuery := query.Get(SEARCH_QUERY_KEY)
+
+	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
+	pageNum, convErr := strconv.Atoi(pageNumStr)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
+	resultsPerPage, convErr := strconv.Atoi(resultsPerPageStr)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	vacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(
+		r.Context(),
+		searchQuery,
+		pageNum,
+		resultsPerPage,
+	)
+
+	if getErr == psql.ErrEntityNotFound {
+		vacancies = []domain.ApiVacancy{}
+	} else if getErr != nil {
+		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		return
+	}
+
+	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {

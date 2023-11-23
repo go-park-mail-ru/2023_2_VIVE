@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option go_package = "HnH/pkg/services/searchEngine/searchEnginePB";
+
+package searchEngine;
+
+service searchEngine {
+    rpc SearchVacancies (SearchRequest) returns (VacanciesSearchResponse) {}
+    // rpc SearchCVs (SearchRequest) returns (SearchResponse) {}
+}
+
+message SearchRequest {
+    string query = 1;
+    int32 page_number = 2;
+    int32 results_per_page = 3;
+}
+
+message Vacancy {
+    int64 id = 1;
+    int64 employer_id = 2;
+    string vacancy_name = 3;
+    string description = 4;
+    int64 SalaryLowerBound = 5;
+    int64 SalaryUpperBound = 6;
+    string Employment = 7;
+    int64 ExperienceLowerBound = 8;
+    int64 ExperienceUpperBound = 9;
+    string EducationType = 10;
+    string Location = 11;
+    string CreatedAt = 12;
+    string UpdatedAt = 13;
+}
+
+message VacanciesSearchResponse {
+    repeated Vacancy vacancies = 1;
+}
