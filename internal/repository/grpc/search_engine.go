@@ -3,7 +3,7 @@ package grpc
 import (
 	"HnH/internal/domain"
 	"HnH/pkg/contextUtils"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 	"fmt"
 

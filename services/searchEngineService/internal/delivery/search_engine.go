@@ -2,9 +2,9 @@ package delivery
 
 import (
 	"HnH/app"
-	"HnH/pkg/services/searchEngineService/internal/repository/psql"
-	"HnH/pkg/services/searchEngineService/internal/usecase"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	"HnH/services/searchEngineService/internal/repository/psql"
+	"HnH/services/searchEngineService/internal/usecase"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"google.golang.org/grpc/codes"

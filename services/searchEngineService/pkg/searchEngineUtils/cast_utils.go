@@ -2,7 +2,7 @@ package searchEngineUtils
 
 import (
 	"HnH/internal/domain"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"time"
 )
 

@@ -1,7 +1,7 @@
 package interceptors
 
 import (
-	"HnH/pkg/services/searchEngineService/pkg/logger"
+	"HnH/services/searchEngineService/pkg/logger"
 	"context"
 
 	"github.com/sirupsen/logrus"

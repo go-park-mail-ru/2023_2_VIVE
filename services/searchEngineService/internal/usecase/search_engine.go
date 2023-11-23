@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"HnH/pkg/services/searchEngineService/internal/repository/psql"
-	"HnH/pkg/services/searchEngineService/pkg/searchEngineUtils"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	"HnH/services/searchEngineService/internal/repository/psql"
+	"HnH/services/searchEngineService/pkg/searchEngineUtils"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 )
 

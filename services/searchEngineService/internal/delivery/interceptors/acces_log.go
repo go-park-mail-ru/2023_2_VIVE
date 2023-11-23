@@ -2,8 +2,8 @@ package interceptors
 
 import (
 	"HnH/pkg/contextUtils"
-	"HnH/pkg/services/searchEngineService/config"
-	"HnH/pkg/services/searchEngineService/pkg/logger"
+	"HnH/services/searchEngineService/config"
+	"HnH/services/searchEngineService/pkg/logger"
 	"context"
 	"time"
 

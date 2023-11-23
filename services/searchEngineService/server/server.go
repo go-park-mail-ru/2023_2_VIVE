@@ -1,11 +1,11 @@
 package server
 
 import (
-	"HnH/pkg/services/searchEngineService/config"
-	"HnH/pkg/services/searchEngineService/internal/delivery"
-	"HnH/pkg/services/searchEngineService/internal/delivery/interceptors"
-	"HnH/pkg/services/searchEngineService/pkg/logger"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	"HnH/services/searchEngineService/config"
+	"HnH/services/searchEngineService/internal/delivery"
+	"HnH/services/searchEngineService/internal/delivery/interceptors"
+	"HnH/services/searchEngineService/pkg/logger"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"fmt"
 	"net"
 	"os"

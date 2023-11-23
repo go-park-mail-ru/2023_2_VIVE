@@ -9,8 +9,8 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
-	"HnH/pkg/services/searchEngineService/config"
-	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
+	"HnH/services/searchEngineService/config"
+	pb "HnH/services/searchEngineService/searchEnginePB"
 	"os"
 
 	"fmt"
