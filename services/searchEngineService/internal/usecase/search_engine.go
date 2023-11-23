@@ -26,7 +26,7 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 	pageNumber := request.GetPageNumber()
 	resultsPerPage := request.GetResultsPerPage()
 
-	queryWords := searchEngineUtils.GetQueryWords(query)
+	queryWords := searchEngineUtils.ParseSearchQuery(query)
 
 	vacancies, err := u.searchRepo.SearchVacancies(ctx, queryWords, pageNumber, resultsPerPage)
 	if err != nil {
