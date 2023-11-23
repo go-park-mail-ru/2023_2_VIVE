@@ -1,0 +1,13 @@
+{"level":"error","msg":"panic recovered","panic":"interface conversion: interface {} is nil, not string","time":"Thu, 23 Nov 2023 06:09:34 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:12:25 MSK"}
+{"level":"error","msg":"panic recovered","panic":"interface conversion: interface {} is nil, not string","time":"Thu, 23 Nov 2023 06:12:27 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:13:14 MSK"}
+{"level":"error","msg":"panic recovered","panic":"interface conversion: interface {} is nil, not string","time":"Thu, 23 Nov 2023 06:13:16 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:14:48 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:14:56 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:15:28 MSK"}
+{"level":"error","msg":"panic recovered","panic":"interface conversion: interface {} is nil, not string","time":"Thu, 23 Nov 2023 06:15:31 MSK"}
+{"level":"info","msg":"starting search engine server at 8071 port","time":"Thu, 23 Nov 2023 06:16:40 MSK"}
+{"level":"debug","meta_data":"metadata.MD{\":authority\":[]string{\"localhost:8071\"}, \"content-type\":[]string{\"application/grpc\"}, \"request_id\":[]string{\"3c6e2836-6523-4d17-aa8b-68f25b2356df\"}, \"user-agent\":[]string{\"grpc-go/1.59.0\"}}","msg":"got request with meta data","time":"Thu, 23 Nov 2023 06:16:41 MSK"}
+{"level":"info","msg":"got request with 'request_id'","request_id":"3c6e2836-6523-4d17-aa8b-68f25b2356df","time":"Thu, 23 Nov 2023 06:16:41 MSK"}
+{"execution_time":"3.3µs","level":"info","msg":"Request successful","request_id":"3c6e2836-6523-4d17-aa8b-68f25b2356df","service":"Search Engine","time":"Thu, 23 Nov 2023 06:16:41 MSK"}

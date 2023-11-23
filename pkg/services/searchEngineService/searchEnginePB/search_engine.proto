@@ -11,8 +11,8 @@ service searchEngine {
 
 message SearchRequest {
     string query = 1;
-    int32 page_number = 2;
-    int32 results_per_page = 3;
+    int64 page_number = 2;
+    int64 results_per_page = 3;
 }
 
 message Vacancy {

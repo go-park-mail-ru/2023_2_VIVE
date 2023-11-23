@@ -57,7 +57,7 @@ func AccessLogMiddleware( /* logger *logrus.Logger,  */ next http.Handler) http.
 		wrappedWriter := newResponseWriterWrapper(w)
 
 		// requestID := r.Context().Value(REQUEST_ID_KEY)
-		requestID := contextUtils.GetRequestIDCtx(r.Context())
+		requestID := contextUtils.GetRequestIDFromCtx(r.Context())
 		logging.Logger = logging.Logger.WithField("request_id", requestID).Logger
 
 		// next.ServeHTTP(wrappedWriter, r)
@@ -65,10 +65,7 @@ func AccessLogMiddleware( /* logger *logrus.Logger,  */ next http.Handler) http.
 		contextLogger := logging.Logger.WithFields(logrus.Fields{
 			"method":     r.Method,
 			"URL":        r.URL.Path,
-			"endpoint":   r.RemoteAddr,
 			"request_id": requestID,
-			// "status":         wrappedWriter.status,
-			// "execution_time": time.Since(start).String(),
 		})
 
 		ctx := context.WithValue(r.Context(), contextUtils.LOGGER_KEY, contextLogger)
@@ -87,5 +84,3 @@ func AccessLogMiddleware( /* logger *logrus.Logger,  */ next http.Handler) http.
 		}
 	})
 }
-
-

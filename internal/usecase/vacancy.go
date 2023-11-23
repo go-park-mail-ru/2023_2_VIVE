@@ -16,14 +16,14 @@ type IVacancyUsecase interface {
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
-	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int) ([]domain.ApiVacancy, error)
+	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]domain.ApiVacancy, error)
 }
 
 type VacancyUsecase struct {
-	vacancyRepo psql.IVacancyRepository
-	sessionRepo redisRepo.ISessionRepository
-	userRepo    psql.IUserRepository
-	searchEngine grpc.ISearchEngineRepository
+	vacancyRepo      psql.IVacancyRepository
+	sessionRepo      redisRepo.ISessionRepository
+	userRepo         psql.IUserRepository
+	searchEngineRepo grpc.ISearchEngineRepository
 }
 
 func NewVacancyUsecase(
@@ -33,10 +33,10 @@ func NewVacancyUsecase(
 	searchEngineRepository grpc.ISearchEngineRepository,
 ) IVacancyUsecase {
 	return &VacancyUsecase{
-		vacancyRepo: vacancyRepository,
-		sessionRepo: sessionRepository,
-		userRepo:    userRepository,
-		searchEngine: searchEngineRepository,
+		vacancyRepo:      vacancyRepository,
+		sessionRepo:      sessionRepository,
+		userRepo:         userRepository,
+		searchEngineRepo: searchEngineRepository,
 	}
 }
 
@@ -93,7 +93,7 @@ func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []
 }
 
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
-	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx, )
+	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx)
 	if getErr != nil {
 		return nil, getErr
 	}
@@ -176,8 +176,14 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 	return vacancyUsecase.collectApiVacs(vacanciesList), nil
 }
 
-func (vacancyUsecase *VacancyUsecase) SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int) ([]domain.ApiVacancy, error) {
-	
-
-	return []domain.ApiVacancy{}, nil
+func (vacancyUsecase *VacancyUsecase) SearchVacancies(
+	ctx context.Context,
+	query string,
+	pageNumber, resultsPerPage int64,
+) ([]domain.ApiVacancy, error) {
+	vacancies, err := vacancyUsecase.searchEngineRepo.SearchVacancies(ctx, query, pageNumber, resultsPerPage)
+	if err != nil {
+		return []domain.ApiVacancy{}, nil
+	}
+	return vacancies, nil
 }

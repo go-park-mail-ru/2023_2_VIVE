@@ -98,14 +98,14 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 	searchQuery := query.Get(SEARCH_QUERY_KEY)
 
 	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	pageNum, convErr := strconv.Atoi(pageNumStr)
+	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
 	if convErr != nil {
 		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
 		return
 	}
 
 	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	resultsPerPage, convErr := strconv.Atoi(resultsPerPageStr)
+	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
 	if convErr != nil {
 		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
 		return

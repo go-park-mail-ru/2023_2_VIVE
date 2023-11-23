@@ -9,6 +9,7 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
+	"HnH/pkg/services/searchEngineService/config"
 	pb "HnH/pkg/services/searchEngineService/searchEnginePB"
 	"os"
 
@@ -20,7 +21,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func initSearchEngineClient(config configs.SearchEngineConfig) (pb.SearchEngineClient, error) {
+func initSearchEngineClient(config config.SearchEngineConfig) (pb.SearchEngineClient, error) {
 	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
 	opts := []grpc.DialOption{}
@@ -45,7 +46,7 @@ func Run() error {
 
 	logging.InitLogger(logFile)
 
-	db, err := getPostgres()
+	db, err := GetPostgres()
 	if err != nil {
 		return err
 	}
@@ -66,7 +67,7 @@ func Run() error {
 	experienceRepo := psql.NewPsqlExperienceRepository(db)
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 
-	searchEngineClient, err := initSearchEngineClient(configs.HnHSearchEngineConfig)
+	searchEngineClient, err := initSearchEngineClient(config.SearchEngineServiceConfig)
 	if err != nil {
 		return err
 	}

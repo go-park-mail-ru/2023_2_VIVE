@@ -38,7 +38,7 @@ func getRedis() *redis.Pool {
 	return pool
 }
 
-func getPostgres() (*sql.DB, error) {
+func GetPostgres() (*sql.DB, error) {
 	dsn := configs.HnHPostgresConfig.GetConnectionString()
 
 	db, err := sql.Open("pgx", dsn)

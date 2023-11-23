@@ -17,6 +17,6 @@ func GetContextLogger(ctx context.Context) *logrus.Entry {
 	return ctx.Value(LOGGER_KEY).(*logrus.Entry)
 }
 
-func GetRequestIDCtx(ctx context.Context) string {
+func GetRequestIDFromCtx(ctx context.Context) string {
 	return ctx.Value(REQUEST_ID_KEY).(string)
 }

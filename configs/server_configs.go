@@ -46,16 +46,6 @@ var HnHPostgresConfig = postgresConfig{
 	sslmode:  "disable",
 }
 
-var HnHSearchEngineConfig = SearchEngineConfig{
-	Host: "localhost",
-	Port: 8071,
-}
-
-type SearchEngineConfig struct {
-	Host string
-	Port int
-}
-
 type redisConfig struct {
 	protocol       string
 	networkAddress string
