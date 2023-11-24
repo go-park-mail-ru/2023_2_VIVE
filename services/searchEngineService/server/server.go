@@ -5,7 +5,6 @@ import (
 	"HnH/services/searchEngineService/internal/delivery"
 	"HnH/services/searchEngineService/internal/delivery/interceptors"
 	"HnH/services/searchEngineService/pkg/logger"
-	morphanalyzer "HnH/services/searchEngineService/pkg/morphAnalyzer"
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"fmt"
 	"net"
@@ -60,12 +59,6 @@ func Run() {
 	loggerErr := initLogger()
 	if loggerErr != nil {
 		fmt.Printf("Error while initializing logger\n")
-		os.Exit(1)
-	}
-
-	morphErr := morphanalyzer.InitMorphAnalyzer()
-	if morphErr != nil {
-		fmt.Printf("failed to init morph: %v", morphErr)
 		os.Exit(1)
 	}
 

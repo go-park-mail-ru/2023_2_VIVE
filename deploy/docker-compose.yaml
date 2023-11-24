@@ -14,7 +14,7 @@ services:
 
   db_hnh:
     container_name: db_hnh
-    image: postgres:${POSTGRES_VERSION}-alpine
+    image: search_postgres
     restart: always
     environment:
       POSTGRES_DB: "hnh"
@@ -22,5 +22,23 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./migrations/:/docker-entrypoint-initdb.d/
+      - hnh_data:/var/lib/postgresql/data
     ports:
-      - "8054:5432"
+      - "8054:5432"      
+
+volumes:
+  hnh_data:
+
+
+  # db_hnh:
+  #   container_name: db_hnh
+  #   image: postgres:${POSTGRES_VERSION}-alpine
+  #   restart: always
+  #   environment:
+  #     POSTGRES_DB: "hnh"
+  #     POSTGRES_USER: vive_admin
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - ./migrations/:/docker-entrypoint-initdb.d/
+  #   ports:
+  #     - "8054:5432"

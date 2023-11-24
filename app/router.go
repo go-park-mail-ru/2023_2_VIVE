@@ -60,7 +60,6 @@ func Run() error {
 
 	sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
-	organizationRepo := psql.NewPsqlOrganizationRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
 	responseRepo := psql.NewPsqlResponseRepository(db)
@@ -74,7 +73,7 @@ func Run() error {
 	searchEngineClientRepo := repoGrpc.NewGrpcSearchEngineRepository(searchEngineClient)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo, searchEngineClientRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)

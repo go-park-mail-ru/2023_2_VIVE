@@ -1,13 +1,12 @@
 package psql
 
 import (
-	"HnH/internal/domain"
 	"context"
 	"database/sql"
 )
 
 type ISearchRepository interface {
-	SearchVacancies(ctx context.Context, words []string, pageNumber, resultsPerPage int64) ([]domain.DbVacancy, error)
+	SearchVacanciesIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, error)
 }
 
 type psqlSearchRepository struct {
@@ -20,6 +19,11 @@ func NewPsqlSearchRepository(db *sql.DB) ISearchRepository {
 	}
 }
 
-func (repo *psqlSearchRepository) SearchVacancies(ctx context.Context, words []string, pageNumber, resultsPerPage int64) ([]domain.DbVacancy, error) {
-	return []domain.DbVacancy{}, nil
+func (repo *psqlSearchRepository) SearchVacanciesIDs(
+	ctx context.Context,
+	query string,
+	pageNumber,
+	resultsPerPage int64,
+) ([]int64, error) {
+	return []int64{}, nil
 }

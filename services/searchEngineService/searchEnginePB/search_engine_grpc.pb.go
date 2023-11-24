@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchEngineClient interface {
-	SearchVacancies(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*VacanciesSearchResponse, error)
+	SearchVacancies(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
 }
 
 type searchEngineClient struct {
@@ -33,8 +33,8 @@ func NewSearchEngineClient(cc grpc.ClientConnInterface) SearchEngineClient {
 	return &searchEngineClient{cc}
 }
 
-func (c *searchEngineClient) SearchVacancies(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*VacanciesSearchResponse, error) {
-	out := new(VacanciesSearchResponse)
+func (c *searchEngineClient) SearchVacancies(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
 	err := c.cc.Invoke(ctx, "/searchEngine.searchEngine/SearchVacancies", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (c *searchEngineClient) SearchVacancies(ctx context.Context, in *SearchRequ
 // All implementations must embed UnimplementedSearchEngineServer
 // for forward compatibility
 type SearchEngineServer interface {
-	SearchVacancies(context.Context, *SearchRequest) (*VacanciesSearchResponse, error)
+	SearchVacancies(context.Context, *SearchRequest) (*SearchResponse, error)
 	mustEmbedUnimplementedSearchEngineServer()
 }
 
@@ -54,7 +54,7 @@ type SearchEngineServer interface {
 type UnimplementedSearchEngineServer struct {
 }
 
-func (UnimplementedSearchEngineServer) SearchVacancies(context.Context, *SearchRequest) (*VacanciesSearchResponse, error) {
+func (UnimplementedSearchEngineServer) SearchVacancies(context.Context, *SearchRequest) (*SearchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchVacancies not implemented")
 }
 func (UnimplementedSearchEngineServer) mustEmbedUnimplementedSearchEngineServer() {}

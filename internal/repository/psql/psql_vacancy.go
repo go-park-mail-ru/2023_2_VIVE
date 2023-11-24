@@ -13,14 +13,15 @@ import (
 
 type IVacancyRepository interface {
 	GetAllVacancies(ctx context.Context) ([]domain.DbVacancy, error)
-	GetVacanciesByIds(ctx context.Context, orgID int, idList []int) ([]domain.DbVacancy, error)
+	GetEmpVacanciesByIds(ctx context.Context, empID int, idList []int) ([]domain.DbVacancy, error)
+	GetVacanciesByIds(ctx context.Context, idList []int) ([]domain.DbVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error)
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
-	GetOrgId(ctx context.Context, vacancyID int) (int, error)
+	GetEmpId(ctx context.Context, vacancyID int) (int, error)
 	AddVacancy(ctx context.Context, userID int, vacancy *domain.DbVacancy) (int, error)
-	UpdateOrgVacancy(ctx context.Context, orgID, vacancyID int, vacancy *domain.DbVacancy) error
-	DeleteOrgVacancy(ctx context.Context, orgID, vacancyID int) error
+	UpdateEmpVacancy(ctx context.Context, empID, vacancyID int, vacancy *domain.DbVacancy) error
+	DeleteEmpVacancy(ctx context.Context, empID, vacancyID int) error
 }
 
 type psqlVacancyRepository struct {
@@ -90,20 +91,20 @@ func (repo *psqlVacancyRepository) GetAllVacancies(ctx context.Context) ([]domai
 	return vacanciesToReturn, nil
 }
 
-func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, orgID int, idList []int) ([]domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetEmpVacanciesByIds(ctx context.Context, empID int, idList []int) ([]domain.DbVacancy, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
 		"id_list": idList,
-		"org_id":  orgID,
+		"emp_id":  empID,
 	}).
-		Info("getting vacancies by 'id_list' and 'org_id' from postgres")
+		Info("getting vacancies by 'id_list' and 'emp_id' from postgres")
 	if len(idList) == 0 {
 		return nil, ErrEntityNotFound
 	}
 
 	items := make([]int, len(idList)+1)
-	items[0] = orgID
+	items[0] = empID
 	for i := 1; i < len(items); i++ {
 		items[i] = idList[i-1]
 	}
@@ -127,10 +128,77 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, orgID 
 		v.updated_at
 	FROM
 		hnh_data.vacancy v
-	JOIN hnh_data.employer e ON
-		v.employer_id = e.id
 	WHERE
-		e.organization_id = $1
+		v.employer_id = $1
+		AND v.id IN (` + placeHolderString + `)`
+
+	rows, err := repo.DB.Query(query, placeHolderValues...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vacanciesToReturn := []domain.DbVacancy{}
+
+	for rows.Next() {
+		vacancy := domain.DbVacancy{}
+		err := rows.Scan(
+			&vacancy.ID,
+			&vacancy.EmployerID,
+			&vacancy.VacancyName,
+			&vacancy.Description,
+			&vacancy.SalaryLowerBound,
+			&vacancy.SalaryUpperBound,
+			&vacancy.Employment,
+			&vacancy.ExperienceLowerBound,
+			&vacancy.ExperienceUpperBound,
+			&vacancy.EducationType,
+			&vacancy.Location,
+			&vacancy.CreatedAt,
+			&vacancy.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		vacanciesToReturn = append(vacanciesToReturn, vacancy)
+	}
+	if len(vacanciesToReturn) == 0 {
+		return nil, ErrEntityNotFound
+	}
+	return vacanciesToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList []int) ([]domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"id_list": idList,
+	}).
+		Info("getting vacancies by 'id_list' from postgres")
+	if len(idList) == 0 {
+		return nil, ErrEntityNotFound
+	}
+
+	placeHolderValues := *queryUtils.IntToAnySlice(idList)
+	placeHolderString := queryUtils.QueryPlaceHolders(1, len(placeHolderValues))
+
+	query := `SELECT
+		v.id,
+		v.employer_id,
+		v."name",
+		v.description,
+		v.salary_lower_bound,
+		v.salary_upper_bound,
+		v.employment,
+		v.experience_lower_bound,
+		v.experience_upper_bound,
+		v.education_type,
+		v."location",
+		v.created_at,
+		v.updated_at
+	FROM
+		hnh_data.vacancy v
+	WHERE
 		AND v.id IN (` + placeHolderString + `)`
 
 	rows, err := repo.DB.Query(query, placeHolderValues...)
@@ -345,33 +413,23 @@ func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID 
 // 	return &vacancyToReturn, nil
 // }
 
-func (repo *psqlVacancyRepository) GetOrgId(ctx context.Context, vacancyID int) (int, error) {
+func (repo *psqlVacancyRepository) GetEmpId(ctx context.Context, vacancyID int) (int, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
 		"vacancy_id": vacancyID,
 	}).
-		Info("getting organization id by 'vacancy_id' from postgres")
+		Info("getting employer id by 'vacancy_id' from postgres")
 	query := `SELECT
-		organization_id
+		v.employer_id 
 	FROM
-	(
-	SELECT
-			e.organization_id,
-			v.id
-	FROM
-			hnh_data.employer e
-	LEFT JOIN hnh_data.vacancy v ON
-			e.id = v.employer_id
+		hnh_data.vacancy v
 	WHERE
-			v.id IS NOT NULL
-	) AS w
-	WHERE
-		id = $1`
+		v.id = $1`
 
-	var organizationIDToReturn int
+	var employerIDToReturn int
 	err := repo.DB.QueryRow(query, vacancyID).
-		Scan(&organizationIDToReturn)
+		Scan(&employerIDToReturn)
 
 	if err == sql.ErrNoRows {
 		return 0, ErrEntityNotFound
@@ -380,7 +438,7 @@ func (repo *psqlVacancyRepository) GetOrgId(ctx context.Context, vacancyID int) 
 		return 0, err
 	}
 
-	return organizationIDToReturn, nil
+	return employerIDToReturn, nil
 }
 
 // Add new vacancy and return new id if successful
@@ -455,14 +513,14 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, v
 	return insertedVacancyID, nil
 }
 
-func (repo *psqlVacancyRepository) UpdateOrgVacancy(ctx context.Context, orgID, vacancyID int, vacancy *domain.DbVacancy) error {
+func (repo *psqlVacancyRepository) UpdateEmpVacancy(ctx context.Context, empID, vacancyID int, vacancy *domain.DbVacancy) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
-		"vacancy_id":      vacancyID,
-		"organization_id": orgID,
+		"vacancy_id":  vacancyID,
+		"employer_id": empID,
 	}).
-		Info("updating vacancy by 'vacancy_id' and 'organization_id' in postgres")
+		Info("updating vacancy by 'vacancy_id' and 'employer_id' in postgres")
 
 	query := `UPDATE
 		hnh_data.vacancy v
@@ -481,8 +539,7 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(ctx context.Context, orgID, 
 		hnh_data.employer e
 	WHERE
 		v.id = $10
-		AND e.organization_id = $11
-		AND v.employer_id = e.id`
+		AND v.employer_id = $11`
 
 	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
 	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
@@ -508,7 +565,7 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(ctx context.Context, orgID, 
 		vacancy.EducationType,
 		vacancy.Location,
 		vacancyID,
-		orgID,
+		empID,
 	)
 	if err == sql.ErrNoRows {
 		return ErrNoRowsUpdated
@@ -525,25 +582,23 @@ func (repo *psqlVacancyRepository) UpdateOrgVacancy(ctx context.Context, orgID, 
 	return nil
 }
 
-func (repo *psqlVacancyRepository) DeleteOrgVacancy(ctx context.Context, orgID, vacancyID int) error {
+func (repo *psqlVacancyRepository) DeleteEmpVacancy(ctx context.Context, empID, vacancyID int) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
 		"vacancy_id":      vacancyID,
-		"organization_id": orgID,
+		"employer_id": empID,
 	}).
-		Info("deleting vacancy by 'vacancy_id' and 'organization_id' in postgres")
+		Info("deleting vacancy by 'vacancy_id' and 'employer_id' in postgres")
 
 	query := `DELETE
 	FROM
 		hnh_data.vacancy v
-		USING hnh_data.employer e
 	WHERE
 		v.id = $1
-		AND e.organization_id = $2
-		AND v.employer_id = e.id`
+		AND v.employer_id = $2`
 
-	result, err := repo.DB.Exec(query, vacancyID, orgID)
+	result, err := repo.DB.Exec(query, vacancyID, empID)
 	if err == sql.ErrNoRows {
 		return ErrNoRowsDeleted
 	}

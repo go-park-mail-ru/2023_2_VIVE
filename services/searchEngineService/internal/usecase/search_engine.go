@@ -2,13 +2,12 @@ package usecase
 
 import (
 	"HnH/services/searchEngineService/internal/repository/psql"
-	"HnH/services/searchEngineService/pkg/searchEngineUtils"
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 )
 
 type ISearchUsecase interface {
-	SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.VacanciesSearchResponse, error)
+	SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error)
 }
 
 type SearchUsecase struct {
@@ -21,17 +20,23 @@ func NewSearchUscase(searchRepo psql.ISearchRepository) ISearchUsecase {
 	}
 }
 
-func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.VacanciesSearchResponse, error) {
+func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
 	query := request.GetQuery()
 	pageNumber := request.GetPageNumber()
 	resultsPerPage := request.GetResultsPerPage()
 
-	queryWords := searchEngineUtils.ParseSearchQuery(query)
-
-	vacancies, err := u.searchRepo.SearchVacancies(ctx, queryWords, pageNumber, resultsPerPage)
+	vacanciesIDs, err := u.searchRepo.SearchVacanciesIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return nil, err
 	}
 
-	return searchEngineUtils.DbVacanciesToGrpc(vacancies), nil
+	res := pb.SearchResponse{
+		Ids: vacanciesIDs,
+	}
+
+	return &res, nil
+
+
+
+	// return searchEngineUtils.DbVacanciesToGrpc(vacanciesIDs), nil
 }

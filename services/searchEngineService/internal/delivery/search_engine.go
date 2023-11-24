@@ -16,15 +16,15 @@ type SearchEngineServer struct {
 	searchUscase usecase.ISearchUsecase
 }
 
-func (s *SearchEngineServer) SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.VacanciesSearchResponse, error) {
-	vacancies, err := s.searchUscase.SearchVacancies(ctx, request)
+func (s *SearchEngineServer) SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
+	vacanciesIDs, err := s.searchUscase.SearchVacancies(ctx, request)
 	if err != nil {
 		return nil, err
 	}
-	return vacancies, nil
+	return vacanciesIDs, nil
 	// return nil, status.Errorf(codes.Unimplemented, "method SearchVacancies not implemented")
 }
-func (s *SearchEngineServer) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.VacanciesSearchResponse, error) {
+func (s *SearchEngineServer) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchCVs not implemented")
 }
 

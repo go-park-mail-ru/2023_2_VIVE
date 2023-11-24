@@ -22,20 +22,18 @@ type IUserRepository interface {
 	GetRoleById(ctx context.Context, userID int) (domain.Role, error)
 	GetUserInfo(ctx context.Context, userID int) (*domain.DbUser, *int, *int, error)
 	UpdateUserInfo(ctx context.Context, userID int, user *domain.UserUpdate) error
-	GetUserOrgId(ctx context.Context, userID int) (int, error)
+	GetUserEmpId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
 	GetAvatarByUserID(ctx context.Context, userID int) (string, error)
 }
 
 type psqlUserRepository struct {
 	userStorage *sql.DB
-	orgRepo     IOrganizationRepository
 }
 
 func NewPsqlUserRepository(db *sql.DB) IUserRepository {
 	return &psqlUserRepository{
 		userStorage: db,
-		orgRepo:     NewPsqlOrganizationRepository(db),
 	}
 }
 
@@ -198,17 +196,16 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 	} else if user.Type == domain.Employer {
 		var userID int
 
-		organization := domain.DbOrganization{
-			Name:        user.OrganizationName,
-			Description: "описание организации", // TODO: изменить описание организации по-умолчанию
-			Location:    user.Location,
-		}
-		contextLogger.Info("adding organization for employer")
-		orgID, addOrgErr := p.orgRepo.AddTxOrganization(ctx, tx, &organization)
-		if addOrgErr != nil {
-			tx.Rollback()
-			return addOrgErr
-		}
+		// employer := domain.DbEmployer{
+		// 	OrganizationName:        user.OrganizationName,
+		// 	OrganizationDescription: user.OrganizationDescription,
+		// }
+		// contextLogger.Info("adding organization for employer")
+		// orgID, addOrgErr := p.orgRepo.AddTxOrganization(ctx, tx, &employer)
+		// if addOrgErr != nil {
+		// 	tx.Rollback()
+		// 	return addOrgErr
+		// }
 
 		contextLogger.Info("adding employer to postgres")
 		addErr := tx.QueryRow(`INSERT INTO hnh_data.user_profile `+
@@ -229,16 +226,11 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 
 		result, empErr := tx.Exec(`INSERT
 				INTO
-				hnh_data.employer (
-					user_id,
-					organization_id
-				)
-			VALUES (
-				$1,
-				$2
-			);`,
+				hnh_data.employer (user_id, organization_name, organization_description)
+			VALUES ($1, $2, $3)`,
 			userID,
-			orgID,
+			user.OrganizationName,
+			user.OrganizationDescription,
 		)
 		if empErr != nil {
 			contextLogger.WithFields(logrus.Fields{
@@ -407,19 +399,25 @@ func (p *psqlUserRepository) UpdateUserInfo(ctx context.Context, userID int, use
 	return nil
 }
 
-func (p *psqlUserRepository) GetUserOrgId(ctx context.Context, userID int) (int, error) {
-	var orgID int
+func (p *psqlUserRepository) GetUserEmpId(ctx context.Context, userID int) (int, error) {
+	var empID int
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
-	contextLogger.Info("getting employer's 'organization_id'")
-	err := p.userStorage.QueryRow(`SELECT organization_id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&orgID)
+	contextLogger.Info("getting user's 'employer_id'")
+	query := `SELECT
+		e.id
+	FROM
+		hnh_data.employer e
+	WHERE
+		e.id = $1`
+	err := p.userStorage.QueryRow(query, userID).Scan(&empID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrEntityNotFound
 	} else if err != nil {
 		return 0, err
 	}
 
-	return orgID, nil
+	return empID, nil
 }
 
 func (p *psqlUserRepository) UploadAvatarByUserID(ctx context.Context, userID int, path string) error {

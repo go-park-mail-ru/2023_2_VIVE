@@ -1,3 +1,9 @@
+/*
+protoc --go_out=. --go_opt=paths=source_relative \
+--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+searchEnginePB/search_engine.proto
+*/
+
 syntax = "proto3";
 
 option go_package = "HnH/pkg/services/searchEngine/searchEnginePB";
@@ -5,7 +11,7 @@ option go_package = "HnH/pkg/services/searchEngine/searchEnginePB";
 package searchEngine;
 
 service searchEngine {
-    rpc SearchVacancies (SearchRequest) returns (VacanciesSearchResponse) {}
+    rpc SearchVacancies (SearchRequest) returns (SearchResponse) {}
     // rpc SearchCVs (SearchRequest) returns (SearchResponse) {}
 }
 
@@ -15,22 +21,6 @@ message SearchRequest {
     int64 results_per_page = 3;
 }
 
-message Vacancy {
-    int64 id = 1;
-    int64 employer_id = 2;
-    string vacancy_name = 3;
-    string description = 4;
-    int64 SalaryLowerBound = 5;
-    int64 SalaryUpperBound = 6;
-    string Employment = 7;
-    int64 ExperienceLowerBound = 8;
-    int64 ExperienceUpperBound = 9;
-    string EducationType = 10;
-    string Location = 11;
-    string CreatedAt = 12;
-    string UpdatedAt = 13;
-}
-
-message VacanciesSearchResponse {
-    repeated Vacancy vacancies = 1;
+message SearchResponse {
+    repeated int64 ids = 1;
 }

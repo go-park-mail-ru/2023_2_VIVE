@@ -75,7 +75,7 @@ func (cvUsecase *CVUsecase) validateRoleAndGetUserId(ctx context.Context, sessio
 	if err != nil {
 		return 0, err
 	} else if userRole != requiredRole {
-		return 0, INAPPROPRIATE_ROLE
+		return 0, ErrInapropriateRole
 	}
 
 	return userID, nil
@@ -111,12 +111,12 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, sessionID string, cvI
 		return nil, err
 	}
 
-	userOrgID, err := cvUsecase.userRepo.GetUserOrgId(ctx, userID)
+	userEmpID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = cvUsecase.vacancyRepo.GetVacanciesByIds(ctx, userOrgID, vacIdsList)
+	_, err = cvUsecase.vacancyRepo.GetEmpVacanciesByIds(ctx, userEmpID, vacIdsList)
 	if err == psql.ErrEntityNotFound {
 		return nil, serverErrors.FORBIDDEN
 	}
@@ -168,10 +168,10 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]
 	if err != nil && err != psql.ErrEntityNotFound {
 		contextLogger := contextUtils.GetContextLogger(ctx)
 		contextLogger.WithFields(logrus.Fields{
-			"err": err,
+			"err":     err,
 			"user_id": userID,
 		}).
-		Debug("got 'err' while trying to get all user's cvs by 'user_id'")
+			Debug("got 'err' while trying to get all user's cvs by 'user_id'")
 		return nil, err
 	}
 	// fmt.Println("after getting cvs")
@@ -278,7 +278,6 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 		return validStatus
 	}
 
-
 	expIDs, expErr := cvUsecase.expRepo.GetCVExperiencesIDs(ctx, cvID)
 	if expErr != nil && expErr != psql.ErrEntityNotFound {
 		return expErr
@@ -290,7 +289,7 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
 
 	expsIDsToDelete, expsToUpdate, expsToInsert := cvUsecase.getExpsBatches(dbExperiences, expIDs)
-	
+
 	instsIDsToDelete, instsToUpdate, instsToInsert := cvUsecase.getInstsBatches(dbEducationInstitutions, instIDs)
 
 	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(ctx, userID, cvID, dbCV,

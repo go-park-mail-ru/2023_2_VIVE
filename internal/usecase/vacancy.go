@@ -5,6 +5,7 @@ import (
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
+	"HnH/pkg/castUtils"
 	"HnH/pkg/serverErrors"
 	"context"
 )
@@ -40,7 +41,7 @@ func NewVacancyUsecase(
 	}
 }
 
-func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetOrgId(ctx context.Context, sessionID string) (int, error) {
+func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetEmpId(ctx context.Context, sessionID string) (int, error) {
 	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
 	if validStatus != nil {
 		return 0, validStatus
@@ -55,33 +56,33 @@ func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetOrgId(ctx context.Co
 	if err != nil {
 		return 0, err
 	} else if userRole != domain.Employer {
-		return 0, INAPPROPRIATE_ROLE
+		return 0, ErrInapropriateRole
 	}
 
-	userOrgID, err := vacancyUsecase.userRepo.GetUserOrgId(ctx, userID)
+	userEmpID, err := vacancyUsecase.userRepo.GetUserEmpId(ctx, userID)
 	if err != nil {
 		return 0, err
 	}
 
-	return userOrgID, nil
+	return userEmpID, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) validateEmployer(ctx context.Context, sessionID string, vacancyID int) (int, error) {
-	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(ctx, sessionID)
+	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	orgID, err := vacancyUsecase.vacancyRepo.GetOrgId(ctx, vacancyID)
+	empID, err := vacancyUsecase.vacancyRepo.GetEmpId(ctx, vacancyID)
 	if err != nil {
 		return 0, err
 	}
 
-	if userOrgID != orgID {
+	if userEmpID != empID {
 		return 0, serverErrors.FORBIDDEN
 	}
 
-	return userOrgID, nil
+	return userEmpID, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []domain.ApiVacancy {
@@ -111,7 +112,7 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 }
 
 func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error) {
-	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetOrgId(ctx, sessionID)
+	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
@@ -127,12 +128,12 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID 
 }
 
 func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error {
-	orgID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
+	empID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	updStatus := vacancyUsecase.vacancyRepo.UpdateOrgVacancy(ctx, orgID, vacancyID, vacancy.ToDb())
+	updStatus := vacancyUsecase.vacancyRepo.UpdateEmpVacancy(ctx, empID, vacancyID, vacancy.ToDb())
 	if updStatus != nil {
 		return updStatus
 	}
@@ -140,12 +141,12 @@ func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, session
 }
 
 func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error {
-	orgID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
+	empID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
 
-	delStatus := vacancyUsecase.vacancyRepo.DeleteOrgVacancy(ctx, orgID, vacancyID)
+	delStatus := vacancyUsecase.vacancyRepo.DeleteEmpVacancy(ctx, empID, vacancyID)
 	if delStatus != nil {
 		return delStatus
 	}
@@ -164,7 +165,7 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 	}
 
 	if role != domain.Employer {
-		return nil, INAPPROPRIATE_ROLE
+		return nil, ErrInapropriateRole
 	}
 
 	vacanciesList, err := vacancyUsecase.vacancyRepo.GetUserVacancies(ctx, userID)
@@ -181,9 +182,17 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	query string,
 	pageNumber, resultsPerPage int64,
 ) ([]domain.ApiVacancy, error) {
-	vacancies, err := vacancyUsecase.searchEngineRepo.SearchVacancies(ctx, query, pageNumber, resultsPerPage)
+	vacancyIDs, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return []domain.ApiVacancy{}, nil
 	}
-	return vacancies, nil
+
+	vacancies, vacErr := vacancyUsecase.vacancyRepo.GetVacanciesByIds(ctx, castUtils.Int64SliceToIntSlice(vacancyIDs))
+	if vacErr != nil && vacErr != psql.ErrEntityNotFound {
+		return nil, vacErr
+	}
+
+	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
+
+	return vacanciesToReturn, nil
 }
