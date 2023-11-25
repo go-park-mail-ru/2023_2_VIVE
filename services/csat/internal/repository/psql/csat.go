@@ -102,8 +102,16 @@ func (repo *psqlCsatRepository) RegisterAnswer(ctx context.Context, answer *pb.A
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	contextLogger.Info("writing csat answer to postgres")
 
+	var mess *string
+	if answer.Comment != "" {
+		mess = new(string)
+		*mess = answer.Comment
+	} else {
+		mess = nil
+	}
+
 	err := repo.DB.QueryRow(`INSERT INTO csat_data.answer ("stars", "message", "question_id") VALUES ($1, $2, $3)`,
-		answer.Starts, answer.Comment, answer.QuestionId).Err()
+		answer.Starts, mess, answer.QuestionId).Err()
 	if err != nil {
 		return err
 	}
@@ -143,7 +151,7 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 
 		for AnsRows.Next() {
 			var stars int32
-			var message string
+			var message *string
 
 			err = AnsRows.Scan(&stars, &message)
 			if err != nil {
@@ -152,10 +160,12 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 
 			countOfStars[stars]++
 
-			mess := &pb.QuestionComment{
-				Comment: message,
+			if message != nil {
+				mess := &pb.QuestionComment{
+					Comment: *message,
+				}
+				messages = append(messages, mess)
 			}
-			messages = append(messages, mess)
 		}
 
 		var starsSum int64
