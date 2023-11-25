@@ -168,10 +168,10 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]
 	if err != nil && err != psql.ErrEntityNotFound {
 		contextLogger := contextUtils.GetContextLogger(ctx)
 		contextLogger.WithFields(logrus.Fields{
-			"err": err,
+			"err":     err,
 			"user_id": userID,
 		}).
-		Debug("got 'err' while trying to get all user's cvs by 'user_id'")
+			Debug("got 'err' while trying to get all user's cvs by 'user_id'")
 		return nil, err
 	}
 	// fmt.Println("after getting cvs")
@@ -278,7 +278,6 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 		return validStatus
 	}
 
-
 	expIDs, expErr := cvUsecase.expRepo.GetCVExperiencesIDs(ctx, cvID)
 	if expErr != nil && expErr != psql.ErrEntityNotFound {
 		return expErr
@@ -290,7 +289,7 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 	dbExperiences, dbEducationInstitutions, dbCV := cvUsecase.getDataFromApiCV(cv)
 
 	expsIDsToDelete, expsToUpdate, expsToInsert := cvUsecase.getExpsBatches(dbExperiences, expIDs)
-	
+
 	instsIDsToDelete, instsToUpdate, instsToInsert := cvUsecase.getInstsBatches(dbEducationInstitutions, instIDs)
 
 	updStatus := cvUsecase.cvRepo.UpdateOneOfUsersCV(ctx, userID, cvID, dbCV,

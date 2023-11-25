@@ -1,0 +1,60 @@
+/*
+protoc --go_out=. --go_opt=paths=source_relative \
+--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+csatPB/csat.proto
+*/
+
+syntax = "proto3";
+
+option go_package = "HnH/pkg/services/csat/csatPB";
+
+package csat;
+
+service csat {
+    rpc GetQuestions (UserID) returns (QuestionList) {}
+    rpc RegisterAnswer (Answer) returns (Empty) {}
+    rpc GetStatistic (Empty) returns (Statistics) {}
+}
+
+message Empty {}
+
+message UserID {
+    int64 userID = 1;
+}
+
+message Question {
+    string question = 1;
+    string name = 2;
+    int64 question_id = 3;
+}
+
+message QuestionList {
+    repeated Question questions = 1;
+}
+
+message Answer {
+    int32 starts = 1;
+    string comment = 2;
+    int64 question_id = 3;
+}
+
+message StarsNum {
+    int32 starsNum = 1;
+    int64 count = 2;
+    
+}
+
+message QuestionComment {
+    string comment = 1;
+}
+
+message QuestionStatistics {
+    float avgStars = 1;
+    repeated StarsNum starsNumList = 2;
+    repeated QuestionComment questionCommentList = 3;
+    string question_text = 4;
+}
+
+message Statistics {
+    repeated QuestionStatistics statisticsList = 1;
+}
