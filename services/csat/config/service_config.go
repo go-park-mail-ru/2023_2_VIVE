@@ -14,7 +14,6 @@ var CsatServiceConfig = CsatConfig{
 	LogFile:     "csat_service.log",
 }
 
-
 type postgresConfig struct {
 	user     string
 	password string
