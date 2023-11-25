@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"google.golang.org/grpc"
 )
 
@@ -67,7 +68,7 @@ func initGrpcServer(opts []grpc.ServerOption) (*grpc.Server, error) {
 	db, err := initPostgres()
 	if err != nil {
 		return nil, err
-	} 
+	}
 
 	server, err := delivery.NewServer(db)
 	if err != nil {
