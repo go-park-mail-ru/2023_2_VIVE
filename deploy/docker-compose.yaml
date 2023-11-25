@@ -21,6 +21,19 @@ services:
       POSTGRES_USER: vive_admin
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./migrations/:/docker-entrypoint-initdb.d/
+      - ./migrations/hnh/:/docker-entrypoint-initdb.d/
     ports:
       - "8054:5432"
+
+  db_hnh_csat:
+    container_name: db_hnh_csat
+    image: postgres:${POSTGRES_VERSION}-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "hnh_csat"
+      POSTGRES_USER: vive_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./migrations/hnh_csat/:/docker-entrypoint-initdb.d/
+    ports:
+      - "8055:5432"

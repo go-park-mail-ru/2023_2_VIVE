@@ -39,7 +39,7 @@ var HnHRedisConfig = redisConfig{
 
 var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
-	password: "123",
+	password: "vive_password",
 	dbname:   "hnh",
 	host:     "localhost",
 	port:     "8054",
