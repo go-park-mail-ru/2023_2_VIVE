@@ -12,7 +12,8 @@ const (
 )
 
 type ICsatUsecase interface {
-	GetQuestions(ctx context.Context, request *pb.UserID) (*pb.QuestionList, error)
+	GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.QuestionList, error)
+	RegisterAnswer(ctx context.Context, answer *pb.Answer) (*pb.Empty, error)
 }
 
 type CsatUsecase struct {
@@ -29,10 +30,7 @@ func (u *CsatUsecase) checkLastUpdate(lastUpdate time.Time) bool {
 	now := time.Now()
 
 	delta := now.Sub(lastUpdate)
-	if delta < NO_SHOW_CSAT_TIME {
-		return false
-	}
-	return true
+	return delta >= NO_SHOW_CSAT_TIME
 }
 
 func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.QuestionList, error) {
@@ -60,5 +58,14 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 		res.Questions = append(res.Questions, &pb.Question{Question: question})
 	}
 
+	return &res, nil
+}
+
+func (u *CsatUsecase) RegisterAnswer(ctx context.Context, answer *pb.Answer) (*pb.Empty, error) {
+	res := pb.Empty{}
+	err := u.csatRepo.RegisterAnswer(ctx, answer.GetStarts(), answer.GetComment())
+	if err != nil {
+		return &res, err
+	}
 	return &res, nil
 }
