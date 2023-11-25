@@ -25,7 +25,7 @@ func Run() error {
 
 	logging.InitLogger(logFile)
 
-	db, err := getPostgres()
+	db, err := GetPostgres()
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func Run() error {
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
 	corsRouter := configs.CORS.Handler(router)
-	loggedRouter := middleware.AccessLogMiddleware(/* logging.Logger,  */corsRouter)
+	loggedRouter := middleware.AccessLogMiddleware( /* logging.Logger,  */ corsRouter)
 	requestIDRouter := middleware.RequestID(loggedRouter)
 	finalRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
 

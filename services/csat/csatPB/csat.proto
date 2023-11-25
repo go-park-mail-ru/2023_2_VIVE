@@ -24,6 +24,8 @@ message UserID {
 
 message Question {
     string question = 1;
+    string name = 2;
+    int64 question_id = 3;
 }
 
 message QuestionList {
@@ -33,6 +35,7 @@ message QuestionList {
 message Answer {
     int32 starts = 1;
     string comment = 2;
+    int64 question_id = 3;
 }
 
 message StarsNum {
@@ -49,6 +52,7 @@ message QuestionStatistics {
     float avgStars = 1;
     repeated StarsNum starsNumList = 2;
     repeated QuestionComment questionCommentList = 3;
+    string question_text = 4;
 }
 
 message Statistics {

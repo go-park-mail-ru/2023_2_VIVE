@@ -14,7 +14,6 @@ var CsatServiceConfig = CsatConfig{
 	LogFile:     "csat_service.log",
 }
 
-
 type postgresConfig struct {
 	user     string
 	password string
@@ -29,7 +28,7 @@ var CsatPostgresConfig = postgresConfig{
 	password: "vive_password",
 	dbname:   "hnh_csat",
 	host:     "localhost",
-	port:     "8054",
+	port:     "8055",
 	sslmode:  "disable",
 }
 

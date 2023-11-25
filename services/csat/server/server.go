@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 
+	_ "github.com/jackc/pgx/stdlib"
 	"google.golang.org/grpc"
 )
 
@@ -67,7 +68,7 @@ func initGrpcServer(opts []grpc.ServerOption) (*grpc.Server, error) {
 	db, err := initPostgres()
 	if err != nil {
 		return nil, err
-	} 
+	}
 
 	server, err := delivery.NewServer(db)
 	if err != nil {
@@ -98,7 +99,7 @@ func Run() {
 		fmt.Printf("error while starting server: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("\tstarting search engine server at %d port\n", config.CsatServiceConfig.Port)
-	logger.Logger.Infof("starting search engine server at %d port", config.CsatServiceConfig.Port)
+	fmt.Printf("\tstarting %s server at %d port\n", config.CsatServiceConfig.ServiceName, config.CsatServiceConfig.Port)
+	logger.Logger.Infof("starting %s server at %d port", config.CsatServiceConfig.ServiceName, config.CsatServiceConfig.Port)
 	grpcServer.Serve(listner)
 }
