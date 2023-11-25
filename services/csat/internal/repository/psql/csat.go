@@ -1,6 +1,7 @@
 package psql
 
 import (
+	pb "HnH/services/csat/csatPB"
 	"context"
 	"database/sql"
 	"time"
@@ -10,6 +11,7 @@ type ICsatRepository interface {
 	GetLastUpdate(ctx context.Context, userID int64) (time.Time, error)
 	GetQuestions(ctx context.Context) ([]string, error)
 	RegisterAnswer(ctx context.Context, stars int32, comment string) (error)
+	GetStatistics(ctx context.Context) (*pb.Statistics, error)
 }
 
 type psqlCsatRepository struct {
@@ -32,4 +34,8 @@ func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]string, err
 
 func (repo *psqlCsatRepository) RegisterAnswer(ctx context.Context, stars int32, comment string) (error) {
 	return nil
+}
+
+func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statistics, error) {
+	return &pb.Statistics{}, nil
 }

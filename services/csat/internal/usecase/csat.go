@@ -14,6 +14,7 @@ const (
 type ICsatUsecase interface {
 	GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.QuestionList, error)
 	RegisterAnswer(ctx context.Context, answer *pb.Answer) (*pb.Empty, error)
+	GetStatistics(ctx context.Context) (*pb.Statistics, error)
 }
 
 type CsatUsecase struct {
@@ -68,4 +69,14 @@ func (u *CsatUsecase) RegisterAnswer(ctx context.Context, answer *pb.Answer) (*p
 		return &res, err
 	}
 	return &res, nil
+}
+
+func (u *CsatUsecase) GetStatistics(ctx context.Context) (*pb.Statistics, error) {
+	res := pb.Statistics{}
+	statistics, err := u.csatRepo.GetStatistics(ctx)
+	if err != nil {
+		return &res, err
+	}
+
+	return statistics, nil
 }

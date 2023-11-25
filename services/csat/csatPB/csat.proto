@@ -35,4 +35,22 @@ message Answer {
     string comment = 2;
 }
 
-message Statistics {}
+message StarsNum {
+    int32 starsNum = 1;
+    int64 count = 2;
+    
+}
+
+message QuestionComment {
+    string comment = 1;
+}
+
+message QuestionStatistics {
+    float avgStars = 1;
+    repeated StarsNum starsNumList = 2;
+    repeated QuestionComment questionCommentList = 3;
+}
+
+message Statistics {
+    repeated QuestionStatistics statisticsList = 1;
+}
