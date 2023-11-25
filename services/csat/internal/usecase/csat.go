@@ -56,7 +56,7 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 	}
 
 	for _, question := range questions {
-		res.Questions = append(res.Questions, &pb.Question{Question: question})
+		res.Questions = append(res.Questions, question)
 	}
 
 	return &res, nil
@@ -64,7 +64,7 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 
 func (u *CsatUsecase) RegisterAnswer(ctx context.Context, answer *pb.Answer) (*pb.Empty, error) {
 	res := pb.Empty{}
-	err := u.csatRepo.RegisterAnswer(ctx, answer.GetStarts(), answer.GetComment())
+	err := u.csatRepo.RegisterAnswer(ctx, answer)
 	if err != nil {
 		return &res, err
 	}
