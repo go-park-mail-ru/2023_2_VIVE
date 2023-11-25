@@ -55,9 +55,11 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 		return &res, err
 	}
 
-	for _, question := range questions {
-		res.Questions = append(res.Questions, question)
-	}
+	
+	res.Questions = append(res.Questions, questions...)
+	// for _, question := range questions {
+	// 	res.Questions = append(res.Questions, question)
+	// }
 
 	return &res, nil
 }
