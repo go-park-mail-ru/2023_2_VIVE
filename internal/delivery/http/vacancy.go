@@ -103,11 +103,10 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 }
 
 func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
-	// vars := mux.Vars(r)
 	contextLogger := contextUtils.GetContextLogger(r.Context())
 	query := r.URL.Query()
 	contextLogger.WithFields(logrus.Fields{
-		"query": query,
+		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
 	searchQuery := query.Get(SEARCH_QUERY_KEY)

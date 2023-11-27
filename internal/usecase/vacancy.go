@@ -185,19 +185,25 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	vacancyIDs, count, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return domain.ApiMetaVacancy{
-			Count: 0,
+			Count:     0,
 			Vacancies: nil,
 		}, nil
 	}
 
 	vacancies, vacErr := vacancyUsecase.vacancyRepo.GetVacanciesByIds(ctx, castUtils.Int64SliceToIntSlice(vacancyIDs))
-	if vacErr != nil && vacErr != psql.ErrEntityNotFound {
+	if vacErr == psql.ErrEntityNotFound {
+		return domain.ApiMetaVacancy{
+			Count:     0,
+			Vacancies: nil,
+		}, nil
+	}
+	if vacErr != nil {
 		return domain.ApiMetaVacancy{}, vacErr
 	}
 
 	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
 	result := domain.ApiMetaVacancy{
-		Count: count,
+		Count:     count,
 		Vacancies: vacanciesToReturn,
 	}
 

@@ -4,6 +4,7 @@ import (
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 
@@ -13,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type CVHandler struct {
@@ -26,6 +28,9 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 
 	router.Handle("/cv/{cvID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCV))).
+		Methods("GET")
+
+	router.HandleFunc("/cv/search", handler.SearchCVs).
 		Methods("GET")
 
 	router.Handle("/current_user/cvs",
@@ -98,6 +103,56 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 	sanitizedCV := cvHandler.sanitizeCVs(*cv)
 
 	responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+}
+
+func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.ApiMetaCV {
+	result := domain.ApiMetaCV{
+		Count:     metaCVs.Count,
+		CVs: cvHandler.sanitizeCVs(metaCVs.CVs...),
+	}
+	return result
+}
+
+func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	query := r.URL.Query()
+	contextLogger.WithFields(logrus.Fields{
+		"query": query.Encode(),
+	}).
+		Debug("got search request with query")
+	searchQuery := query.Get(SEARCH_QUERY_KEY)
+
+	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
+	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
+	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(
+		r.Context(),
+		searchQuery,
+		pageNum,
+		resultsPerPage,
+	)
+
+	if getErr != nil {
+		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		return
+	}
+
+	sanitizedMetaVacancies := cvHandler.sanitizeMetaCVs(metaCVs)
+
+	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
