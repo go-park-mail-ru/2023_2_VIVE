@@ -35,13 +35,13 @@ func NewResponseUsecase(respondRepository psql.IResponseRepository,
 	}
 }
 
-func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
-	validStatus := responseUsecase.sessionRepo.ValidateSession(sessionID)
+func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(ctx context.Context, sessionID string) (int, error) {
+	validStatus := responseUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userID, err := responseUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := responseUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return 0, err
 	}
@@ -50,7 +50,7 @@ func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(sessionID st
 }
 
 func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, sessionID string, vacancyID, cvID int) error {
-	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := responseUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -70,7 +70,7 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, se
 }
 
 func (responseUsecase *ResponseUsecase) GetApplicantsList(ctx context.Context, sessionID string, vacancyID int) ([]domain.ApplicantInfo, error) {
-	userID, validStatus := responseUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := responseUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}

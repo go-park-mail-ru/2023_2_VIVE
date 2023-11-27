@@ -6,11 +6,12 @@ import (
 	"HnH/internal/delivery/http/middleware"
 	grpcRepo "HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
-	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
-	"HnH/services/csat/config"
-	pb "HnH/services/csat/csatPB"
+	authPB "HnH/services/auth/authPB"
+	auth "HnH/services/auth/config"
+	csat "HnH/services/csat/config"
+	csatPB "HnH/services/csat/csatPB"
 	"os"
 
 	"fmt"
@@ -21,7 +22,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func initCsatClient(config config.CsatConfig) (pb.CsatClient, error) {
+func initCsatClient(config csat.CsatConfig) (csatPB.CsatClient, error) {
 	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
 	opts := []grpc.DialOption{}
@@ -32,7 +33,22 @@ func initCsatClient(config config.CsatConfig) (pb.CsatClient, error) {
 		return nil, err
 	}
 
-	client := pb.NewCsatClient(conn)
+	client := csatPB.NewCsatClient(conn)
+	return client, nil
+}
+
+func initAuthClient(config auth.AuthConfig) (authPB.AuthClient, error) {
+	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+
+	opts := []grpc.DialOption{}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	conn, err := grpc.Dial(connAddr, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := authPB.NewAuthClient(conn)
 	return client, nil
 }
 
@@ -51,18 +67,24 @@ func Run() error {
 	}
 	defer db.Close()
 
-	redisDB := getRedis()
+	/*redisDB := getRedis()
 	if err != nil {
 		return err
 	}
-	defer redisDB.Close()
+	defer redisDB.Close()*/
 
-	csatClient, err := initCsatClient(config.CsatServiceConfig)
+	csatClient, err := initCsatClient(csat.CsatServiceConfig)
 	if err != nil {
 		return err
 	}
 
-	sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
+	authClient, err := initAuthClient(auth.AuthServiceConfig)
+	if err != nil {
+		return err
+	}
+
+	//sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
+	authRepo := grpcRepo.NewGrpcAuthRepository(authClient)
 	userRepo := psql.NewPsqlUserRepository(db)
 	organizationRepo := psql.NewPsqlOrganizationRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
@@ -72,12 +94,12 @@ func Run() error {
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 	csatRepo := grpcRepo.NewGrpcSearchEngineRepository(csatClient)
 
-	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
-	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
-	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
-	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)
-	csatUsecase := usecase.NewCsatUsecase(csatRepo, sessionRepo)
+	sessionUsecase := usecase.NewSessionUsecase(authRepo, userRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, authRepo, organizationRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, authRepo, userRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo)
+	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo)
+	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
 
 	router := mux.NewRouter()
 	// router.Use(func(h http.Handler) http.Handler {

@@ -34,12 +34,12 @@ func NewVacancyUsecase(vacancyRepository psql.IVacancyRepository,
 }
 
 func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetOrgId(ctx context.Context, sessionID string) (int, error) {
-	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
+	validStatus := vacancyUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return 0, err
 	}
@@ -86,7 +86,7 @@ func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []
 }
 
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
-	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx, )
+	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx)
 	if getErr != nil {
 		return nil, getErr
 	}
@@ -146,7 +146,7 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, session
 }
 
 func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error) {
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return nil, serverErrors.AUTH_REQUIRED
 	}

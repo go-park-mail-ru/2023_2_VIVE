@@ -1,0 +1,34 @@
+/*
+protoc --go_out=. --go_opt=paths=source_relative \
+--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+authPB/auth.proto
+*/
+
+syntax = "proto3";
+
+option go_package = "HnH/pkg/services/auth/authPB";
+
+package auth;
+
+service auth {
+    rpc AddSession (AuthData) returns (Empty) {}
+    rpc DeleteSession (SessionID) returns (Empty) {}
+    rpc ValidateSession (SessionID) returns (Empty) {}
+    rpc GetUserIdBySession(SessionID) returns (UserID) {}
+}
+
+message Empty {}
+
+message SessionID {
+    string session_id = 1;
+}
+
+message UserID {
+    int64 user_id = 1;
+}
+
+message AuthData {
+    SessionID session_id = 1;
+    UserID user_id = 2;
+    int64 expiry_time = 3;
+}

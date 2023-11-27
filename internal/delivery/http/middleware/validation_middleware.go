@@ -60,7 +60,7 @@ func CSRFProtectionMiddleware(sessionRepo redisRepo.ISessionRepository, next htt
 			}
 
 			sessionID := cookie.Value
-			userID, err := sessionRepo.GetUserIdBySession(sessionID)
+			userID, err := sessionRepo.GetUserIdBySession(r.Context(), sessionID)
 			if err != nil {
 				responseTemplates.SendErrorMessage(w, err, http.StatusUnauthorized)
 				return
