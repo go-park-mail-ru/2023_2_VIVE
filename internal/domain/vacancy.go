@@ -121,3 +121,8 @@ func (vac *ApiVacancy) ToDb() *DbVacancy {
 
 	return &res
 }
+
+type ApiMetaVacancy struct {
+	Count     int64        `json:"count"`
+	Vacancies []ApiVacancy `json:"list"`
+}

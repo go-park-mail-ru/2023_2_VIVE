@@ -17,7 +17,7 @@ type IVacancyUsecase interface {
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
-	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]domain.ApiVacancy, error)
+	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaVacancy, error)
 }
 
 type VacancyUsecase struct {
@@ -181,18 +181,25 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	ctx context.Context,
 	query string,
 	pageNumber, resultsPerPage int64,
-) ([]domain.ApiVacancy, error) {
-	vacancyIDs, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
+) (domain.ApiMetaVacancy, error) {
+	vacancyIDs, count, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
-		return []domain.ApiVacancy{}, nil
+		return domain.ApiMetaVacancy{
+			Count: 0,
+			Vacancies: nil,
+		}, nil
 	}
 
 	vacancies, vacErr := vacancyUsecase.vacancyRepo.GetVacanciesByIds(ctx, castUtils.Int64SliceToIntSlice(vacancyIDs))
 	if vacErr != nil && vacErr != psql.ErrEntityNotFound {
-		return nil, vacErr
+		return domain.ApiMetaVacancy{}, vacErr
 	}
 
 	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
+	result := domain.ApiMetaVacancy{
+		Count: count,
+		Vacancies: vacanciesToReturn,
+	}
 
-	return vacanciesToReturn, nil
+	return result, nil
 }

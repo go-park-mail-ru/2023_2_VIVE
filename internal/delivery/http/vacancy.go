@@ -5,6 +5,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 
@@ -14,6 +15,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,6 +43,14 @@ func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.ApiV
 		result = append(result, vac)
 	}
 
+	return result
+}
+
+func (vacancyHandler *VacancyHandler) sanitizeMetaVacancies(metaVacancies domain.ApiMetaVacancy) domain.ApiMetaVacancy {
+	result := domain.ApiMetaVacancy{
+		Count:     metaVacancies.Count,
+		Vacancies: vacancyHandler.sanitizeVacancies(metaVacancies.Vacancies...),
+	}
 	return result
 }
 
@@ -94,7 +104,12 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 
 func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
 	// vars := mux.Vars(r)
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	query := r.URL.Query()
+	contextLogger.WithFields(logrus.Fields{
+		"query": query,
+	}).
+		Debug("got search request with query")
 	searchQuery := query.Get(SEARCH_QUERY_KEY)
 
 	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
@@ -111,23 +126,21 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 		return
 	}
 
-	vacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(
+	metaVacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(
 		r.Context(),
 		searchQuery,
 		pageNum,
 		resultsPerPage,
 	)
 
-	if getErr == psql.ErrEntityNotFound {
-		vacancies = []domain.ApiVacancy{}
-	} else if getErr != nil {
+	if getErr != nil {
 		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
 		return
 	}
 
-	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
+	sanitizedMetaVacancies := vacancyHandler.sanitizeMetaVacancies(metaVacancies)
 
-	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
 
 	w.WriteHeader(http.StatusOK)
 }

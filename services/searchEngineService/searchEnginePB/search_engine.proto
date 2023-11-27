@@ -23,4 +23,5 @@ message SearchRequest {
 
 message SearchResponse {
     repeated int64 ids = 1;
+    int64 count = 2;
 }

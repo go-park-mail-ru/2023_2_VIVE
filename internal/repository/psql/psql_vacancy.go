@@ -199,7 +199,12 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 	FROM
 		hnh_data.vacancy v
 	WHERE
-		AND v.id IN (` + placeHolderString + `)`
+		v.id IN (` + placeHolderString + `)`
+
+	contextLogger.WithFields(logrus.Fields{
+		"db_query": query,
+	}).
+		Debug("query to db")
 
 	rows, err := repo.DB.Query(query, placeHolderValues...)
 	if err != nil {
@@ -586,7 +591,7 @@ func (repo *psqlVacancyRepository) DeleteEmpVacancy(ctx context.Context, empID, 
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
-		"vacancy_id":      vacancyID,
+		"vacancy_id":  vacancyID,
 		"employer_id": empID,
 	}).
 		Info("deleting vacancy by 'vacancy_id' and 'employer_id' in postgres")
