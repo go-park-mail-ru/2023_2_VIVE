@@ -30,7 +30,7 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCV))).
 		Methods("GET")
 
-	router.HandleFunc("/cv/search", handler.SearchCVs).
+	router.HandleFunc("/cvs/search", handler.SearchCVs).
 		Methods("GET")
 
 	router.Handle("/current_user/cvs",

@@ -12,7 +12,7 @@ package searchEngine;
 
 service searchEngine {
     rpc SearchVacancies (SearchRequest) returns (SearchResponse) {}
-    // rpc SearchCVs (SearchRequest) returns (SearchResponse) {}
+    rpc SearchCVs (SearchRequest) returns (SearchResponse) {}
 }
 
 message SearchRequest {

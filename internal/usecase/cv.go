@@ -354,7 +354,7 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	query string,
 	pageNumber, resultsPerPage int64,
 ) (domain.ApiMetaCV, error) {
-	cvIDs, count, err := cvUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
+	cvIDs, count, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return domain.ApiMetaCV{
 			Count: 0,

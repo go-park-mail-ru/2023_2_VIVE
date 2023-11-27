@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearchEngineClient interface {
 	SearchVacancies(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+	SearchCVs(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
 }
 
 type searchEngineClient struct {
@@ -42,11 +43,21 @@ func (c *searchEngineClient) SearchVacancies(ctx context.Context, in *SearchRequ
 	return out, nil
 }
 
+func (c *searchEngineClient) SearchCVs(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
+	out := new(SearchResponse)
+	err := c.cc.Invoke(ctx, "/searchEngine.searchEngine/SearchCVs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchEngineServer is the server API for SearchEngine service.
 // All implementations must embed UnimplementedSearchEngineServer
 // for forward compatibility
 type SearchEngineServer interface {
 	SearchVacancies(context.Context, *SearchRequest) (*SearchResponse, error)
+	SearchCVs(context.Context, *SearchRequest) (*SearchResponse, error)
 	mustEmbedUnimplementedSearchEngineServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedSearchEngineServer struct {
 
 func (UnimplementedSearchEngineServer) SearchVacancies(context.Context, *SearchRequest) (*SearchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchVacancies not implemented")
+}
+func (UnimplementedSearchEngineServer) SearchCVs(context.Context, *SearchRequest) (*SearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchCVs not implemented")
 }
 func (UnimplementedSearchEngineServer) mustEmbedUnimplementedSearchEngineServer() {}
 
@@ -88,6 +102,24 @@ func _SearchEngine_SearchVacancies_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SearchEngine_SearchCVs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchEngineServer).SearchCVs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/searchEngine.searchEngine/SearchCVs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchEngineServer).SearchCVs(ctx, req.(*SearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SearchEngine_ServiceDesc is the grpc.ServiceDesc for SearchEngine service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var SearchEngine_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchVacancies",
 			Handler:    _SearchEngine_SearchVacancies_Handler,
+		},
+		{
+			MethodName: "SearchCVs",
+			Handler:    _SearchEngine_SearchCVs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

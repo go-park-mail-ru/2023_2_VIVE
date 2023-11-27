@@ -9,6 +9,7 @@ import (
 
 type ISearchUsecase interface {
 	SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error)
+	SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error)
 }
 
 type SearchUsecase struct {
@@ -36,6 +37,27 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 
 	res := pb.SearchResponse{
 		Ids:   vacanciesIDs,
+		Count: count,
+	}
+
+	return &res, nil
+}
+
+func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
+	query := request.GetQuery()
+	pageNumber := request.GetPageNumber()
+	resultsPerPage := request.GetResultsPerPage()
+
+	cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
+	if err == psql.ErrEntityNotFound {
+		return &pb.SearchResponse{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	res := pb.SearchResponse{
+		Ids:   cvsIDs,
 		Count: count,
 	}
 
