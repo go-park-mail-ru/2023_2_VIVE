@@ -10,7 +10,7 @@ import (
 )
 
 type ISearchEngineRepository interface {
-	SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error)
+	SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error)
 	SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error)
 }
 
@@ -24,7 +24,7 @@ func NewGrpcSearchEngineRepository(client pb.SearchEngineClient) ISearchEngineRe
 	}
 }
 
-func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error) {
+func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	request := pb.SearchRequest{
 		Query:          query,
@@ -44,13 +44,10 @@ func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, qu
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	searchResponse, err := repo.client.SearchVacancies(ctx, &request)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	// foundVacancyIDs := repo.castVacanciesResponse(searchResponse)
-	foundVacancyIDs, count := searchResponse.Ids, searchResponse.Count
-
-	return foundVacancyIDs, count, nil
+	return searchResponse, nil
 }
 
 func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error) {

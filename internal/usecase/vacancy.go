@@ -112,14 +112,14 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 }
 
 func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error) {
-	userOrgID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
+	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
 	// fmt.Printf("vacancy: %v\n", vacancy)
 
-	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(ctx, userOrgID, vacancy)
+	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(ctx, userEmpID, vacancy)
 	if addStatus != nil {
 		return 0, addStatus
 	}
@@ -182,19 +182,20 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	query string,
 	pageNumber, resultsPerPage int64,
 ) (domain.ApiMetaVacancy, error) {
-	vacancyIDs, count, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
+	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return domain.ApiMetaVacancy{
-			Count:     0,
-			Vacancies: nil,
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
 		}, nil
 	}
+	vacancyIDs, count := vacanciesSearchResponse.Ids, vacanciesSearchResponse.Count
 
 	vacancies, vacErr := vacancyUsecase.vacancyRepo.GetVacanciesByIds(ctx, castUtils.Int64SliceToIntSlice(vacancyIDs))
 	if vacErr == psql.ErrEntityNotFound {
 		return domain.ApiMetaVacancy{
-			Count:     0,
-			Vacancies: nil,
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
 		}, nil
 	}
 	if vacErr != nil {
@@ -203,8 +204,11 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 
 	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
 	result := domain.ApiMetaVacancy{
-		Count:     count,
-		Vacancies: vacanciesToReturn,
+		Filters: vacanciesSearchResponse.Filters,
+		Vacancies: domain.ApiVacancyCount{
+			Count:     count,
+			Vacancies: vacanciesToReturn,
+		},
 	}
 
 	return result, nil

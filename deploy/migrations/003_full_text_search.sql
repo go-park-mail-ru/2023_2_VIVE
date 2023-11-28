@@ -22,8 +22,7 @@ ALTER TABLE hnh_data.vacancy
 ALTER TABLE hnh_data.employer 
     ADD COLUMN organization_name TEXT NOT NULL DEFAULT 'Название вашей компании'
         CONSTRAINT organization_name_is_not_empty CHECK (length(organization_name) > 0),
-    ADD COLUMN organization_description TEXT NOT NULL DEFAULT 'Описание компании'
-        CONSTRAINT organization_description_is_not_empty CHECK (length(organization_description) > 0),
+    ADD COLUMN organization_description TEXT DEFAULT NULL,
     DROP COLUMN organization_id;
 
 
@@ -75,7 +74,11 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-
 CREATE OR REPLACE TRIGGER cv_fts_update
 BEFORE INSERT OR UPDATE ON hnh_data.cv 
 FOR EACH ROW EXECUTE FUNCTION hnh_data.update_cv_fts_column();
+
+ALTER TABLE hnh_data.vacancy 
+    ADD COLUMN experience TEXT NOT NULL DEFAULT 'none',
+    DROP COLUMN experience_lower_bound,
+    DROP COLUMN experience_upper_bound;

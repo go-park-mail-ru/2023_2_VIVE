@@ -19,7 +19,7 @@ type IVacancyRepository interface {
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetEmpId(ctx context.Context, vacancyID int) (int, error)
-	AddVacancy(ctx context.Context, userID int, vacancy *domain.DbVacancy) (int, error)
+	AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error)
 	UpdateEmpVacancy(ctx context.Context, empID, vacancyID int, vacancy *domain.DbVacancy) error
 	DeleteEmpVacancy(ctx context.Context, empID, vacancyID int) error
 }
@@ -46,8 +46,7 @@ func (repo *psqlVacancyRepository) GetAllVacancies(ctx context.Context) ([]domai
 	    salary_lower_bound,
 	    salary_upper_bound,
 	    employment,
-	    experience_lower_bound,
-	    experience_upper_bound,
+	    experience,
 	    education_type,
 	    "location",
 	    created_at,
@@ -73,8 +72,7 @@ func (repo *psqlVacancyRepository) GetAllVacancies(ctx context.Context) ([]domai
 			&vacancy.SalaryLowerBound,
 			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.ExperienceLowerBound,
-			&vacancy.ExperienceUpperBound,
+			&vacancy.Experience,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -120,8 +118,7 @@ func (repo *psqlVacancyRepository) GetEmpVacanciesByIds(ctx context.Context, emp
 		v.salary_lower_bound,
 		v.salary_upper_bound,
 		v.employment,
-		v.experience_lower_bound,
-		v.experience_upper_bound,
+		v.experience,
 		v.education_type,
 		v."location",
 		v.created_at,
@@ -150,8 +147,7 @@ func (repo *psqlVacancyRepository) GetEmpVacanciesByIds(ctx context.Context, emp
 			&vacancy.SalaryLowerBound,
 			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.ExperienceLowerBound,
-			&vacancy.ExperienceUpperBound,
+			&vacancy.Experience,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -190,8 +186,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 		v.salary_lower_bound,
 		v.salary_upper_bound,
 		v.employment,
-		v.experience_lower_bound,
-		v.experience_upper_bound,
+		v.experience,
 		v.education_type,
 		v."location",
 		v.created_at,
@@ -224,8 +219,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 			&vacancy.SalaryLowerBound,
 			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.ExperienceLowerBound,
-			&vacancy.ExperienceUpperBound,
+			&vacancy.Experience,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -257,8 +251,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 		salary_lower_bound,
 		salary_upper_bound,
 		employment,
-		experience_lower_bound,
-		experience_upper_bound,
+		experience,
 		education_type,
 		"location",
 		created_at,
@@ -279,8 +272,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 			&vacancyToReturn.SalaryLowerBound,
 			&vacancyToReturn.SalaryUpperBound,
 			&vacancyToReturn.Employment,
-			&vacancyToReturn.ExperienceLowerBound,
-			&vacancyToReturn.ExperienceUpperBound,
+			&vacancyToReturn.Experience,
 			&vacancyToReturn.EducationType,
 			&vacancyToReturn.Location,
 			&vacancyToReturn.CreatedAt,
@@ -318,8 +310,7 @@ func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID 
 		salary_lower_bound,
 		salary_upper_bound,
 		employment,
-		experience_lower_bound,
-		experience_upper_bound,
+		experience,
 		education_type,
 		"location",
 		created_at,
@@ -349,8 +340,7 @@ func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID 
 			&vacancy.SalaryLowerBound,
 			&vacancy.SalaryUpperBound,
 			&vacancy.Employment,
-			&vacancy.ExperienceLowerBound,
-			&vacancy.ExperienceUpperBound,
+			&vacancy.Experience,
 			&vacancy.EducationType,
 			&vacancy.Location,
 			&vacancy.CreatedAt,
@@ -447,14 +437,13 @@ func (repo *psqlVacancyRepository) GetEmpId(ctx context.Context, vacancyID int) 
 }
 
 // Add new vacancy and return new id if successful
-func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, vacancy *domain.DbVacancy) (int, error) {
+func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
-		"user_id": userID,
+		"employer_id": empID,
 	}).
 		Info("adding new vacancy  by 'user_id' in postgres")
-	// fmt.Printf("before inserting vacancy in db: %v\n", vacancy)
 	query := `INSERT
 		INTO
 		hnh_data.vacancy (
@@ -464,8 +453,7 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, v
 			salary_lower_bound,
 			salary_upper_bound,
 			employment,
-			experience_lower_bound,
-			experience_upper_bound,
+			experience,
 			education_type,
 			"location"
 		)
@@ -474,21 +462,10 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, v
 	FROM
 		hnh_data.employer e
 	WHERE
-		e.organization_id = $10
+		e.id = $10
 		RETURNING id`
 
 	var insertedVacancyID int
-
-	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
-	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
-	// fmt.Printf("*vacancy.Salary_lower_bound: %v\n", *vacancy.SalaryLowerBound)
-	// fmt.Printf("*vacancy.Salary_upper_bound: %v\n", *vacancy.SalaryUpperBound)
-	// fmt.Printf("vacancy.Employment: %v\n", vacancy.Employment)
-	// fmt.Printf("*vacancy.Experience_lower_bound: %v\n", *vacancy.ExperienceLowerBound)
-	// fmt.Printf("*vacancy.Experience_upper_bound: %v\n", *vacancy.ExperienceUpperBound)
-	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
-	// fmt.Printf("*vacancy.Location: %v\n", *vacancy.Location)
-	// fmt.Printf("userID: %v\n", userID)
 
 	err := repo.DB.QueryRow(
 		query,
@@ -497,23 +474,19 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, userID int, v
 		vacancy.SalaryLowerBound,
 		vacancy.SalaryUpperBound,
 		vacancy.Employment,
-		vacancy.ExperienceLowerBound,
-		vacancy.ExperienceUpperBound,
+		vacancy.Experience,
 		vacancy.EducationType,
 		vacancy.Location,
-		userID,
+		empID,
 	).
 		Scan(&insertedVacancyID)
 
 	if err == sql.ErrNoRows {
-		// fmt.Printf("err: %s\n", err)
 		return 0, ErrNotInserted
 	}
 	if err != nil {
-		// fmt.Printf("err: %s\n", err)
 		return 0, err
 	}
-	// fmt.Printf("after inserting vacancy in db\n")
 
 	return insertedVacancyID, nil
 }
@@ -535,28 +508,15 @@ func (repo *psqlVacancyRepository) UpdateEmpVacancy(ctx context.Context, empID, 
 		salary_lower_bound = $3,
 		salary_upper_bound = $4,
 		employment = $5,
-		experience_lower_bound = $6,
-		experience_upper_bound = $7,
-		education_type = $8,
-		"location" = $9,
+		experience = $6,
+		education_type = $7,
+		"location" = $8,
 		updated_at = now()
 	FROM
 		hnh_data.employer e
 	WHERE
-		v.id = $10
-		AND v.employer_id = $11`
-
-	// fmt.Printf("vacancy.VacancyName: %v\n", vacancy.VacancyName)
-	// fmt.Printf("vacancy.Description: %v\n", vacancy.Description)
-	// fmt.Printf("vacancy.Salary_lower_bound: %v\n", vacancy.Salary_lower_bound)
-	// fmt.Printf("vacancy.Salary_upper_bound: %v\n", vacancy.Salary_upper_bound)
-	// fmt.Printf("vacancy.Employment: %v\n", vacancy.Employment)
-	// fmt.Printf("vacancy.Experience_lower_bound: %v\n", vacancy.Experience_lower_bound)
-	// fmt.Printf("vacancy.Experience_upper_bound: %v\n", vacancy.Experience_upper_bound)
-	// fmt.Printf("vacancy.EducationType: %v\n", vacancy.EducationType)
-	// fmt.Printf("vacancy.Location: %v\n", vacancy.Location)
-	// fmt.Printf("vacancyID: %v\n", vacancyID)
-	// fmt.Printf("orgID: %v\n", orgID)
+		v.id = $9
+		AND v.employer_id = $10`
 
 	result, err := repo.DB.Exec(
 		query,
@@ -565,8 +525,7 @@ func (repo *psqlVacancyRepository) UpdateEmpVacancy(ctx context.Context, empID, 
 		vacancy.SalaryLowerBound,
 		vacancy.SalaryUpperBound,
 		vacancy.Employment,
-		vacancy.ExperienceLowerBound,
-		vacancy.ExperienceUpperBound,
+		vacancy.Experience,
 		vacancy.EducationType,
 		vacancy.Location,
 		vacancyID,

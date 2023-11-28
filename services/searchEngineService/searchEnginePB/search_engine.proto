@@ -21,7 +21,19 @@ message SearchRequest {
     int64 results_per_page = 3;
 }
 
+message FilterValue {
+    string value = 1;
+    int64 count = 2;
+}
+
+message Filter {
+    string name = 1;
+    string type = 2;
+    repeated FilterValue values = 3;
+}
+
 message SearchResponse {
     repeated int64 ids = 1;
     int64 count = 2;
+    repeated Filter filters = 3;
 }

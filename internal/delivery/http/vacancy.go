@@ -48,8 +48,11 @@ func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.ApiV
 
 func (vacancyHandler *VacancyHandler) sanitizeMetaVacancies(metaVacancies domain.ApiMetaVacancy) domain.ApiMetaVacancy {
 	result := domain.ApiMetaVacancy{
-		Count:     metaVacancies.Count,
-		Vacancies: vacancyHandler.sanitizeVacancies(metaVacancies.Vacancies...),
+		Filters: metaVacancies.Filters,
+		Vacancies: domain.ApiVacancyCount{
+			Count: metaVacancies.Vacancies.Count,
+			Vacancies: vacancyHandler.sanitizeVacancies(metaVacancies.Vacancies.Vacancies...),
+		},
 	}
 	return result
 }

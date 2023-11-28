@@ -409,7 +409,7 @@ func (p *psqlUserRepository) GetUserEmpId(ctx context.Context, userID int) (int,
 	FROM
 		hnh_data.employer e
 	WHERE
-		e.id = $1`
+		e.user_id = $1`
 	err := p.userStorage.QueryRow(query, userID).Scan(&empID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrEntityNotFound
