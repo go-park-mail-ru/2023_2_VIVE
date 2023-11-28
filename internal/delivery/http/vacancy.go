@@ -5,6 +5,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 
@@ -14,6 +15,13 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	SEARCH_QUERY_KEY           = "q"
+	PAGE_NUM_QUERY_KEY         = "page_num"
+	RESULTS_PER_PAGE_QUERY_KEY = "results_per_page"
 )
 
 type VacancyHandler struct {
@@ -38,6 +46,17 @@ func (vacancyHandler *VacancyHandler) sanitizeVacancies(vacancies ...domain.ApiV
 	return result
 }
 
+func (vacancyHandler *VacancyHandler) sanitizeMetaVacancies(metaVacancies domain.ApiMetaVacancy) domain.ApiMetaVacancy {
+	result := domain.ApiMetaVacancy{
+		Filters: metaVacancies.Filters,
+		Vacancies: domain.ApiVacancyCount{
+			Count: metaVacancies.Vacancies.Count,
+			Vacancies: vacancyHandler.sanitizeVacancies(metaVacancies.Vacancies.Vacancies...),
+		},
+	}
+	return result
+}
+
 func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase, sessionUCase usecase.ISessionUsecase) {
 	handler := &VacancyHandler{
 		vacancyUsecase: vacancyUCase,
@@ -45,6 +64,9 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 
 	router.HandleFunc("/vacancies",
 		handler.GetVacancies).
+		Methods("GET")
+
+	router.HandleFunc("/vacancies/search", handler.SearchVacancies).
 		Methods("GET")
 
 	router.Handle("/vacancies",
@@ -65,6 +87,7 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 	router.Handle("/vacancies/{vacancyID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
+
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +103,48 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+}
+
+func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	query := r.URL.Query()
+	contextLogger.WithFields(logrus.Fields{
+		"query": query.Encode(),
+	}).
+		Debug("got search request with query")
+	searchQuery := query.Get(SEARCH_QUERY_KEY)
+
+	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
+	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
+	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+		return
+	}
+
+	metaVacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(
+		r.Context(),
+		searchQuery,
+		pageNum,
+		resultsPerPage,
+	)
+
+	if getErr != nil {
+		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		return
+	}
+
+	sanitizedMetaVacancies := vacancyHandler.sanitizeMetaVacancies(metaVacancies)
+
+	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {

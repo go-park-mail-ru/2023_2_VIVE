@@ -14,7 +14,7 @@ services:
 
   db_hnh:
     container_name: db_hnh
-    image: postgres:${POSTGRES_VERSION}-alpine
+    image: search_postgres
     restart: always
     environment:
       POSTGRES_DB: "hnh"
@@ -22,6 +22,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./migrations/hnh/:/docker-entrypoint-initdb.d/
+      - hnh_data:/var/lib/postgresql/data
     ports:
       - "8054:5432"
 
@@ -35,5 +36,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./migrations/hnh_csat/:/docker-entrypoint-initdb.d/
+      - hnh_csat_data:/var/lib/postgresql/data
     ports:
       - "8055:5432"
+
+volumes:
+  hnh_data:
+  hnh_csat_data:

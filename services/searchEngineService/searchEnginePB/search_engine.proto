@@ -1,0 +1,39 @@
+/*
+protoc --go_out=. --go_opt=paths=source_relative \
+--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+searchEnginePB/search_engine.proto
+*/
+
+syntax = "proto3";
+
+option go_package = "HnH/pkg/services/searchEngine/searchEnginePB";
+
+package searchEngine;
+
+service searchEngine {
+    rpc SearchVacancies (SearchRequest) returns (SearchResponse) {}
+    rpc SearchCVs (SearchRequest) returns (SearchResponse) {}
+}
+
+message SearchRequest {
+    string query = 1;
+    int64 page_number = 2;
+    int64 results_per_page = 3;
+}
+
+message FilterValue {
+    string value = 1;
+    int64 count = 2;
+}
+
+message Filter {
+    string name = 1;
+    string type = 2;
+    repeated FilterValue values = 3;
+}
+
+message SearchResponse {
+    repeated int64 ids = 1;
+    int64 count = 2;
+    repeated Filter filters = 3;
+}

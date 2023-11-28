@@ -2,8 +2,10 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
+	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"HnH/pkg/utils"
@@ -19,16 +21,18 @@ type ICVUsecase interface {
 	GetCVOfUserById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error)
 	UpdateCVOfUserById(ctx context.Context, sessionID string, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, sessionID string, cvID int) error
+	SearchCVs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaCV, error)
 }
 
 type CVUsecase struct {
-	cvRepo       psql.ICVRepository
-	expRepo      psql.IExperienceRepository
-	instRepo     psql.IEducationInstitutionRepository
-	sessionRepo  redisRepo.ISessionRepository
-	userRepo     psql.IUserRepository
-	responseRepo psql.IResponseRepository
-	vacancyRepo  psql.IVacancyRepository
+	cvRepo           psql.ICVRepository
+	expRepo          psql.IExperienceRepository
+	instRepo         psql.IEducationInstitutionRepository
+	sessionRepo      redisRepo.ISessionRepository
+	userRepo         psql.IUserRepository
+	responseRepo     psql.IResponseRepository
+	vacancyRepo      psql.IVacancyRepository
+	searchEngineRepo grpc.ISearchEngineRepository
 }
 
 func NewCVUsecase(
@@ -39,15 +43,17 @@ func NewCVUsecase(
 	userRepository psql.IUserRepository,
 	responseRepository psql.IResponseRepository,
 	vacancyRepository psql.IVacancyRepository,
+	searchEngineRepository grpc.ISearchEngineRepository,
 ) ICVUsecase {
 	return &CVUsecase{
-		cvRepo:       cvRepository,
-		expRepo:      expRepository,
-		instRepo:     instRepository,
-		sessionRepo:  sessionRepository,
-		userRepo:     userRepository,
-		responseRepo: responseRepository,
-		vacancyRepo:  vacancyRepository,
+		cvRepo:           cvRepository,
+		expRepo:          expRepository,
+		instRepo:         instRepository,
+		sessionRepo:      sessionRepository,
+		userRepo:         userRepository,
+		responseRepo:     responseRepository,
+		vacancyRepo:      vacancyRepository,
+		searchEngineRepo: searchEngineRepository,
 	}
 }
 
@@ -75,7 +81,7 @@ func (cvUsecase *CVUsecase) validateRoleAndGetUserId(ctx context.Context, sessio
 	if err != nil {
 		return 0, err
 	} else if userRole != requiredRole {
-		return 0, INAPPROPRIATE_ROLE
+		return 0, ErrInapropriateRole
 	}
 
 	return userID, nil
@@ -111,12 +117,12 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, sessionID string, cvI
 		return nil, err
 	}
 
-	userOrgID, err := cvUsecase.userRepo.GetUserOrgId(ctx, userID)
+	userEmpID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = cvUsecase.vacancyRepo.GetVacanciesByIds(ctx, userOrgID, vacIdsList)
+	_, err = cvUsecase.vacancyRepo.GetEmpVacanciesByIds(ctx, userEmpID, vacIdsList)
 	if err == psql.ErrEntityNotFound {
 		return nil, serverErrors.FORBIDDEN
 	}
@@ -315,4 +321,64 @@ func (cvUsecase *CVUsecase) DeleteCVOfUserById(ctx context.Context, sessionID st
 	}
 
 	return nil
+}
+
+// func (cvUsecase *CVUsecase) collectApiCVs(
+// 	cvs []domain.DbCV,
+// 	exps []domain.DbExperience,
+// 	insts []domain.DbEducationInstitution,
+// ) []domain.ApiCV {
+// 	res := []domain.ApiCV{}
+// 	for _, cv := range cvs {
+// 		cv := cvUsecase.combineDbCVs()
+// 		cvID := cv.ID
+// 		cvExps := []domain.DbExperience{}
+// 		for _, exp := range exps {
+// 			if exp.CvID == cvID {
+// 				cvExps = append(cvExps, exp)
+// 			}
+// 		}
+// 		cvInsts := []domain.DbEducationInstitution{}
+// 		for _, inst := range insts {
+// 			if inst.CvID == cvID {
+// 				cvInsts = append(cvInsts, inst)
+// 			}
+// 		}
+// 		res = append(res, *cv.ToAPI())
+// 	}
+// 	return res
+// }
+
+func (cvUsecase *CVUsecase) SearchCVs(
+	ctx context.Context,
+	query string,
+	pageNumber, resultsPerPage int64,
+) (domain.ApiMetaCV, error) {
+	cvIDs, count, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
+	if err != nil {
+		return domain.ApiMetaCV{
+			Count: 0,
+			CVs:   nil,
+		}, nil
+	}
+
+	// dbCvs, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
+	dbCvs, dbExps, dbInsts, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
+	if cvErr == psql.ErrEntityNotFound {
+		return domain.ApiMetaCV{
+			Count: 0,
+			CVs:   nil,
+		}, nil
+	}
+	if cvErr != nil {
+		return domain.ApiMetaCV{}, cvErr
+	}
+
+	cvsToReturn := cvUsecase.combineDbCVs(dbCvs, dbExps, dbInsts)
+	result := domain.ApiMetaCV{
+		Count:     count,
+		CVs: cvsToReturn,
+	}
+
+	return result, nil
 }

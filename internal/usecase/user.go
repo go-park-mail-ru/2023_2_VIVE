@@ -25,18 +25,15 @@ type IUserUsecase interface {
 type UserUsecase struct {
 	userRepo    psql.IUserRepository
 	sessionRepo redisRepo.ISessionRepository
-	orgRepo     psql.IOrganizationRepository
 }
 
 func NewUserUsecase(
 	userRepository psql.IUserRepository,
 	sessionRepository redisRepo.ISessionRepository,
-	orgRepository psql.IOrganizationRepository,
 ) IUserUsecase {
 	return &UserUsecase{
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,
-		orgRepo:     orgRepository,
 	}
 }
 
@@ -88,7 +85,7 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 	// 		return "", addOrgErr
 	// 	}
 	// }
-	
+
 	contextLogger.Info("adding user")
 	addStatus := userUsecase.userRepo.AddUser(ctx, user, authUtils.GenerateHash)
 	if addStatus != nil {
@@ -188,7 +185,7 @@ func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string)
 
 	fileBytes, err := ioutil.ReadFile(configs.CURRENT_DIR + path)
 	if err != nil {
-		return nil, CAN_NOT_READ_AVATAR
+		return nil, ErrReadAvatar
 	}
 
 	return fileBytes, nil

@@ -19,7 +19,7 @@ func AccesLogInterceptor(
 ) (any, error) {
 	start := time.Now()
 	// requestID := contextUtils.GetRequestIDFromCtx(ctx)
-	requestID := contextUtils.GetRequestIDCtx(ctx)
+	requestID := contextUtils.GetRequestIDFromCtx(ctx)
 
 	contextLogger := logger.Logger.WithFields(logrus.Fields{
 		"service":    config.CsatServiceConfig.ServiceName,

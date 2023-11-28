@@ -13,11 +13,7 @@ func InitLogger(logFile *os.File) {
 		TimestampFormat: "Mon, 02 Jan 2006 15:04:05 MST",
 	}
 
-	// logger := logrus.New()
 	Logger.SetOutput(logFile)
 	Logger.SetFormatter(jsonFormatter)
 	Logger.SetLevel(logrus.DebugLevel)
-	Logger = Logger.WithFields(logrus.Fields{"app_name": "app"}).Logger
-
-	// return Logger
 }

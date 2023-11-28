@@ -9,8 +9,10 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/internal/usecase"
 	"HnH/pkg/logging"
-	"HnH/services/csat/config"
-	pb "HnH/services/csat/csatPB"
+	searchConfig "HnH/services/searchEngineService/config"
+	"HnH/services/searchEngineService/searchEnginePB"
+	csatConfig "HnH/services/csat/config"
+	"HnH/services/csat/csatPB"
 	"os"
 
 	"fmt"
@@ -21,7 +23,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func initCsatClient(config config.CsatConfig) (pb.CsatClient, error) {
+func initSearchEngineClient(config searchConfig.SearchEngineConfig) (searchEnginePB.SearchEngineClient, error) {
 	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
 	opts := []grpc.DialOption{}
@@ -32,7 +34,23 @@ func initCsatClient(config config.CsatConfig) (pb.CsatClient, error) {
 		return nil, err
 	}
 
-	client := pb.NewCsatClient(conn)
+	client := searchEnginePB.NewSearchEngineClient(conn)
+	return client, nil
+
+}
+
+func initCsatClient(config csatConfig.CsatConfig) (csatPB.CsatClient, error) {
+	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+
+	opts := []grpc.DialOption{}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	conn, err := grpc.Dial(connAddr, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := csatPB.NewCsatClient(conn)
 	return client, nil
 }
 
@@ -57,25 +75,30 @@ func Run() error {
 	}
 	defer redisDB.Close()
 
-	csatClient, err := initCsatClient(config.CsatServiceConfig)
+	csatClient, err := initCsatClient(csatConfig.CsatServiceConfig)
 	if err != nil {
 		return err
 	}
 
 	sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
 	userRepo := psql.NewPsqlUserRepository(db)
-	organizationRepo := psql.NewPsqlOrganizationRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
 	cvRepo := psql.NewPsqlCVRepository(db)
 	responseRepo := psql.NewPsqlResponseRepository(db)
 	experienceRepo := psql.NewPsqlExperienceRepository(db)
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
-	csatRepo := grpcRepo.NewGrpcSearchEngineRepository(csatClient)
+	csatRepo := grpcRepo.NewGrpcCsatRepository(csatClient)
+
+	searchEngineClient, err := initSearchEngineClient(searchConfig.SearchEngineServiceConfig)
+	if err != nil {
+		return err
+	}
+	searchEngineClientRepo := grpcRepo.NewGrpcSearchEngineRepository(searchEngineClient)
 
 	sessionUsecase := usecase.NewSessionUsecase(sessionRepo, userRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo, organizationRepo)
-	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo)
-	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, sessionRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, sessionRepo, userRepo, searchEngineClientRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, sessionRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, sessionRepo, userRepo, vacancyRepo, cvRepo)
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, sessionRepo)
 

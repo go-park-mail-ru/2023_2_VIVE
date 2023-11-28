@@ -14,18 +14,19 @@ func (r Role) IsRole() bool {
 }
 
 type ApiUser struct {
-	ID               int     `json:"id,omitempty"`
-	EmployerID       *int    `json:"employer_id,omitempty"`
-	ApplicantID      *int    `json:"applicant_id,omitempty"`
-	Email            string  `json:"email"`
-	Password         string  `json:"password,omitempty"`
-	FirstName        string  `json:"first_name,omitempty"`
-	LastName         string  `json:"last_name,omitempty"`
-	Birthday         *string `json:"birthday,omitempty"`
-	PhoneNumber      *string `json:"phone_number,omitempty"`
-	Location         *string `json:"location,omitempty"`
-	Type             Role    `json:"role,omitempty"`
-	OrganizationName string  `json:"organization_name,omitempty"`
+	ID                      int     `json:"id,omitempty"`
+	EmployerID              *int    `json:"employer_id,omitempty"`
+	ApplicantID             *int    `json:"applicant_id,omitempty"`
+	Email                   string  `json:"email"`
+	Password                string  `json:"password,omitempty"`
+	FirstName               string  `json:"first_name,omitempty"`
+	LastName                string  `json:"last_name,omitempty"`
+	Birthday                *string `json:"birthday,omitempty"`
+	PhoneNumber             *string `json:"phone_number,omitempty"`
+	Location                *string `json:"location,omitempty"`
+	Type                    Role    `json:"role,omitempty"`
+	OrganizationName        string  `json:"organization_name,omitempty"`
+	OrganizationDescription string  `json:"organization_description,omitempty"`
 	// AvatarPath  *string `json:"avatar,omitempty"`
 }
 
