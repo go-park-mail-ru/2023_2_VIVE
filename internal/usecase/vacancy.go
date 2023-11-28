@@ -14,6 +14,7 @@ type IVacancyUsecase interface {
 	GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error)
 	GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error)
+	GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error)
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
@@ -175,6 +176,23 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 	// fmt.Printf("vacancies: %v\n", vacanciesList)
 
 	return vacancyUsecase.collectApiVacs(vacanciesList), nil
+}
+
+func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
+	first_name, last_name, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
+	if err != nil {
+		return nil, err
+	}
+
+	vacsToReturn := vacancyUsecase.collectApiVacs(empVacs)
+
+	info := &domain.EmployerInfo{
+		FirstName: first_name,
+		LastName:  last_name,
+		Vacancies: vacsToReturn,
+	}
+
+	return info, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) SearchVacancies(

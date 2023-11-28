@@ -30,6 +30,9 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCV))).
 		Methods("GET")
 
+	router.HandleFunc("/cvs/applicant/{applicantID}", handler.GetApplicantInfo).
+		Methods("GET")
+
 	router.HandleFunc("/cvs/search", handler.SearchCVs).
 		Methods("GET")
 
@@ -107,8 +110,8 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 
 func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.ApiMetaCV {
 	result := domain.ApiMetaCV{
-		Count:     metaCVs.Count,
-		CVs: cvHandler.sanitizeCVs(metaCVs.CVs...),
+		Count: metaCVs.Count,
+		CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
 	}
 	return result
 }
@@ -260,4 +263,23 @@ func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	appID, convErr := strconv.Atoi(vars["applicantID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	info, err := cvHandler.cvUsecase.GetApplicantInfo(r.Context(), appID)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		return
+	}
+
+	info.CVs = cvHandler.sanitizeCVs(info.CVs...)
+
+	responseTemplates.MarshalAndSend(w, info)
 }

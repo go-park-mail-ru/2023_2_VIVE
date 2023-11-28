@@ -7,12 +7,15 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ICVRepository interface {
 	GetCVById(ctx context.Context, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	GetCVsByIds(ctx context.Context, idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	GetCVsByUserId(ctx context.Context, userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetApplicantInfo(ctx context.Context, applicantID int) (string, string, []domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	AddCV(ctx context.Context, userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
 	GetOneOfUsersCV(ctx context.Context, userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	UpdateOneOfUsersCV(ctx context.Context, userID, cvID int, cv *domain.DbCV,
@@ -285,6 +288,58 @@ func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([
 	}
 
 	return cvsToReturn, expsToReturn, instsToReturn, nil
+}
+
+func (repo *psqlCVRepository) isApplicant(logger *logrus.Entry, applicantID int) (bool, error) {
+	logger.Info("checking applicant for given 'user_id'")
+
+	var isApplicant bool
+
+	appErr := repo.DB.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.applicant WHERE id = $1)`, applicantID).Scan(&isApplicant)
+	if appErr != nil {
+		return false, appErr
+	}
+
+	return isApplicant, nil
+}
+
+func (repo *psqlCVRepository) GetApplicantInfo(ctx context.Context, applicantID int) (string, string, []domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"applicant_id": applicantID,
+	}).
+		Info("getting cvs and personal info by 'applicant_id' from postgres")
+
+	isApp, err := repo.isApplicant(contextLogger, applicantID)
+	if err != nil {
+		return "", "", nil, nil, nil, err
+	}
+
+	if !isApp {
+		return "", "", nil, nil, nil, ErrEntityNotFound
+	}
+
+	var userID int
+
+	err = repo.DB.QueryRow(`SELECT user_id FROM hnh_data.applicant WHERE id = $1`, applicantID).Scan(&userID)
+	if err != nil {
+		return "", "", nil, nil, nil, err
+	}
+
+	var first_name, last_name string
+
+	err = repo.DB.QueryRow(`SELECT first_name, last_name FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&first_name, &last_name)
+	if err != nil {
+		return "", "", nil, nil, nil, err
+	}
+
+	cvs, exp, edu, err := repo.GetCVsByUserId(ctx, userID)
+	if err != nil {
+		return "", "", nil, nil, nil, err
+	}
+
+	return first_name, last_name, cvs, exp, edu, nil
 }
 
 func (repo *psqlCVRepository) AddCV(ctx context.Context,

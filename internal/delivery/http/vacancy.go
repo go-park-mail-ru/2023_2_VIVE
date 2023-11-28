@@ -50,7 +50,7 @@ func (vacancyHandler *VacancyHandler) sanitizeMetaVacancies(metaVacancies domain
 	result := domain.ApiMetaVacancy{
 		Filters: metaVacancies.Filters,
 		Vacancies: domain.ApiVacancyCount{
-			Count: metaVacancies.Vacancies.Count,
+			Count:     metaVacancies.Vacancies.Count,
 			Vacancies: vacancyHandler.sanitizeVacancies(metaVacancies.Vacancies.Vacancies...),
 		},
 	}
@@ -74,6 +74,9 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		Methods("POST")
 
 	router.Handle("/vacancies/current_user", middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserVacancies))).
+		Methods("GET")
+
+	router.HandleFunc("/vacancies/employer/{employerID}", handler.GetEmployerInfo).
 		Methods("GET")
 
 	router.HandleFunc("/vacancies/{vacancyID}",
@@ -254,4 +257,23 @@ func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r 
 	sanitizedList := vacancyHandler.sanitizeVacancies(vacanciesList...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedList)
+}
+
+func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	empID, convErr := strconv.Atoi(vars["employerID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	info, err := vacancyHandler.vacancyUsecase.GetEmployerInfo(r.Context(), empID)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		return
+	}
+
+	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
+
+	responseTemplates.MarshalAndSend(w, info)
 }

@@ -17,6 +17,7 @@ type IVacancyRepository interface {
 	GetVacanciesByIds(ctx context.Context, idList []int) ([]domain.DbVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error)
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
+	GetEmployerInfo(ctx context.Context, employerID int) (string, string, []domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetEmpId(ctx context.Context, vacancyID int) (int, error)
 	AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error)
@@ -355,6 +356,58 @@ func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID 
 	}
 
 	return listToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) isEmployer(logger *logrus.Entry, employerID int) (bool, error) {
+	logger.Info("checking employer for given 'user_id'")
+
+	var isEmployer bool
+
+	empErr := repo.DB.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.employer WHERE id = $1)`, employerID).Scan(&isEmployer)
+	if empErr != nil {
+		return false, empErr
+	}
+
+	return isEmployer, nil
+}
+
+func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employerID int) (string, string, []domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"employer_id": employerID,
+	}).
+		Info("getting vacancies and personal info by 'employer_id' from postgres")
+
+	isEmp, err := repo.isEmployer(contextLogger, employerID)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	if !isEmp {
+		return "", "", nil, ErrEntityNotFound
+	}
+
+	var userID int
+
+	err = repo.DB.QueryRow(`SELECT user_id FROM hnh_data.employer WHERE id = $1`, employerID).Scan(&userID)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	var first_name, last_name string
+
+	err = repo.DB.QueryRow(`SELECT first_name, last_name FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&first_name, &last_name)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	vacancies, err := repo.GetUserVacancies(ctx, userID)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	return first_name, last_name, vacancies, nil
 }
 
 // func (repo *psqlVacancyRepository) GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error) {

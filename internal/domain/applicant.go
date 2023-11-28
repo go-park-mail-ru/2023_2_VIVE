@@ -11,3 +11,9 @@ type DbApplicant struct {
 	UserID int    `json:"user_id"`
 	Status string `json:"status"`
 }
+
+type ApplicantInfo struct {
+	FirstName string  `json:"first_name"`
+	LastName  string  `json:"last_name"`
+	CVs       []ApiCV `json:"cvs,omitempty"`
+}
