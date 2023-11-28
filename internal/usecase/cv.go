@@ -19,6 +19,7 @@ type ICVUsecase interface {
 	GetCVList(ctx context.Context, sessionID string) ([]domain.ApiCV, error)
 	AddNewCV(ctx context.Context, sessionID string, cv *domain.ApiCV) (int, error)
 	GetCVOfUserById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error)
+	GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error)
 	UpdateCVOfUserById(ctx context.Context, sessionID string, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, sessionID string, cvID int) error
 	SearchCVs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaCV, error)
@@ -244,6 +245,23 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, sessionID strin
 	return apiCv, nil
 }
 
+func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error) {
+	first_name, last_name, cvs, exp, edu, err := cvUsecase.cvRepo.GetApplicantInfo(ctx, applicantID)
+	if err != nil {
+		return nil, err
+	}
+
+	cvsToReturn := cvUsecase.combineDbCVs(cvs, exp, edu)
+
+	info := &domain.ApplicantInfo{
+		FirstName: first_name,
+		LastName:  last_name,
+		CVs:       cvsToReturn,
+	}
+
+	return info, nil
+}
+
 func (cvUsecase *CVUsecase) getExpsBatches(
 	expsFromApi []domain.DbExperience,
 	expIDsFromDB []int,
@@ -376,8 +394,8 @@ func (cvUsecase *CVUsecase) SearchCVs(
 
 	cvsToReturn := cvUsecase.combineDbCVs(dbCvs, dbExps, dbInsts)
 	result := domain.ApiMetaCV{
-		Count:     count,
-		CVs: cvsToReturn,
+		Count: count,
+		CVs:   cvsToReturn,
 	}
 
 	return result, nil
