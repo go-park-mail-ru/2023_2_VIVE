@@ -29,7 +29,7 @@ func NewCsatUsecase(
 }
 
 func (u *CvUsecase) GetQuestions(ctx context.Context, sessionID string) (*pb.QuestionList, error) {
-	userID, err := u.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := u.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return nil, err
 	}

@@ -51,7 +51,7 @@ func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.Db
 
 	sessionID := uuid.NewString()
 
-	addErr := sessionUsecase.sessionRepo.AddSession(sessionID, userID, expiryUnixSeconds)
+	addErr := sessionUsecase.sessionRepo.AddSession(ctx, sessionID, userID, expiryUnixSeconds)
 	if addErr != nil {
 		return "", addErr
 	}
@@ -60,7 +60,7 @@ func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.Db
 }
 
 func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID string) error {
-	deleteErr := sessionUsecase.sessionRepo.DeleteSession(sessionID)
+	deleteErr := sessionUsecase.sessionRepo.DeleteSession(ctx, sessionID)
 	if deleteErr != nil {
 		return deleteErr
 	}
@@ -69,7 +69,7 @@ func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID stri
 }
 
 func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context, sessionID string) error {
-	sessionErr := sessionUsecase.sessionRepo.ValidateSession(sessionID)
+	sessionErr := sessionUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if sessionErr != nil {
 		return sessionErr
 	}

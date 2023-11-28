@@ -42,12 +42,12 @@ func NewVacancyUsecase(
 }
 
 func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetEmpId(ctx context.Context, sessionID string) (int, error) {
-	validStatus := vacancyUsecase.sessionRepo.ValidateSession(sessionID)
+	validStatus := vacancyUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return 0, err
 	}
@@ -154,7 +154,7 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, session
 }
 
 func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error) {
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return nil, serverErrors.AUTH_REQUIRED
 	}

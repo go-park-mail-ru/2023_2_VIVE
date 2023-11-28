@@ -57,13 +57,13 @@ func NewCVUsecase(
 	}
 }
 
-func (cvUsecase *CVUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
-	validStatus := cvUsecase.sessionRepo.ValidateSession(sessionID)
+func (cvUsecase *CVUsecase) validateSessionAndGetUserId(ctx context.Context, sessionID string) (int, error) {
+	validStatus := cvUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := cvUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return 0, err
 	}
@@ -72,7 +72,7 @@ func (cvUsecase *CVUsecase) validateSessionAndGetUserId(sessionID string) (int, 
 }
 
 func (cvUsecase *CVUsecase) validateRoleAndGetUserId(ctx context.Context, sessionID string, requiredRole domain.Role) (int, error) {
-	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
@@ -212,7 +212,7 @@ func (cvUsecase *CVUsecase) getDataFromApiCV(apiCV *domain.ApiCV) ([]domain.DbEx
 }
 
 func (cvUsecase *CVUsecase) AddNewCV(ctx context.Context, sessionID string, cv *domain.ApiCV) (int, error) {
-	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	// fmt.Println(userID)
 	if validStatus != nil {
 		return 0, validStatus
@@ -229,7 +229,7 @@ func (cvUsecase *CVUsecase) AddNewCV(ctx context.Context, sessionID string, cv *
 }
 
 func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error) {
-	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
@@ -279,7 +279,7 @@ func (cvUsecase *CVUsecase) getInstsBatches(
 }
 
 func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID string, cvID int, cv *domain.ApiCV) error {
-	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -310,7 +310,7 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 }
 
 func (cvUsecase *CVUsecase) DeleteCVOfUserById(ctx context.Context, sessionID string, cvID int) error {
-	userID, validStatus := cvUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := cvUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return validStatus
 	}

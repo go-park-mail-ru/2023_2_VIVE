@@ -37,13 +37,13 @@ func NewUserUsecase(
 	}
 }
 
-func (userUsecase *UserUsecase) validateSessionAndGetUserId(sessionID string) (int, error) {
-	validStatus := userUsecase.sessionRepo.ValidateSession(sessionID)
+func (userUsecase *UserUsecase) validateSessionAndGetUserId(ctx context.Context, sessionID string) (int, error) {
+	validStatus := userUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	userID, err := userUsecase.sessionRepo.GetUserIdBySession(sessionID)
+	userID, err := userUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +103,7 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 	sessionID := uuid.NewString()
 
 	contextLogger.Info("adding session")
-	addErr := userUsecase.sessionRepo.AddSession(sessionID, userID, expiryUnixSeconds)
+	addErr := userUsecase.sessionRepo.AddSession(ctx, sessionID, userID, expiryUnixSeconds)
 	if addErr != nil {
 		return "", addErr
 	}
@@ -113,7 +113,7 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 
 func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
@@ -132,7 +132,7 @@ func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (
 
 func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -152,7 +152,7 @@ func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, sessionID string
 
 func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID, path string) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -169,7 +169,7 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID, pat
 func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string) ([]byte, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(sessionID)
+	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
 		return nil, validStatus
 	}
