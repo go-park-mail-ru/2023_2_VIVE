@@ -39,10 +39,10 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 		Questions: []*pb.Question{},
 	}
 	lastUpdate, err := u.csatRepo.GetLastUpdate(ctx, userID.UserID)
-	if err == psql.ErrNoLastUpdate {
-		return &res, nil
-	}
-	if err != nil {
+	// if err == psql.ErrEntityNotFound {
+	// 	return &res, nil
+	// }
+	if err != nil && err != psql.ErrEntityNotFound {
 		return &res, err
 	}
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -59,7 +60,7 @@ func (repo *psqlCsatRepository) GetLastUpdate(ctx context.Context, userID int64)
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	contextLogger.Info("getting last request time by 'user_id' in postgres")
 
-	err := repo.DB.QueryRow(`SELECT last_request_at FROM csat_data.user_info WHERE id = $1`, userID).Scan(&reqTime)
+	err := repo.DB.QueryRow(`SELECT last_request_at FROM csat_data.user_info WHERE user_id = $1`, userID).Scan(&reqTime)
 	if errors.Is(err, sql.ErrNoRows) {
 		return time.Time{}, ErrEntityNotFound
 	} else if err != nil {
@@ -70,6 +71,7 @@ func (repo *psqlCsatRepository) GetLastUpdate(ctx context.Context, userID int64)
 }
 
 func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]*pb.Question, error) {
+	fmt.Printf("start GetQuestions")
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	contextLogger.Info("getting csat questions from postgres")
 
@@ -86,10 +88,14 @@ func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]*pb.Questio
 
 		err := rows.Scan(&question.QuestionId, &question.Name, &question.Question)
 		if err != nil {
+			fmt.Printf("error on scan")
 			return nil, err
 		}
 		questionsToReturn = append(questionsToReturn, question)
 	}
+
+	// contextLogger.Debugf("%d", len(questionsToReturn))
+	fmt.Printf("%d", len(questionsToReturn))
 
 	if len(questionsToReturn) == 0 {
 		return nil, ErrEntityNotFound

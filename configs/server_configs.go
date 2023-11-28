@@ -25,6 +25,7 @@ var CORS = cors.New(cors.Options{
 		"http://212.233.90.231:8083",
 		"http://212.233.90.231:8084",
 		"http://212.233.90.231:8085",
+		"http://212.233.90.231:8086",
 	},
 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	AllowCredentials: true,
