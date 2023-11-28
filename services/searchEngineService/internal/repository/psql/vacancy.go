@@ -18,8 +18,24 @@ type ISearchRepository interface {
 	FilterExperienceAllVacancies(ctx context.Context) ([]*pb.FilterValue, error)
 	FilterEmploymentAllVacancies(ctx context.Context) ([]*pb.FilterValue, error)
 	FilterEducationTypeAllVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterCitiesVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterSalaryVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterExperienceVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEmploymentVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEducationTypeVacancies(ctx context.Context) ([]*pb.FilterValue, error)
+
 	SearchVacanciesIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
 	SearchCVsIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
+	// TODO: FilterCitiesAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterSalaryAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterExperienceAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEmploymentAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEducationTypeAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterCitiesCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterSalaryCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterExperienceCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEmploymentCVs(ctx context.Context) ([]*pb.FilterValue, error)
+	// TODO: FilterEducationTypeCVs(ctx context.Context) ([]*pb.FilterValue, error)
 }
 
 type psqlSearchRepository struct {
