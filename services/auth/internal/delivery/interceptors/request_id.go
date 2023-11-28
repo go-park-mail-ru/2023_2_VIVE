@@ -2,7 +2,7 @@ package interceptors
 
 import (
 	"HnH/pkg/contextUtils"
-	"HnH/services/csat/pkg/logger"
+	"HnH/services/auth/pkg/logger"
 	"context"
 	"fmt"
 

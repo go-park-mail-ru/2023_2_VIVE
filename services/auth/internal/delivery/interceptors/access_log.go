@@ -2,8 +2,8 @@ package interceptors
 
 import (
 	"HnH/pkg/contextUtils"
-	"HnH/services/csat/config"
-	"HnH/services/csat/pkg/logger"
+	"HnH/services/auth/config"
+	"HnH/services/auth/pkg/logger"
 	"context"
 	"time"
 
@@ -22,7 +22,7 @@ func AccesLogInterceptor(
 	requestID := contextUtils.GetRequestIDCtx(ctx)
 
 	contextLogger := logger.Logger.WithFields(logrus.Fields{
-		"service":    config.CsatServiceConfig.ServiceName,
+		"service":    config.AuthServiceConfig.ServiceName,
 		"request_id": requestID,
 	})
 

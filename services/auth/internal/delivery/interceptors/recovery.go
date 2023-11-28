@@ -1,7 +1,7 @@
 package interceptors
 
 import (
-	"HnH/services/csat/pkg/logger"
+	"HnH/services/auth/pkg/logger"
 	"context"
 
 	"github.com/sirupsen/logrus"
