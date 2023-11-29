@@ -2,31 +2,33 @@ package usecase
 
 import (
 	"HnH/internal/domain"
-	"HnH/internal/repository"
+	"HnH/internal/repository/psql"
+	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
+	"context"
 
 	"github.com/google/uuid"
 )
 
 type ISessionUsecase interface {
-	Login(user *domain.User) (string, error)
-	Logout(sessionID string) error
-	CheckLogin(sessionID string) error
+	Login(ctx context.Context, user *domain.DbUser, expiryUnixSeconds int64) (string, error)
+	Logout(ctx context.Context, sessionID string) error
+	CheckLogin(ctx context.Context, sessionID string) error
 }
 
 type SessionUsecase struct {
-	sessionRepo repository.ISessionRepository
-	userRepo    repository.IUserRepository
+	sessionRepo redisRepo.ISessionRepository
+	userRepo    psql.IUserRepository
 }
 
-func NewSessionUsecase(sessionRepository repository.ISessionRepository, userRepository repository.IUserRepository) ISessionUsecase {
+func NewSessionUsecase(sessionRepository redisRepo.ISessionRepository, userRepository psql.IUserRepository) ISessionUsecase {
 	return &SessionUsecase{
 		sessionRepo: sessionRepository,
 		userRepo:    userRepository,
 	}
 }
 
-func (sessionUsecase *SessionUsecase) Login(user *domain.User) (string, error) {
+func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.DbUser, expiryUnixSeconds int64) (string, error) {
 	validEmailStatus := authUtils.ValidateEmail(user.Email)
 	if validEmailStatus != nil {
 		return "", validEmailStatus
@@ -37,19 +39,19 @@ func (sessionUsecase *SessionUsecase) Login(user *domain.User) (string, error) {
 		return "", validPasswordStatus
 	}
 
-	loginErr := sessionUsecase.userRepo.CheckUser(user)
+	loginErr := sessionUsecase.userRepo.CheckUser(ctx, user)
 	if loginErr != nil {
 		return "", loginErr
 	}
 
-	userID, err := sessionUsecase.userRepo.GetUserIdByEmail(user.Email)
+	userID, err := sessionUsecase.userRepo.GetUserIdByEmail(ctx, user.Email)
 	if err != nil {
 		return "", err
 	}
 
 	sessionID := uuid.NewString()
 
-	addErr := sessionUsecase.sessionRepo.AddSession(sessionID, userID)
+	addErr := sessionUsecase.sessionRepo.AddSession(ctx, sessionID, userID, expiryUnixSeconds)
 	if addErr != nil {
 		return "", addErr
 	}
@@ -57,8 +59,8 @@ func (sessionUsecase *SessionUsecase) Login(user *domain.User) (string, error) {
 	return sessionID, nil
 }
 
-func (sessionUsecase *SessionUsecase) Logout(sessionID string) error {
-	deleteErr := sessionUsecase.sessionRepo.DeleteSession(sessionID)
+func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID string) error {
+	deleteErr := sessionUsecase.sessionRepo.DeleteSession(ctx, sessionID)
 	if deleteErr != nil {
 		return deleteErr
 	}
@@ -66,8 +68,8 @@ func (sessionUsecase *SessionUsecase) Logout(sessionID string) error {
 	return nil
 }
 
-func (sessionUsecase *SessionUsecase) CheckLogin(sessionID string) error {
-	sessionErr := sessionUsecase.sessionRepo.ValidateSession(sessionID)
+func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context, sessionID string) error {
+	sessionErr := sessionUsecase.sessionRepo.ValidateSession(ctx, sessionID)
 	if sessionErr != nil {
 		return sessionErr
 	}

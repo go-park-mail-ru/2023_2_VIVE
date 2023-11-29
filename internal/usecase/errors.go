@@ -3,5 +3,6 @@ package usecase
 import "fmt"
 
 var (
-	INAPPROPRIATE_ROLE = fmt.Errorf("Such a request is not possible with your role")
+	ErrInapropriateRole = fmt.Errorf("such a request is not possible with your role")
+	ErrReadAvatar       = fmt.Errorf("an error occurred while loading the avatar")
 )

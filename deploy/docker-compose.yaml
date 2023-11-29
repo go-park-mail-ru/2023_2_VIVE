@@ -1,0 +1,80 @@
+services:
+
+  sessions_hnh:
+    container_name: redis_hnh
+    image: redis:${REDDIS_VERSION}-alpine
+    restart: always
+    command: redis-server --requirepass ${REDDIS_PASSWORD}
+    ports: 
+      - "8008:6379"
+    environment:
+      - REDIS_PASSWORD=${REDDIS_PASSWORD}
+    volumes:
+      - $PWD/redis_data:/data
+
+  db_hnh:
+    container_name: db_hnh
+    image: search_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "hnh"
+      POSTGRES_USER: vive_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./migrations/hnh/:/docker-entrypoint-initdb.d/
+      - hnh_data:/var/lib/postgresql/data
+    ports:
+      - "8054:5432"
+
+  db_hnh_csat:
+    container_name: db_hnh_csat
+    image: postgres:${POSTGRES_VERSION}-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "hnh_csat"
+      POSTGRES_USER: vive_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./migrations/hnh_csat/:/docker-entrypoint-initdb.d/
+      - hnh_csat_data:/var/lib/postgresql/data
+    ports:
+      - "8055:5432"
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v${PROMETHEUS_VERSION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "8010:9090"
+    restart: unless-stopped
+    
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${GRAFANA_VERSION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - 8011:3000
+    links:
+      - prometheus
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:v${NODE_EXPORTER_VERSION}
+    restart: unless-stopped
+    expose:
+      - 9100
+    ports:
+      - 8012:9100
+
+volumes:
+  hnh_data:
+  hnh_csat_data:
