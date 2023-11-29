@@ -2,6 +2,7 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
@@ -142,7 +143,7 @@ func TestCheckUserSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckUserCases {
 		checkPasswordByEmailRows := sqlmock.NewRows([]string{"actual_hash", "salt"}).
 			AddRow(testCase.hashedPassword, testCase.salt)
@@ -179,7 +180,7 @@ func TestCheckUserIncorrectRole(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckUserCases {
 		checkPasswordByEmailRows := sqlmock.NewRows([]string{"actual_hash", "salt"}).
 			AddRow(testCase.hashedPassword, testCase.salt)
@@ -216,7 +217,7 @@ func TestCheckUserQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckUserCases {
 		checkPasswordByEmailRows := sqlmock.NewRows([]string{"actual_hash", "salt"}).
 			AddRow(testCase.hashedPassword, testCase.salt)
@@ -267,7 +268,7 @@ func TestCheckUserErrEntityNotFound(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckUserCases {
 		mock.
 			ExpectQuery(testHelper.SelectQuery).
@@ -275,7 +276,7 @@ func TestCheckUserErrEntityNotFound(t *testing.T) {
 			WillReturnError(sql.ErrNoRows)
 
 		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
-		if actual != ErrEntityNotFound {
+		if actual != psql.ErrEntityNotFound {
 			t.Errorf("got unexpected err: %s\nexpected: %s", err, testHelper.ErrQuery)
 			return
 		}
@@ -300,7 +301,7 @@ var testCheckPasswordByIdCases = []struct {
 		hashedPassword:      hashedPassword1,
 		salt:                salt1,
 		returningQueryError: sql.ErrNoRows,
-		expectedError:       ErrEntityNotFound,
+		expectedError:       psql.ErrEntityNotFound,
 	},
 	{
 		inputID:             2,
@@ -319,7 +320,7 @@ func TestCheckPasswordByIdSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckPasswordByIdCases {
 		rows := sqlmock.NewRows([]string{"actual_hash", "salt"}).
 			AddRow(testCase.hashedPassword, testCase.salt)
@@ -348,7 +349,7 @@ func TestCheckPasswordByIdQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 	for _, testCase := range testCheckPasswordByIdCases {
 		mock.
 			ExpectQuery(testHelper.SelectQuery).
@@ -401,7 +402,7 @@ func TestAddUserSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	hasher := func(password string) (hash []byte, salt []byte, err error) {
 		return hashedPassword1, salt1, nil
@@ -502,7 +503,7 @@ func TestGetUserInfoSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	for _, testCase := range testGetUserInfoCases {
 		rows := sqlmock.NewRows(dbUserRows).
@@ -592,7 +593,7 @@ func TestGetUserIdByEmailSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	for _, testCase := range testGetUserIdByEmailCases {
 		rows := sqlmock.NewRows([]string{"user_id"}).
@@ -648,7 +649,7 @@ func TestGetRoleByIdSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	for _, testCase := range testGetRoleByIdCases {
 		if testCase.expected == domain.Applicant {
@@ -719,7 +720,7 @@ func TestUpdateUserInfoSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	for _, testCase := range testUpdateUserInfoCases {
 		if testCase.inputUser.NewPassword != "" {
@@ -785,7 +786,7 @@ func TestGetUserEmpIdSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlUserRepository(db)
+	repo := psql.NewPsqlUserRepository(db)
 
 	for _, testCase := range testGetUserEmpIdCases {
 		mock.

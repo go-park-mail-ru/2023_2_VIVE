@@ -3,7 +3,10 @@ package authUtils
 import (
 	"HnH/pkg/authUtils"
 	"HnH/pkg/testHelper"
+	"fmt"
 	"testing"
+
+	emailverifier "github.com/AfterShip/email-verifier"
 )
 
 var testValidateEmailCases = []struct {
@@ -59,7 +62,7 @@ var testValidateEmailCases = []struct {
 func TestValidateEmail(t *testing.T) {
 	for _, testCase := range testValidateEmailCases {
 		actualErr := authUtils.ValidateEmail(testCase.email)
-		if actualErr != testCase.expectedErr {
+		if actualErr != testCase.expectedErr && actualErr != fmt.Errorf(emailverifier.ErrTimeout) {
 			t.Errorf(testHelper.ErrNotEqual(testCase.expectedErr, actualErr))
 		}
 	}

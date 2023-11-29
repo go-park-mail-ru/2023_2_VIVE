@@ -2,6 +2,7 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/testHelper"
 	"database/sql"
 	"database/sql/driver"
@@ -103,7 +104,7 @@ func TestGetCVByIdSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVByIdSuccessCases {
 		rows := sqlmock.NewRows(cvColumns).
@@ -163,7 +164,7 @@ var testGetCVByIdQueryErrorCases = []struct {
 	{
 		inputCVID:      1,
 		returningError: sql.ErrNoRows,
-		expectedError:  ErrEntityNotFound,
+		expectedError:  psql.ErrEntityNotFound,
 	},
 	{
 		inputCVID:      2,
@@ -179,7 +180,7 @@ func TestGetCVByIdQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVByIdQueryErrorCases {
 		mock.ExpectBegin()
@@ -234,7 +235,7 @@ func TestGetCVsByIdsSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByIdsSuccessCases {
 		rows := sqlmock.NewRows(cvColumns)
@@ -307,7 +308,7 @@ func TestGetCVsByIdsQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByIdsQueryErrorCases {
 		mock.ExpectBegin()
@@ -336,10 +337,10 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyArgs(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	inputCVIDs := []int{}
-	expectedErr := ErrEntityNotFound
+	expectedErr := psql.ErrEntityNotFound
 
 	mock.ExpectBegin()
 	mock.ExpectCommit()
@@ -358,10 +359,10 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	inputCVIDs := []int{1, 2, 3}
-	expectedErr := ErrEntityNotFound
+	expectedErr := psql.ErrEntityNotFound
 	mock.ExpectBegin()
 	mock.
 		ExpectQuery(testHelper.SelectQuery).
@@ -409,7 +410,7 @@ func TestGetCVsByUserIdSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByUserIdSuccessCases {
 		rows := sqlmock.NewRows(cvColumns)
@@ -482,7 +483,7 @@ func TestGetCVsByUserIdQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByUserIdQueryErrorCases {
 		mock.ExpectBegin()
@@ -511,10 +512,10 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	inputUserID := 1
-	expectedError := ErrEntityNotFound
+	expectedError := psql.ErrEntityNotFound
 
 	mock.ExpectBegin()
 	mock.
@@ -571,7 +572,7 @@ func TestAddCVSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testAddCVSuccessCases {
 		cvRows := sqlmock.NewRows([]string{"id"}).
@@ -641,7 +642,7 @@ var testAddCVQueryErrorCases = []struct {
 		inputExps:      []domain.DbExperience{},
 		inputInsts:     []domain.DbEducationInstitution{},
 		returningError: sql.ErrNoRows,
-		expectedError:  ErrNotInserted,
+		expectedError:  psql.ErrNotInserted,
 	},
 }
 
@@ -652,7 +653,7 @@ func TestAddCVQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testAddCVQueryErrorCases {
 		mock.ExpectBegin()
@@ -714,7 +715,7 @@ func TestGetOneOfUsersCVSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetOneOfUsersCVSuccessCases {
 		rows := sqlmock.NewRows(cvColumns).
@@ -782,7 +783,7 @@ var testGetOneOfUsersCVQueryErrorCases = []struct {
 		inputUserID:    1,
 		inputCVID:      1,
 		returningError: sql.ErrNoRows,
-		expectedError:  ErrEntityNotFound,
+		expectedError:  psql.ErrEntityNotFound,
 	},
 }
 
@@ -793,7 +794,7 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()
@@ -868,7 +869,7 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testUpdateOneOfUsersCVSuccessCases {
 		mock.ExpectBegin()
@@ -960,7 +961,7 @@ var testUpdateOneOfUsersCVQueryErrorCases = []struct {
 		inputInstsToUpdate:    []domain.DbEducationInstitution{},
 		inputInstsToInsert:    []domain.DbEducationInstitution{},
 		returningError:        sql.ErrNoRows,
-		expectedError:         ErrNoRowsUpdated,
+		expectedError:         psql.ErrNoRowsUpdated,
 	},
 }
 
@@ -971,7 +972,7 @@ func TestUpdateOneOfUsersCVQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testUpdateOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()
@@ -1042,7 +1043,7 @@ func TestDeleteOneOfUsersCVSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testDeleteOneOfUsersCVSuccessCases {
 		mock.ExpectBegin()
@@ -1088,7 +1089,7 @@ var testDeleteOneOfUsersCVQueryErrorCases = []struct {
 		inputUserID:    1,
 		inputCVID:      1,
 		returningError: sql.ErrNoRows,
-		expectedError:  ErrNoRowsDeleted,
+		expectedError:  psql.ErrNoRowsDeleted,
 	},
 }
 
@@ -1099,7 +1100,7 @@ func TestDeleteOneOfUsersCVQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlCVRepository(db)
+	repo := psql.NewPsqlCVRepository(db)
 
 	for _, testCase := range testDeleteOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()

@@ -2,6 +2,7 @@ package psql
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/psql"
 	"HnH/pkg/testHelper"
 	"database/sql"
 	"reflect"
@@ -91,7 +92,7 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetAllVacanciesSuccessCases {
 		rows := sqlmock.NewRows(vacanciesColumns)
@@ -151,7 +152,7 @@ func TestGetAllVacanciesQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	mock.
 		ExpectQuery(testHelper.SelectQuery).
@@ -175,7 +176,7 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	rows := sqlmock.NewRows(vacanciesColumns)
 
@@ -188,7 +189,7 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-	if returnedErr != ErrEntityNotFound {
+	if returnedErr != psql.ErrEntityNotFound {
 		t.Errorf("expected error 'ErrEntityNotFound', got: '%s'", returnedErr)
 		return
 	}
@@ -215,7 +216,7 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetVacanciesByIdsSuccessCases {
 		rows := sqlmock.NewRows(vacanciesColumns)
@@ -271,10 +272,10 @@ func TestGetVacanciesByIdsEmptyInput(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	_, err = repo.GetVacanciesByIds(ctxWithLogger, []int{})
-	if err != ErrEntityNotFound {
+	if err != psql.ErrEntityNotFound {
 		t.Errorf("expected error 'ErrEntityNotFound', got %s", err)
 	}
 }
@@ -286,7 +287,7 @@ func TestGetVacanciesByIdsQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
 	// orgID := 1
@@ -318,7 +319,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
 	// orgID := 1
@@ -338,7 +339,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-	if returnedErr != ErrEntityNotFound {
+	if returnedErr != psql.ErrEntityNotFound {
 		t.Errorf("expected 'ErrEntityNotFound', got: '%s'", returnedErr)
 		return
 	}
@@ -369,7 +370,7 @@ func TestGetVacancySuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetVacancySuccessCases {
 		rows := sqlmock.NewRows(vacanciesColumns).
@@ -417,7 +418,7 @@ var testGetVacancyQueryErrorCases = []struct {
 	{
 		input:        1,
 		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrEntityNotFound,
+		expectedErr:  psql.ErrEntityNotFound,
 	},
 	{
 		input:        1,
@@ -433,7 +434,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetVacancyQueryErrorCases {
 		mock.
@@ -478,7 +479,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testGetOrgIdSuccessCases {
 // 		rows := sqlmock.NewRows([]string{"id"}).
@@ -531,7 +532,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testGetOrgIdQueryErrorCases {
 // 		mock.
@@ -580,7 +581,7 @@ func TestAddVacancySuccess(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testAddVacancySuccessCases {
 		rows := sqlmock.NewRows([]string{"id"}).
@@ -627,7 +628,7 @@ var testAddVacancyErrorCases = []struct {
 		inputUserID:  1,
 		inputVacancy: fullVacancyID1,
 		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNotInserted,
+		expectedErr:  psql.ErrNotInserted,
 	},
 	{
 		inputUserID:  1,
@@ -639,7 +640,7 @@ var testAddVacancyErrorCases = []struct {
 		inputUserID:  3,
 		inputVacancy: incompleteVacancyID3,
 		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNotInserted,
+		expectedErr:  psql.ErrNotInserted,
 	},
 	{
 		inputUserID:  3,
@@ -656,7 +657,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testAddVacancyErrorCases {
 		mock.
@@ -715,7 +716,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testUpdateOrgVacancySuccessCases {
 // 		mock.
@@ -791,7 +792,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testUpdateOrgVacancyErrorCases {
 // 		mock.
@@ -849,7 +850,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testDeleteOrgVacancySuccessCases {
 // 		mock.
@@ -911,7 +912,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 // 	}
 // 	defer db.Close()
 
-// 	repo := NewPsqlVacancyRepository(db)
+// 	repo := psql.NewPsqlVacancyRepository(db)
 
 // 	for _, testCase := range testDeleteOrgVacancyErrorCases {
 // 		mock.
