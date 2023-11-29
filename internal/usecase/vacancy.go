@@ -13,6 +13,7 @@ import (
 type IVacancyUsecase interface {
 	GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error)
+	GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error)
 	GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error)
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
@@ -110,6 +111,25 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 	}
 
 	return vacancy.ToAPI(), nil
+}
+
+func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error) {
+	vacancy, err := vacancyUsecase.GetVacancy(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+
+	companyName, err := vacancyUsecase.vacancyRepo.GetCompanyName(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+
+	compVac := &domain.CompanyVacancy{
+		CompanyName: companyName,
+		Vacancy:     *vacancy,
+	}
+
+	return compVac, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error) {

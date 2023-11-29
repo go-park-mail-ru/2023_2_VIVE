@@ -16,6 +16,7 @@ type IVacancyRepository interface {
 	GetEmpVacanciesByIds(ctx context.Context, empID int, idList []int) ([]domain.DbVacancy, error)
 	GetVacanciesByIds(ctx context.Context, idList []int) ([]domain.DbVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error)
+	GetCompanyName(ctx context.Context, vacancyID int) (string, error)
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (string, string, []domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
@@ -287,6 +288,28 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 	}
 
 	return &vacancyToReturn, nil
+}
+
+func (repo *psqlVacancyRepository) GetCompanyName(ctx context.Context, vacancyID int) (string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+	}).
+		Info("getting company name by 'vacancy_id' from postgres")
+
+	var companyName string
+
+	err := repo.DB.QueryRow(`SELECT "name" FROM hnh_data.organization WHERE id = 
+							(SELECT organization_id FROM hnh_data.employer WHERE id = 
+							(SELECT employer_id FROM hnh_data.vacancy WHERE id = $1))`, vacancyID).Scan(&companyName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrEntityNotFound
+	} else if err != nil {
+		return "", err
+	}
+
+	return companyName, nil
 }
 
 func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error) {

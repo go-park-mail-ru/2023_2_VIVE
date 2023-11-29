@@ -64,6 +64,11 @@ func (vac *DbVacancy) ToAPI() *ApiVacancy {
 	return &res
 }
 
+type CompanyVacancy struct {
+	CompanyName string     `json:"organization_name"`
+	Vacancy     ApiVacancy `json:"vacancy"`
+}
+
 type ApiVacancy struct {
 	ID               int            `json:"id"`
 	EmployerID       int            `json:"employer_id"`

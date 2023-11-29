@@ -158,15 +158,15 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	vacancy, err := vacancyHandler.vacancyUsecase.GetVacancy(r.Context(), vacancyID)
+	vacWithCompName, err := vacancyHandler.vacancyUsecase.GetVacancyWithCompanyName(r.Context(), vacancyID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 
-	sanitizedVacancy := vacancyHandler.sanitizeVacancies(*vacancy)
+	vacWithCompName.Vacancy = vacancyHandler.sanitizeVacancies(vacWithCompName.Vacancy)[0]
 
-	responseTemplates.MarshalAndSend(w, sanitizedVacancy[0])
+	responseTemplates.MarshalAndSend(w, vacWithCompName)
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {
