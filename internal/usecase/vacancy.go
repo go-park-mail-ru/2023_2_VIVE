@@ -13,6 +13,7 @@ import (
 type IVacancyUsecase interface {
 	GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error)
+	GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error)
 	GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error)
 	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error)
@@ -131,6 +132,25 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 	return apiVac, nil
 }
 
+func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error) {
+	vacancy, err := vacancyUsecase.GetVacancy(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+
+	companyName, err := vacancyUsecase.vacancyRepo.GetCompanyName(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+
+	compVac := &domain.CompanyVacancy{
+		CompanyName: companyName,
+		Vacancy:     *vacancy,
+	}
+
+	return compVac, nil
+}
+
 func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error) {
 	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
 	if validStatus != nil {
@@ -203,7 +223,7 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 }
 
 func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
-	first_name, last_name, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
+	first_name, last_name, compName, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,9 +231,10 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 	vacsToReturn := vacancyUsecase.collectApiVacs(empVacs)
 
 	info := &domain.EmployerInfo{
-		FirstName: first_name,
-		LastName:  last_name,
-		Vacancies: vacsToReturn,
+		FirstName:   first_name,
+		LastName:    last_name,
+		CompanyName: compName,
+		Vacancies:   vacsToReturn,
 	}
 
 	return info, nil

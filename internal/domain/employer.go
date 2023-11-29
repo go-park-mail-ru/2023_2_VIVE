@@ -7,7 +7,8 @@ type DbEmployer struct {
 }
 
 type EmployerInfo struct {
-	FirstName string       `json:"first_name"`
-	LastName  string       `json:"last_name"`
-	Vacancies []ApiVacancy `json:"vacancies,omitempty"`
+	FirstName   string       `json:"first_name"`
+	LastName    string       `json:"last_name"`
+	CompanyName string       `json:"organization_name"`
+	Vacancies   []ApiVacancy `json:"vacancies,omitempty"`
 }
