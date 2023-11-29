@@ -2,6 +2,7 @@ package app
 
 import (
 	"HnH/configs"
+	"HnH/configs/metrics"
 	deliveryHTTP "HnH/internal/delivery/http"
 	"HnH/internal/delivery/http/middleware"
 	grpcRepo "HnH/internal/repository/grpc"
@@ -20,6 +21,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -69,6 +72,14 @@ func initSearchEngineClient(config searchConfig.SearchEngineConfig) (searchEngin
 	return client, nil
 
 }
+
+/*var pingCounter = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "ping_request_count",
+		Help: "No of request handled by Ping handler",
+	},
+	[]string{"path"},
+)*/
 
 func Run() error {
 	logFile, err := os.OpenFile(configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -137,10 +148,23 @@ func Run() error {
 	deliveryHTTP.NewCsatHandler(router, csatUsecase, sessionUsecase)
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
+	/*pinger := func(w http.ResponseWriter, r *http.Request) {
+		pingCounter.WithLabelValues("GET").Inc()
+		w.WriteHeader(200)
+		w.Write([]byte("pong"))
+	}*/
+
+	prometheus.MustRegister(metrics.HitCounter, metrics.ErrorCounter)
+	router.Handle("/metrics", promhttp.Handler())
+
 	corsRouter := configs.CORS.Handler(router)
 	loggedRouter := middleware.AccessLogMiddleware( /* logging.Logger,  */ corsRouter)
 	requestIDRouter := middleware.RequestID(loggedRouter)
-	finalRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
+	recoverRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
+
+	hitCountRouter := metrics.HitCounterMiddleware(recoverRouter)
+	timingCountRouter := metrics.TimingHistogramMiddleware(hitCountRouter)
+	finalRouter := metrics.ErrorCounterMiddleware(timingCountRouter)
 
 	http.Handle("/", finalRouter)
 

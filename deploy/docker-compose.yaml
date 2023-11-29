@@ -40,6 +40,41 @@ services:
     ports:
       - "8055:5432"
 
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v${PROMETHEUS_VERSION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "8010:9090"
+    restart: unless-stopped
+    
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${GRAFANA_VERSION}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - 8011:3000
+    links:
+      - prometheus
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:v${NODE_EXPORTER_VERSION}
+    restart: unless-stopped
+    expose:
+      - 9100
+    ports:
+      - 8012:9100
+
 volumes:
   hnh_data:
   hnh_csat_data:
