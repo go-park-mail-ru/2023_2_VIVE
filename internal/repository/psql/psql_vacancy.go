@@ -413,8 +413,9 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 	}
 
 	var userID int
+	var compName string
 
-	err = repo.DB.QueryRow(`SELECT user_id FROM hnh_data.employer WHERE id = $1`, employerID).Scan(&userID)
+	err = repo.DB.QueryRow(`SELECT user_id, organization_name FROM hnh_data.employer WHERE id = $1`, employerID).Scan(&userID, &compName)
 	if err != nil {
 		return "", "", "", nil, err
 	}
@@ -426,13 +427,11 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 		return "", "", "", nil, err
 	}
 
-	var compName string
-
-	err = repo.DB.QueryRow(`SELECT "name" FROM hnh_data.organization WHERE id = 
-						   (SELECT organization_id FROM hnh_data.employer WHERE id = $1)`, employerID).Scan(&compName)
-	if err != nil {
-		return "", "", "", nil, err
-	}
+	// err = repo.DB.QueryRow(`SELECT "name" FROM hnh_data.organization WHERE id =
+	// 					   (SELECT organization_id FROM hnh_data.employer WHERE id = $1)`, employerID).Scan(&compName)
+	// if err != nil {
+	// 	return "", "", "", nil, err
+	// }
 
 	vacancies, err := repo.GetUserVacancies(ctx, userID)
 	if err != nil {
