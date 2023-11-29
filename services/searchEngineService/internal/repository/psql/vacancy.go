@@ -1,7 +1,6 @@
 package psql
 
 import (
-	"HnH/internal/repository/psql"
 	"HnH/pkg/contextUtils"
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
@@ -345,9 +344,6 @@ func (repo *psqlSearchRepository) SearchVacanciesIDs(
 		OFFSET $3`
 
 	rows, err := repo.DB.Query(query, searchQuery, limit, offset)
-	if err == sql.ErrNoRows {
-		return nil, 0, psql.ErrEntityNotFound
-	}
 	if err != nil {
 		return nil, 0, err
 	}
@@ -362,6 +358,11 @@ func (repo *psqlSearchRepository) SearchVacanciesIDs(
 		if err != nil {
 			return nil, 0, err
 		}
+		contextLogger.WithFields(logrus.Fields{
+			"vac_id": vacID,
+			"count":  count,
+		}).
+			Debug("rows.Next()")
 		vacIDs = append(vacIDs, vacID)
 	}
 

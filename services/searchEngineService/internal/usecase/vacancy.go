@@ -8,6 +8,8 @@ import (
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ISearchUsecase interface {
@@ -103,11 +105,23 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 		}
 		return &res, nil
 	} else {
-		vacanciesIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, query, pageNumber, resultsPerPage)
+		contextLogger.WithFields(logrus.Fields{
+			"query": query,
+		}).
+			Debug("got search query")
+		vacanciesIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, query, limit, offset)
 		if err == psql.ErrEntityNotFound {
+			contextLogger.WithFields(logrus.Fields{
+				"err": err,
+			}).
+				Debug("got error")
 			return &pb.SearchResponse{}, nil
 		}
 		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err": err,
+			}).
+				Debug("got error")
 			return nil, err
 		}
 
