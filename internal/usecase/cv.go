@@ -34,6 +34,7 @@ type CVUsecase struct {
 	responseRepo     psql.IResponseRepository
 	vacancyRepo      psql.IVacancyRepository
 	searchEngineRepo grpc.ISearchEngineRepository
+	skillRepo        psql.ISkillRepository
 }
 
 func NewCVUsecase(
@@ -45,6 +46,7 @@ func NewCVUsecase(
 	responseRepository psql.IResponseRepository,
 	vacancyRepository psql.IVacancyRepository,
 	searchEngineRepository grpc.ISearchEngineRepository,
+	skillRepository psql.ISkillRepository,
 ) ICVUsecase {
 	return &CVUsecase{
 		cvRepo:           cvRepository,
@@ -55,6 +57,7 @@ func NewCVUsecase(
 		responseRepo:     responseRepository,
 		vacancyRepo:      vacancyRepository,
 		searchEngineRepo: searchEngineRepository,
+		skillRepo:        skillRepository,
 	}
 }
 
@@ -138,6 +141,12 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, sessionID string, cvI
 
 	apiCV := cvUsecase.constructApiCV(cv, exps, edInsts)
 
+	skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, apiCV.ID)
+	if err != nil {
+		return nil, err
+	}
+	apiCV.Skills = skills
+
 	return apiCV, nil
 }
 
@@ -163,13 +172,10 @@ func (cvUsecase *CVUsecase) combineDbCVs(cvs []domain.DbCV, exps []domain.DbExpe
 }
 
 func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]domain.ApiCV, error) {
-
 	userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Applicant)
 	if validStatus != nil {
 		return nil, validStatus
 	}
-	// fmt.Printf("userID: %v\n", userID)
-	// fmt.Println("before getting cvs")
 
 	cvs, exps, insts, err := cvUsecase.cvRepo.GetCVsByUserId(ctx, userID)
 	if err != nil && err != psql.ErrEntityNotFound {
@@ -181,9 +187,17 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context, sessionID string) ([]
 			Debug("got 'err' while trying to get all user's cvs by 'user_id'")
 		return nil, err
 	}
-	// fmt.Println("after getting cvs")
 
 	apiCvs := cvUsecase.combineDbCVs(cvs, exps, insts)
+
+	// TODO: optimize
+	for i := range apiCvs {
+		skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, apiCvs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiCvs[i].Skills = skills
+	}
 
 	return apiCvs, nil
 }
@@ -226,6 +240,11 @@ func (cvUsecase *CVUsecase) AddNewCV(ctx context.Context, sessionID string, cv *
 		return 0, addErr
 	}
 
+	err := cvUsecase.skillRepo.AddSkillsByCvID(ctx, cvID, cv.Skills)
+	if err != nil {
+		return 0, err
+	}
+
 	return cvID, nil
 }
 
@@ -241,6 +260,12 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, sessionID strin
 	}
 
 	apiCv := cvUsecase.constructApiCV(cv, exps, insts)
+
+	skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, apiCv.ID)
+	if err != nil {
+		return nil, err
+	}
+	apiCv.Skills = skills
 
 	return apiCv, nil
 }
@@ -393,6 +418,16 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	}
 
 	cvsToReturn := cvUsecase.combineDbCVs(dbCvs, dbExps, dbInsts)
+
+	// TODO: optimize
+	for i := range cvsToReturn {
+		skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, cvsToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaCV{}, err
+		}
+		cvsToReturn[i].Skills = skills
+	}
+
 	result := domain.ApiMetaCV{
 		Count: count,
 		CVs:   cvsToReturn,

@@ -77,3 +77,61 @@ func (repo *psqlSearchRepository) SearchCVsIDs(
 
 	return cvsIDs, count, nil
 }
+
+func (repo *psqlSearchRepository) GetAllCVsIDs(ctx context.Context, limit, offset int64) ([]int64, int64, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting all cvs ids from postgres")
+	contextLogger.WithFields(logrus.Fields{
+		"limit":  limit,
+		"offset": offset,
+	}).
+		Debug("params")
+
+	queryAllCVs := `WITH all_cvs AS (
+			SELECT
+				c.id
+			FROM
+				hnh_data.cv c
+		),
+		count_total AS (
+			SELECT
+				COUNT(*) AS total
+			FROM
+				all_cvs
+		)
+		SELECT
+			ac.id,
+			ct.total
+		FROM
+			all_cvs ac,
+			count_total ct
+		LIMIT $1
+		OFFSET $2`
+
+	rows, err := repo.DB.Query(queryAllCVs, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	cvsIDs := []int64{}
+	var count int64
+
+	for rows.Next() {
+		var cvID int64
+		err := rows.Scan(&cvID, &count)
+		if err != nil {
+			return nil, 0, err
+		}
+		cvsIDs = append(cvsIDs, cvID)
+	}
+
+	contextLogger.WithFields(logrus.Fields{
+		"ids":   cvsIDs,
+		"count": count,
+	}).
+		Debug("got results")
+
+	return cvsIDs, count, nil
+}

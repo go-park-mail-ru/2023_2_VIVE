@@ -511,11 +511,11 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, empID int, va
 			"location"
 		)
 		SELECT
-			e.id, $1, $2, $3, $4, $5, $6, $7, $8, $9
+			e.id, $1, $2, $3, $4, $5, $6, $7, $8
 	FROM
 		hnh_data.employer e
 	WHERE
-		e.id = $10
+		e.id = $9
 		RETURNING id`
 
 	var insertedVacancyID int

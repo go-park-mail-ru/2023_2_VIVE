@@ -15,7 +15,7 @@ type IVacancyUsecase interface {
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error)
 	GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error)
-	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error)
+	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
 	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaVacancy, error)
@@ -26,6 +26,7 @@ type VacancyUsecase struct {
 	sessionRepo      redisRepo.ISessionRepository
 	userRepo         psql.IUserRepository
 	searchEngineRepo grpc.ISearchEngineRepository
+	skillRepo        psql.ISkillRepository
 }
 
 func NewVacancyUsecase(
@@ -33,12 +34,14 @@ func NewVacancyUsecase(
 	sessionRepository redisRepo.ISessionRepository,
 	userRepository psql.IUserRepository,
 	searchEngineRepository grpc.ISearchEngineRepository,
+	skillRepository psql.ISkillRepository,
 ) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo:      vacancyRepository,
 		sessionRepo:      sessionRepository,
 		userRepo:         userRepository,
 		searchEngineRepo: searchEngineRepository,
+		skillRepo:        skillRepository,
 	}
 }
 
@@ -100,7 +103,17 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 		return nil, getErr
 	}
 
-	return vacancyUsecase.collectApiVacs(vacancies), nil
+	// TODO: optimize
+	apiVacs := vacancyUsecase.collectApiVacs(vacancies)
+	for i := range apiVacs {
+		skills, err := vacancyUsecase.skillRepo.GetSkillsByVacID(ctx, apiVacs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiVacs[i].Skills = skills
+	}
+
+	return apiVacs, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error) {
@@ -109,25 +122,36 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 		return nil, err
 	}
 
-	return vacancy.ToAPI(), nil
+	apiVac := vacancy.ToAPI()
+	skills, err := vacancyUsecase.skillRepo.GetSkillsByVacID(ctx, apiVac.ID)
+	if err != nil {
+		return nil, err
+	}
+	apiVac.Skills = skills
+	return apiVac, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.DbVacancy) (int, error) {
+func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error) {
 	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
 
-	// fmt.Printf("vacancy: %v\n", vacancy)
-
-	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(ctx, userEmpID, vacancy)
+	dbVac := vacancy.ToDb()
+	vacancyID, addStatus := vacancyUsecase.vacancyRepo.AddVacancy(ctx, userEmpID, dbVac)
 	if addStatus != nil {
 		return 0, addStatus
+	}
+
+	addSkillsErr := vacancyUsecase.skillRepo.AddSkillsByVacID(ctx, vacancyID, vacancy.Skills)
+	if addSkillsErr != nil {
+		return 0, addSkillsErr
 	}
 
 	return vacancyID, nil
 }
 
+// TODO: add skills
 func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error {
 	empID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
 	if validStatus != nil {
@@ -221,6 +245,16 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	}
 
 	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
+
+	// TODO: optimize
+	for i := range vacanciesToReturn {
+		skills, err := vacancyUsecase.skillRepo.GetSkillsByVacID(ctx, vacanciesToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaVacancy{}, err
+		}
+		vacanciesToReturn[i].Skills = skills
+	}
+
 	result := domain.ApiMetaVacancy{
 		Filters: vacanciesSearchResponse.Filters,
 		Vacancies: domain.ApiVacancyCount{

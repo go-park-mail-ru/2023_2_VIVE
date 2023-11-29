@@ -4,6 +4,7 @@ import (
 	"HnH/internal/repository/psql"
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
+	"strings"
 )
 
 func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
@@ -14,7 +15,8 @@ func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest
 	offset := (pageNumber - 1) * resultsPerPage
 	// contextLogger := contextUtils.GetContextLogger(ctx)
 
-	cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, query, limit, offset)
+	if strings.TrimSpace(query) == "" {
+		cvsIDs, count, err := u.searchRepo.GetAllCVsIDs(ctx, limit, offset)
 		if err == psql.ErrEntityNotFound {
 			return &pb.SearchResponse{}, nil
 		}
@@ -26,6 +28,20 @@ func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest
 			Count: count,
 		}
 		return &res, nil
+	} else {
+		cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, query, limit, offset)
+		if err == psql.ErrEntityNotFound {
+			return &pb.SearchResponse{}, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		res := pb.SearchResponse{
+			Ids:   cvsIDs,
+			Count: count,
+		}
+		return &res, nil
+	}
 
 	// if strings.TrimSpace(query) == "" {
 	// 	contextLogger.Debug("got empty search query")
@@ -58,7 +74,7 @@ func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest
 	// 		Type:   string(domain.Radio),
 	// 		Values: salaryFilterValues,
 	// 	})
-		
+
 	// 	experienceFilterValues, err := u.searchRepo.FilterExperienceAll()
 	// 	if err != nil {
 	// 		return nil, err
@@ -96,7 +112,7 @@ func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest
 	// 	}
 	// 	return &res, nil
 	// } else {
-		
+
 	// }
 
 }

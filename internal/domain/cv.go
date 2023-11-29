@@ -91,6 +91,7 @@ type ApiCV struct {
 	EducationInstitutions []ApiEducationInstitution `json:"institutions"`
 	Experience            []ApiExperience           `json:"companies"`
 	Description           *string                   `json:"description,omitempty"`
+	Skills                []string                  `json:"skills,omitempty"`
 	CreatedAt             time.Time                 `json:"created_at,omitempty"`
 	UpdatedAt             time.Time                 `json:"updated_at,omitempty"`
 }

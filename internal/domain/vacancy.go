@@ -75,6 +75,7 @@ type ApiVacancy struct {
 	EducationType    EducationLevel `json:"education_type,omitempty"`
 	Location         *string        `json:"location,omitempty"`
 	Description      string         `json:"description,omitempty"`
+	Skills           []string       `json:"skills,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
