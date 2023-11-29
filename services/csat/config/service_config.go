@@ -9,7 +9,7 @@ type CsatConfig struct {
 
 var CsatServiceConfig = CsatConfig{
 	ServiceName: "csat service",
-	Host:        "localhost",
+	Host:        "212.233.90.231",
 	Port:        8061,
 	LogFile:     "csat_service.log",
 }
@@ -27,7 +27,7 @@ var CsatPostgresConfig = postgresConfig{
 	user:     "vive_admin",
 	password: "vive_password",
 	dbname:   "hnh_csat",
-	host:     "localhost",
+	host:     "212.233.90.231",
 	port:     "8055",
 	sslmode:  "disable",
 }
