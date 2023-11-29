@@ -24,6 +24,7 @@ type ISearchRepository interface {
 	// TODO: FilterEmploymentVacancies(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterEducationTypeVacancies(ctx context.Context) ([]*pb.FilterValue, error)
 
+	GetAllCVsIDs(ctx context.Context, limit, offset int64) ([]int64, int64, error)
 	SearchVacanciesIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
 	SearchCVsIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
 	// TODO: FilterCitiesAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
