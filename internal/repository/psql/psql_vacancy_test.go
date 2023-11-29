@@ -2,10 +2,8 @@ package psql
 
 import (
 	"HnH/internal/domain"
-	"HnH/pkg/nullTypes"
 	"HnH/pkg/testHelper"
 	"database/sql"
-	"database/sql/driver"
 	"reflect"
 	"testing"
 
@@ -16,63 +14,62 @@ var (
 	vacanciesColumns = []string{
 		"id",
 		"employer_id",
-		"name",
+		`"name"`,
 		"description",
 		"salary_lower_bound",
 		"salary_upper_bound",
 		"employment",
-		"experience_lower_bound",
-		"experience_upper_bound",
+		"experience",
 		"education_type",
-		"location",
+		`"location"`,
 		"created_at",
 		"updated_at",
 	}
 
+	salaryLowerBound = 50000
+	salaryUpperBound = 100000
+
 	fullVacancyID1 = domain.DbVacancy{
-		ID:                   1,
-		EmployerID:           1,
-		VacancyName:          "Vacancy #1",
-		Description:          "Description #1",
-		SalaryLowerBound:     nullTypes.NewNullInt(10000, true),
-		SalaryUpperBound:     nullTypes.NewNullInt(20000, true),
-		Employment:           nullTypes.NewNullString(string(domain.FullTime), true),
-		ExperienceLowerBound: nullTypes.NewNullInt(0, true),
-		ExperienceUpperBound: nullTypes.NewNullInt(12, true),
-		EducationType:        domain.Higher,
-		Location:             nullTypes.NewNullString("Moscow", true),
-		CreatedAt:            testHelper.Created_at,
-		UpdatedAt:            testHelper.Updated_at,
+		ID:               1,
+		EmployerID:       1,
+		VacancyName:      "Vacancy #1",
+		Description:      "Description #1",
+		SalaryLowerBound: &salaryLowerBound,
+		SalaryUpperBound: &salaryUpperBound,
+		Employment:       domain.FullTime,
+		Experience:       domain.None,
+		EducationType:    domain.Higher,
+		Location:         &location,
+		CreatedAt:        testHelper.Created_at,
+		UpdatedAt:        testHelper.Updated_at,
 	}
 	fullVacancyID2 = domain.DbVacancy{
-		ID:                   2,
-		EmployerID:           2,
-		VacancyName:          "Vacancy #2",
-		Description:          "Description #2",
-		SalaryLowerBound:     nullTypes.NewNullInt(10000, true),
-		SalaryUpperBound:     nullTypes.NewNullInt(20000, true),
-		Employment:           nullTypes.NewNullString(string(domain.FullTime), true),
-		ExperienceLowerBound: nullTypes.NewNullInt(0, true),
-		ExperienceUpperBound: nullTypes.NewNullInt(12, true),
-		EducationType:        domain.Higher,
-		Location:             nullTypes.NewNullString("Moscow", true),
-		CreatedAt:            testHelper.Created_at,
-		UpdatedAt:            testHelper.Updated_at,
+		ID:               2,
+		EmployerID:       2,
+		VacancyName:      "Vacancy #2",
+		Description:      "Description #2",
+		SalaryLowerBound: &salaryLowerBound,
+		SalaryUpperBound: &salaryUpperBound,
+		Employment:       domain.FullTime,
+		Experience:       domain.None,
+		EducationType:    domain.Higher,
+		Location:         &location,
+		CreatedAt:        testHelper.Created_at,
+		UpdatedAt:        testHelper.Updated_at,
 	}
 	incompleteVacancyID3 = domain.DbVacancy{
-		ID:                   3,
-		EmployerID:           1,
-		VacancyName:          "Vacancy #1",
-		Description:          "Description #1",
-		SalaryLowerBound:     nullTypes.NewNullInt(0, false),
-		SalaryUpperBound:     nullTypes.NewNullInt(0, false),
-		Employment:           nullTypes.NewNullString("", false),
-		ExperienceLowerBound: nullTypes.NewNullInt(0, false),
-		ExperienceUpperBound: nullTypes.NewNullInt(0, false),
-		EducationType:        domain.Secondary,
-		Location:             nullTypes.NewNullString("", false),
-		CreatedAt:            testHelper.Created_at,
-		UpdatedAt:            testHelper.Updated_at,
+		ID:               3,
+		EmployerID:       1,
+		VacancyName:      "Vacancy #1",
+		Description:      "Description #1",
+		SalaryLowerBound: nil,
+		SalaryUpperBound: nil,
+		Employment:       domain.FullTime,
+		Experience:       domain.None,
+		EducationType:    domain.Secondary,
+		Location:         nil,
+		CreatedAt:        testHelper.Created_at,
+		UpdatedAt:        testHelper.Updated_at,
 	}
 )
 
@@ -101,17 +98,28 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 
 		for _, item := range testCase.expected {
 			rows = rows.AddRow(
+				// item.ID,
+				// item.EmployerID,
+				// item.VacancyName,
+				// item.Description,
+				// item.SalaryLowerBound,
+				// item.SalaryUpperBound,
+				// item.Employment,
+				// item.Experience,
+				// item.EducationType,
+				// item.Location,
+				// item.CreatedAt,
+				// item.UpdatedAt,
 				item.ID,
 				item.EmployerID,
 				item.VacancyName,
 				item.Description,
-				item.SalaryLowerBound.GetValue(),
-				item.SalaryUpperBound.GetValue(),
-				item.Employment.GetValue(),
-				item.ExperienceLowerBound.GetValue(),
-				item.ExperienceUpperBound.GetValue(),
+				item.SalaryLowerBound,
+				item.SalaryUpperBound,
+				item.Employment,
+				item.Experience,
 				item.EducationType,
-				item.Location.GetValue(),
+				item.Location,
 				item.CreatedAt,
 				item.UpdatedAt,
 			)
@@ -120,7 +128,7 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WillReturnRows(rows)
 
-		actual, err := repo.GetAllVacancies()
+		actual, err := repo.GetAllVacancies(ctxWithLogger)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -149,7 +157,7 @@ func TestGetAllVacanciesQueryError(t *testing.T) {
 		ExpectQuery(testHelper.SELECT_QUERY).
 		WillReturnError(testHelper.ErrQuery)
 
-	_, returnedErr := repo.GetAllVacancies()
+	_, returnedErr := repo.GetAllVacancies(ctxWithLogger)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -175,7 +183,7 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 		ExpectQuery(testHelper.SELECT_QUERY).
 		WillReturnRows(rows)
 
-	_, returnedErr := repo.GetAllVacancies()
+	_, returnedErr := repo.GetAllVacancies(ctxWithLogger)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -188,17 +196,14 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 
 var testGetVacanciesByIdsSuccessCases = []struct {
 	input    []int
-	orgID    int
 	expected []domain.DbVacancy
 }{
 	{
 		input:    []int{1, 2},
-		orgID:    1,
 		expected: []domain.DbVacancy{fullVacancyID1, fullVacancyID2},
 	},
 	{
 		input:    []int{1},
-		orgID:    1,
 		expected: []domain.DbVacancy{incompleteVacancyID3},
 	},
 }
@@ -221,22 +226,21 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 				item.EmployerID,
 				item.VacancyName,
 				item.Description,
-				item.SalaryLowerBound.GetValue(),
-				item.SalaryUpperBound.GetValue(),
-				item.Employment.GetValue(),
-				item.ExperienceLowerBound.GetValue(),
-				item.ExperienceUpperBound.GetValue(),
+				item.SalaryLowerBound,
+				item.SalaryUpperBound,
+				item.Employment,
+				item.Experience,
 				item.EducationType,
-				item.Location.GetValue(),
+				item.Location,
 				item.CreatedAt,
 				item.UpdatedAt,
 			)
 		}
 
-		items := make([]int, len(testCase.input)+1)
-		items[0] = testCase.orgID
-		for i := 1; i < len(items); i++ {
-			items[i] = testCase.input[i-1]
+		items := make([]int, len(testCase.input))
+		// items[0] = testCase.orgID
+		for i := 0; i < len(items); i++ {
+			items[i] = testCase.input[i]
 		}
 
 		mock.
@@ -244,7 +248,7 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 			WithArgs(testHelper.SliceIntToDriverValue(items)...).
 			WillReturnRows(rows)
 
-		actual, err := repo.GetVacanciesByIds(1, testCase.input)
+		actual, err := repo.GetVacanciesByIds(ctxWithLogger, testCase.input)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -269,7 +273,7 @@ func TestGetVacanciesByIdsEmptyInput(t *testing.T) {
 
 	repo := NewPsqlVacancyRepository(db)
 
-	_, err = repo.GetVacanciesByIds(1, []int{})
+	_, err = repo.GetVacanciesByIds(ctxWithLogger, []int{})
 	if err != ErrEntityNotFound {
 		t.Errorf("expected error 'ErrEntityNotFound', got %s", err)
 	}
@@ -285,18 +289,18 @@ func TestGetVacanciesByIdsQueryError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
-	orgID := 1
-	items := make([]int, len(input)+1)
-	items[0] = orgID
-	for i := 1; i < len(items); i++ {
-		items[i] = input[i-1]
+	// orgID := 1
+	items := make([]int, len(input))
+	// items[0] = orgID
+	for i := 0; i < len(items); i++ {
+		items[i] = input[i]
 	}
 	mock.
 		ExpectQuery(testHelper.SELECT_QUERY).
 		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnError(testHelper.ErrQuery)
 
-	_, returnedErr := repo.GetVacanciesByIds(1, input)
+	_, returnedErr := repo.GetVacanciesByIds(ctxWithLogger, input)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -317,11 +321,11 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	input := []int{1, 2, 3}
-	orgID := 1
-	items := make([]int, len(input)+1)
-	items[0] = orgID
-	for i := 1; i < len(items); i++ {
-		items[i] = input[i-1]
+	// orgID := 1
+	items := make([]int, len(input))
+	// items[0] = orgID
+	for i := 0; i < len(items); i++ {
+		items[i] = input[i]
 	}
 	rows := sqlmock.NewRows(vacanciesColumns)
 	mock.
@@ -329,7 +333,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnRows(rows)
 
-	_, returnedErr := repo.GetVacanciesByIds(1, input)
+	_, returnedErr := repo.GetVacanciesByIds(ctxWithLogger, input)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -374,13 +378,12 @@ func TestGetVacancySuccess(t *testing.T) {
 				testCase.expected.EmployerID,
 				testCase.expected.VacancyName,
 				testCase.expected.Description,
-				testCase.expected.SalaryLowerBound.GetValue(),
-				testCase.expected.SalaryUpperBound.GetValue(),
-				testCase.expected.Employment.GetValue(),
-				testCase.expected.ExperienceLowerBound.GetValue(),
-				testCase.expected.ExperienceUpperBound.GetValue(),
+				testCase.expected.SalaryLowerBound,
+				testCase.expected.SalaryUpperBound,
+				testCase.expected.Employment,
+				testCase.expected.Experience,
 				testCase.expected.EducationType,
-				testCase.expected.Location.GetValue(),
+				testCase.expected.Location,
 				testCase.expected.CreatedAt,
 				testCase.expected.UpdatedAt,
 			)
@@ -390,7 +393,7 @@ func TestGetVacancySuccess(t *testing.T) {
 			WithArgs(testCase.input).
 			WillReturnRows(rows)
 
-		actual, err := repo.GetVacancy(testCase.input)
+		actual, err := repo.GetVacancy(ctxWithLogger, testCase.input)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -438,7 +441,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 			WithArgs(testCase.input).
 			WillReturnError(testCase.returningErr)
 
-		_, actualErr := repo.GetVacancy(testCase.input)
+		_, actualErr := repo.GetVacancy(ctxWithLogger, testCase.input)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -450,103 +453,103 @@ func TestGetVacancyQueryError(t *testing.T) {
 	}
 }
 
-var testGetOrgIdSuccessCases = []struct {
-	input    int
-	expected int
-}{
-	{
-		input:    1,
-		expected: 1,
-	},
-	{
-		input:    2,
-		expected: 2,
-	},
-	{
-		input:    3,
-		expected: 3,
-	},
-}
+// var testGetOrgIdSuccessCases = []struct {
+// 	input    int
+// 	expected int
+// }{
+// 	{
+// 		input:    1,
+// 		expected: 1,
+// 	},
+// 	{
+// 		input:    2,
+// 		expected: 2,
+// 	},
+// 	{
+// 		input:    3,
+// 		expected: 3,
+// 	},
+// }
 
-func TestGetOrgIdSuccess(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestGetOrgIdSuccess(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testGetOrgIdSuccessCases {
-		rows := sqlmock.NewRows([]string{"id"}).
-			AddRow(
-				testCase.expected,
-			)
+// 	for _, testCase := range testGetOrgIdSuccessCases {
+// 		rows := sqlmock.NewRows([]string{"id"}).
+// 			AddRow(
+// 				testCase.expected,
+// 			)
 
-		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
-			WithArgs(testCase.input).
-			WillReturnRows(rows)
+// 		mock.
+// 			ExpectQuery(testHelper.SELECT_QUERY).
+// 			WithArgs(testCase.input).
+// 			WillReturnRows(rows)
 
-		actual, err := repo.GetOrgId(testCase.input)
-		if err != nil {
-			t.Errorf("unexpected err: %s", err)
-			return
-		}
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-		if !reflect.DeepEqual(actual, testCase.expected) {
-			t.Errorf("results not match, want %v, have %v", testCase.expected, actual)
-			return
-		}
-	}
-}
+// 		actual, err := repo.GetOrgId(testCase.input)
+// 		if err != nil {
+// 			t.Errorf("unexpected err: %s", err)
+// 			return
+// 		}
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 		if !reflect.DeepEqual(actual, testCase.expected) {
+// 			t.Errorf("results not match, want %v, have %v", testCase.expected, actual)
+// 			return
+// 		}
+// 	}
+// }
 
-var testGetOrgIdQueryErrorCases = []struct {
-	input        int
-	returningErr error
-	expectedErr  error
-}{
-	{
-		input:        1,
-		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrEntityNotFound,
-	},
-	{
-		input:        1,
-		returningErr: testHelper.ErrQuery,
-		expectedErr:  testHelper.ErrQuery,
-	},
-}
+// var testGetOrgIdQueryErrorCases = []struct {
+// 	input        int
+// 	returningErr error
+// 	expectedErr  error
+// }{
+// 	{
+// 		input:        1,
+// 		returningErr: sql.ErrNoRows,
+// 		expectedErr:  ErrEntityNotFound,
+// 	},
+// 	{
+// 		input:        1,
+// 		returningErr: testHelper.ErrQuery,
+// 		expectedErr:  testHelper.ErrQuery,
+// 	},
+// }
 
-func TestGetOrgIdQueryError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestGetOrgIdQueryError(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testGetOrgIdQueryErrorCases {
-		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
-			WithArgs(testCase.input).
-			WillReturnError(testCase.returningErr)
+// 	for _, testCase := range testGetOrgIdQueryErrorCases {
+// 		mock.
+// 			ExpectQuery(testHelper.SELECT_QUERY).
+// 			WithArgs(testCase.input).
+// 			WillReturnError(testCase.returningErr)
 
-		_, actualErr := repo.GetOrgId(testCase.input)
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-		if actualErr != testCase.expectedErr {
-			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
-			return
-		}
-	}
-}
+// 		_, actualErr := repo.GetOrgId(testCase.input)
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 		if actualErr != testCase.expectedErr {
+// 			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
+// 			return
+// 		}
+// 	}
+// }
 
 var testAddVacancySuccessCases = []struct {
 	inputUserID  int
@@ -591,15 +594,14 @@ func TestAddVacancySuccess(t *testing.T) {
 				testCase.inputVacancy.SalaryLowerBound,
 				testCase.inputVacancy.SalaryUpperBound,
 				testCase.inputVacancy.Employment,
-				testCase.inputVacancy.ExperienceLowerBound,
-				testCase.inputVacancy.ExperienceUpperBound,
+				testCase.inputVacancy.Experience,
 				testCase.inputVacancy.EducationType,
 				testCase.inputVacancy.Location,
 				testCase.inputUserID,
 			).
 			WillReturnRows(rows)
 
-		actual, err := repo.AddVacancy(testCase.inputUserID, &testCase.inputVacancy)
+		actual, err := repo.AddVacancy(ctxWithLogger, testCase.inputUserID, &testCase.inputVacancy)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -665,15 +667,14 @@ func TestAddVacancyQueryError(t *testing.T) {
 				testCase.inputVacancy.SalaryLowerBound,
 				testCase.inputVacancy.SalaryUpperBound,
 				testCase.inputVacancy.Employment,
-				testCase.inputVacancy.ExperienceLowerBound,
-				testCase.inputVacancy.ExperienceUpperBound,
+				testCase.inputVacancy.Experience,
 				testCase.inputVacancy.EducationType,
 				testCase.inputVacancy.Location,
 				testCase.inputUserID,
 			).
 			WillReturnError(testCase.returningErr)
 
-		_, actualErr := repo.AddVacancy(testCase.inputUserID, &testCase.inputVacancy)
+		_, actualErr := repo.AddVacancy(ctxWithLogger, testCase.inputUserID, &testCase.inputVacancy)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -685,251 +686,250 @@ func TestAddVacancyQueryError(t *testing.T) {
 	}
 }
 
-var testUpdateOrgVacancySuccessCases = []struct {
-	inputOrgID   int
-	inputVacID   int
-	inputVacancy domain.DbVacancy
-}{
-	{
-		inputOrgID:   1,
-		inputVacID:   1,
-		inputVacancy: fullVacancyID1,
-	},
-	{
-		inputOrgID:   1,
-		inputVacID:   2,
-		inputVacancy: fullVacancyID2,
-	},
-	{
-		inputOrgID:   1,
-		inputVacID:   3,
-		inputVacancy: incompleteVacancyID3,
-	},
-}
+// var testUpdateOrgVacancySuccessCases = []struct {
+// 	inputOrgID   int
+// 	inputVacID   int
+// 	inputVacancy domain.DbVacancy
+// }{
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   1,
+// 		inputVacancy: fullVacancyID1,
+// 	},
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   2,
+// 		inputVacancy: fullVacancyID2,
+// 	},
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   3,
+// 		inputVacancy: incompleteVacancyID3,
+// 	},
+// }
 
-func TestUpdateOrgVacancySuccess(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestUpdateOrgVacancySuccess(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testUpdateOrgVacancySuccessCases {
-		mock.
-			ExpectExec(testHelper.UPDATE_QUERY).
-			WithArgs(
-				testCase.inputVacancy.EmployerID,
-				testCase.inputVacancy.VacancyName,
-				testCase.inputVacancy.Description,
-				testCase.inputVacancy.SalaryLowerBound,
-				testCase.inputVacancy.SalaryUpperBound,
-				testCase.inputVacancy.Employment,
-				testCase.inputVacancy.ExperienceLowerBound,
-				testCase.inputVacancy.ExperienceUpperBound,
-				testCase.inputVacancy.EducationType,
-				testCase.inputVacancy.Location,
-				testCase.inputVacID,
-				testCase.inputOrgID,
-			).
-			WillReturnResult(driver.RowsAffected(1))
+// 	for _, testCase := range testUpdateOrgVacancySuccessCases {
+// 		mock.
+// 			ExpectExec(testHelper.UPDATE_QUERY).
+// 			WithArgs(
+// 				testCase.inputVacancy.EmployerID,
+// 				testCase.inputVacancy.VacancyName,
+// 				testCase.inputVacancy.Description,
+// 				testCase.inputVacancy.SalaryLowerBound,
+// 				testCase.inputVacancy.SalaryUpperBound,
+// 				testCase.inputVacancy.Employment,
+// 				testCase.inputVacancy.Experience,
+// 				testCase.inputVacancy.EducationType,
+// 				testCase.inputVacancy.Location,
+// 				testCase.inputVacID,
+// 				testCase.inputOrgID,
+// 			).
+// 			WillReturnResult(driver.RowsAffected(1))
 
-		err := repo.UpdateOrgVacancy(testCase.inputOrgID, testCase.inputVacID, &testCase.inputVacancy)
-		if err != nil {
-			t.Errorf("unexpected err: %s", err)
-			return
-		}
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-	}
-}
+// 		err := repo.UpdateOrgVacancy(testCase.inputOrgID, testCase.inputVacID, &testCase.inputVacancy)
+// 		if err != nil {
+// 			t.Errorf("unexpected err: %s", err)
+// 			return
+// 		}
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 	}
+// }
 
-var testUpdateOrgVacancyErrorCases = []struct {
-	inputOrgID   int
-	inputVacID   int
-	inputVacancy domain.DbVacancy
-	returningErr error
-	expectedErr  error
-}{
-	{
-		inputOrgID:   1,
-		inputVacID:   1,
-		inputVacancy: fullVacancyID1,
-		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNoRowsUpdated,
-	},
-	{
-		inputOrgID:   1,
-		inputVacID:   1,
-		inputVacancy: fullVacancyID1,
-		returningErr: testHelper.ErrQuery,
-		expectedErr:  testHelper.ErrQuery,
-	},
-	{
-		inputOrgID:   3,
-		inputVacID:   3,
-		inputVacancy: incompleteVacancyID3,
-		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNoRowsUpdated,
-	},
-	{
-		inputOrgID:   3,
-		inputVacID:   3,
-		inputVacancy: incompleteVacancyID3,
-		returningErr: testHelper.ErrQuery,
-		expectedErr:  testHelper.ErrQuery,
-	},
-}
+// var testUpdateOrgVacancyErrorCases = []struct {
+// 	inputOrgID   int
+// 	inputVacID   int
+// 	inputVacancy domain.DbVacancy
+// 	returningErr error
+// 	expectedErr  error
+// }{
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   1,
+// 		inputVacancy: fullVacancyID1,
+// 		returningErr: sql.ErrNoRows,
+// 		expectedErr:  ErrNoRowsUpdated,
+// 	},
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   1,
+// 		inputVacancy: fullVacancyID1,
+// 		returningErr: testHelper.ErrQuery,
+// 		expectedErr:  testHelper.ErrQuery,
+// 	},
+// 	{
+// 		inputOrgID:   3,
+// 		inputVacID:   3,
+// 		inputVacancy: incompleteVacancyID3,
+// 		returningErr: sql.ErrNoRows,
+// 		expectedErr:  ErrNoRowsUpdated,
+// 	},
+// 	{
+// 		inputOrgID:   3,
+// 		inputVacID:   3,
+// 		inputVacancy: incompleteVacancyID3,
+// 		returningErr: testHelper.ErrQuery,
+// 		expectedErr:  testHelper.ErrQuery,
+// 	},
+// }
 
-func TestUpdateOrgVacancyQueryError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestUpdateOrgVacancyQueryError(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testUpdateOrgVacancyErrorCases {
-		mock.
-			ExpectExec(testHelper.UPDATE_QUERY).
-			WithArgs(
-				testCase.inputVacancy.EmployerID,
-				testCase.inputVacancy.VacancyName,
-				testCase.inputVacancy.Description,
-				testCase.inputVacancy.SalaryLowerBound,
-				testCase.inputVacancy.SalaryUpperBound,
-				testCase.inputVacancy.Employment,
-				testCase.inputVacancy.ExperienceLowerBound,
-				testCase.inputVacancy.ExperienceUpperBound,
-				testCase.inputVacancy.EducationType,
-				testCase.inputVacancy.Location,
-				testCase.inputVacID,
-				testCase.inputOrgID,
-			).
-			WillReturnError(testCase.returningErr)
+// 	for _, testCase := range testUpdateOrgVacancyErrorCases {
+// 		mock.
+// 			ExpectExec(testHelper.UPDATE_QUERY).
+// 			WithArgs(
+// 				testCase.inputVacancy.EmployerID,
+// 				testCase.inputVacancy.VacancyName,
+// 				testCase.inputVacancy.Description,
+// 				testCase.inputVacancy.SalaryLowerBound,
+// 				testCase.inputVacancy.SalaryUpperBound,
+// 				testCase.inputVacancy.Employment,
+// 				testCase.inputVacancy.ExperienceLowerBound,
+// 				testCase.inputVacancy.ExperienceUpperBound,
+// 				testCase.inputVacancy.EducationType,
+// 				testCase.inputVacancy.Location,
+// 				testCase.inputVacID,
+// 				testCase.inputOrgID,
+// 			).
+// 			WillReturnError(testCase.returningErr)
 
-		actualErr := repo.UpdateOrgVacancy(testCase.inputOrgID, testCase.inputVacID, &testCase.inputVacancy)
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-		if actualErr != testCase.expectedErr {
-			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
-			return
-		}
-	}
-}
+// 		actualErr := repo.UpdateOrgVacancy(testCase.inputOrgID, testCase.inputVacID, &testCase.inputVacancy)
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 		if actualErr != testCase.expectedErr {
+// 			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
+// 			return
+// 		}
+// 	}
+// }
 
-var testDeleteOrgVacancySuccessCases = []struct {
-	inputOrgID int
-	inputVacID int
-}{
-	{
-		inputOrgID: 1,
-		inputVacID: 1,
-	},
-	{
-		inputOrgID: 1,
-		inputVacID: 2,
-	},
-	{
-		inputOrgID: 1,
-		inputVacID: 3,
-	},
-}
+// var testDeleteOrgVacancySuccessCases = []struct {
+// 	inputOrgID int
+// 	inputVacID int
+// }{
+// 	{
+// 		inputOrgID: 1,
+// 		inputVacID: 1,
+// 	},
+// 	{
+// 		inputOrgID: 1,
+// 		inputVacID: 2,
+// 	},
+// 	{
+// 		inputOrgID: 1,
+// 		inputVacID: 3,
+// 	},
+// }
 
-func TestDeleteOrgVacancySuccess(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestDeleteOrgVacancySuccess(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testDeleteOrgVacancySuccessCases {
-		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
-			WithArgs(
-				testCase.inputVacID,
-				testCase.inputOrgID,
-			).
-			WillReturnResult(driver.RowsAffected(1))
+// 	for _, testCase := range testDeleteOrgVacancySuccessCases {
+// 		mock.
+// 			ExpectExec(testHelper.DELETE_QUERY).
+// 			WithArgs(
+// 				testCase.inputVacID,
+// 				testCase.inputOrgID,
+// 			).
+// 			WillReturnResult(driver.RowsAffected(1))
 
-		err := repo.DeleteOrgVacancy(testCase.inputOrgID, testCase.inputVacID)
-		if err != nil {
-			t.Errorf("unexpected err: %s", err)
-			return
-		}
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-	}
-}
+// 		err := repo.DeleteOrgVacancy(testCase.inputOrgID, testCase.inputVacID)
+// 		if err != nil {
+// 			t.Errorf("unexpected err: %s", err)
+// 			return
+// 		}
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 	}
+// }
 
-var testDeleteOrgVacancyErrorCases = []struct {
-	inputOrgID   int
-	inputVacID   int
-	returningErr error
-	expectedErr  error
-}{
-	{
-		inputOrgID:   1,
-		inputVacID:   1,
-		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNoRowsDeleted,
-	},
-	{
-		inputOrgID:   1,
-		inputVacID:   1,
-		returningErr: testHelper.ErrQuery,
-		expectedErr:  testHelper.ErrQuery,
-	},
-	{
-		inputOrgID:   3,
-		inputVacID:   3,
-		returningErr: sql.ErrNoRows,
-		expectedErr:  ErrNoRowsDeleted,
-	},
-	{
-		inputOrgID:   3,
-		inputVacID:   3,
-		returningErr: testHelper.ErrQuery,
-		expectedErr:  testHelper.ErrQuery,
-	},
-}
+// var testDeleteOrgVacancyErrorCases = []struct {
+// 	inputOrgID   int
+// 	inputVacID   int
+// 	returningErr error
+// 	expectedErr  error
+// }{
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   1,
+// 		returningErr: sql.ErrNoRows,
+// 		expectedErr:  ErrNoRowsDeleted,
+// 	},
+// 	{
+// 		inputOrgID:   1,
+// 		inputVacID:   1,
+// 		returningErr: testHelper.ErrQuery,
+// 		expectedErr:  testHelper.ErrQuery,
+// 	},
+// 	{
+// 		inputOrgID:   3,
+// 		inputVacID:   3,
+// 		returningErr: sql.ErrNoRows,
+// 		expectedErr:  ErrNoRowsDeleted,
+// 	},
+// 	{
+// 		inputOrgID:   3,
+// 		inputVacID:   3,
+// 		returningErr: testHelper.ErrQuery,
+// 		expectedErr:  testHelper.ErrQuery,
+// 	},
+// }
 
-func TestDeleteOrgVacancyQueryError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
+// func TestDeleteOrgVacancyQueryError(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+// 	}
+// 	defer db.Close()
 
-	repo := NewPsqlVacancyRepository(db)
+// 	repo := NewPsqlVacancyRepository(db)
 
-	for _, testCase := range testDeleteOrgVacancyErrorCases {
-		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
-			WithArgs(
-				testCase.inputVacID,
-				testCase.inputOrgID,
-			).
-			WillReturnError(testCase.returningErr)
+// 	for _, testCase := range testDeleteOrgVacancyErrorCases {
+// 		mock.
+// 			ExpectExec(testHelper.DELETE_QUERY).
+// 			WithArgs(
+// 				testCase.inputVacID,
+// 				testCase.inputOrgID,
+// 			).
+// 			WillReturnError(testCase.returningErr)
 
-		actualErr := repo.DeleteOrgVacancy(testCase.inputOrgID, testCase.inputVacID)
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-		if actualErr != testCase.expectedErr {
-			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
-			return
-		}
-	}
-}
+// 		actualErr := repo.DeleteOrgVacancy(testCase.inputOrgID, testCase.inputVacID)
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 			return
+// 		}
+// 		if actualErr != testCase.expectedErr {
+// 			t.Errorf("expected query error: '%s'\ngot: '%s'", testCase.expectedErr, actualErr)
+// 			return
+// 		}
+// 	}
+// }

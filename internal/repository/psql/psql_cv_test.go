@@ -15,19 +15,36 @@ var (
 	cvColumns = []string{
 		"id",
 		"applicant_id",
-		"profession_name",
+		"name",
+		"first_name",
+		"last_name",
+		"middle_name",
+		"gender",
+		"birthday",
+		"city",
 		"description",
 		"status",
+		"education_level",
 		"created_at",
 		"updated_at",
 	}
+
+	middleName  = "Middle name"
+	description = "description"
 
 	cvID1 = domain.DbCV{
 		ID:             1,
 		ApplicantID:    1,
 		ProfessionName: "Profession #1",
-		Description:    "Description #1",
+		FirstName:      "First name",
+		LastName:       "Last name",
+		MiddleName:     &middleName,
+		Gender:         domain.Female,
+		Birthday:       &birthday,
+		Location:       &location,
+		Description:    &description,
 		Status:         domain.Searching,
+		EducationLevel: domain.Bachelor,
 		CreatedAt:      testHelper.Created_at,
 		UpdatedAt:      testHelper.Updated_at,
 	}
@@ -35,8 +52,15 @@ var (
 		ID:             2,
 		ApplicantID:    2,
 		ProfessionName: "Profession #2",
-		Description:    "Description #2",
+		FirstName:      "First name",
+		LastName:       "Last name",
+		MiddleName:     &middleName,
+		Gender:         domain.Female,
+		Birthday:       &birthday,
+		Location:       &location,
+		Description:    &description,
 		Status:         domain.NotSearching,
+		EducationLevel: domain.Bachelor,
 		CreatedAt:      testHelper.Created_at,
 		UpdatedAt:      testHelper.Updated_at,
 	}
@@ -44,8 +68,15 @@ var (
 		ID:             3,
 		ApplicantID:    3,
 		ProfessionName: "Profession #3",
-		Description:    "Description #3",
+		FirstName:      "First name",
+		LastName:       "Last name",
+		MiddleName:     &middleName,
+		Gender:         domain.Female,
+		Birthday:       &birthday,
+		Location:       &location,
+		Description:    &description,
 		Status:         domain.NotSearching,
+		EducationLevel: domain.Bachelor,
 		CreatedAt:      testHelper.Created_at,
 		UpdatedAt:      testHelper.Updated_at,
 	}
@@ -80,18 +111,35 @@ func TestGetCVByIdSuccess(t *testing.T) {
 				testCase.expected.ID,
 				testCase.expected.ApplicantID,
 				testCase.expected.ProfessionName,
+				testCase.expected.FirstName,
+				testCase.expected.LastName,
+				testCase.expected.MiddleName,
+				testCase.expected.Gender,
+				testCase.expected.Birthday,
+				testCase.expected.Location,
 				testCase.expected.Description,
+				testCase.expected.EducationLevel,
 				testCase.expected.Status,
 				testCase.expected.CreatedAt,
 				testCase.expected.UpdatedAt,
 			)
 
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnRows(rows)
+		mock.ExpectCommit()
 
-		actual, err := repo.GetCVById(testCase.inputCVID)
+		actual, _, _, err := repo.GetCVById(ctxWithLogger, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -134,12 +182,14 @@ func TestGetCVByIdQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVByIdQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputCVID).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		_, actualErr := repo.GetCVById(testCase.inputCVID)
+		_, _, _, actualErr := repo.GetCVById(ctxWithLogger, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -193,19 +243,36 @@ func TestGetCVsByIdsSuccess(t *testing.T) {
 				cv.ID,
 				cv.ApplicantID,
 				cv.ProfessionName,
+				cv.FirstName,
+				cv.LastName,
+				cv.MiddleName,
+				cv.Gender,
+				cv.Birthday,
+				cv.Location,
 				cv.Description,
+				cv.EducationLevel,
 				cv.Status,
 				cv.CreatedAt,
 				cv.UpdatedAt,
 			)
 		}
 
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
+			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
+			WillReturnRows(rows)
+		mock.ExpectCommit()
 
-		actual, err := repo.GetCVsByIds(testCase.inputCVIDs)
+		actual, _, _, err := repo.GetCVsByIds(ctxWithLogger, testCase.inputCVIDs)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -243,12 +310,14 @@ func TestGetCVsByIdsQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByIdsQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		_, actualErr := repo.GetCVsByIds(testCase.inputCVIDs)
+		_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, testCase.inputCVIDs)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -261,7 +330,7 @@ func TestGetCVsByIdsQueryError(t *testing.T) {
 }
 
 func TestGetCVsByIdsErrEntityNotFoundEmptyArgs(t *testing.T) {
-	db, _, err := sqlmock.New()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
@@ -272,7 +341,10 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyArgs(t *testing.T) {
 	inputCVIDs := []int{}
 	expectedErr := ErrEntityNotFound
 
-	_, actualErr := repo.GetCVsByIds(inputCVIDs)
+	mock.ExpectBegin()
+	mock.ExpectCommit()
+
+	_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, inputCVIDs)
 	if actualErr != expectedErr {
 		t.Errorf("expected query error: %s\ngot: '%s'", expectedErr, actualErr)
 		return
@@ -290,12 +362,14 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 
 	inputCVIDs := []int{1, 2, 3}
 	expectedErr := ErrEntityNotFound
+	mock.ExpectBegin()
 	mock.
 		ExpectQuery(testHelper.SELECT_QUERY).
 		WithArgs(testHelper.SliceIntToDriverValue(inputCVIDs)...).
 		WillReturnError(expectedErr)
+	mock.ExpectRollback()
 
-	_, actualErr := repo.GetCVsByIds(inputCVIDs)
+	_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, inputCVIDs)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -308,18 +382,22 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 
 var testGetCVsByUserIdSuccessCases = []struct {
 	inputUserID int
+	expectedIDs []int
 	expected    []domain.DbCV
 }{
 	{
 		inputUserID: 1,
+		expectedIDs: []int{cvID1.ID, cvID2.ID},
 		expected:    []domain.DbCV{cvID1, cvID2},
 	},
 	{
 		inputUserID: 2,
+		expectedIDs: []int{cvID3.ID},
 		expected:    []domain.DbCV{cvID3},
 	},
 	{
 		inputUserID: 3,
+		expectedIDs: []int{cvID1.ID, cvID2.ID, cvID3.ID},
 		expected:    []domain.DbCV{cvID1, cvID2, cvID3},
 	},
 }
@@ -340,19 +418,36 @@ func TestGetCVsByUserIdSuccess(t *testing.T) {
 				cv.ID,
 				cv.ApplicantID,
 				cv.ProfessionName,
+				cv.FirstName,
+				cv.LastName,
+				cv.MiddleName,
+				cv.Gender,
+				cv.Birthday,
+				cv.Location,
 				cv.Description,
+				cv.EducationLevel,
 				cv.Status,
 				cv.CreatedAt,
 				cv.UpdatedAt,
 			)
 		}
 
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputUserID).
 			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testHelper.SliceIntToDriverValue(testCase.expectedIDs)...).
+			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testHelper.SliceIntToDriverValue(testCase.expectedIDs)...).
+			WillReturnRows(rows)
+		mock.ExpectCommit()
 
-		actual, err := repo.GetCVsByUserId(testCase.inputUserID)
+		actual, _, _, err := repo.GetCVsByUserId(ctxWithLogger, testCase.inputUserID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -390,12 +485,14 @@ func TestGetCVsByUserIdQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetCVsByUserIdQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputUserID).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		_, actualErr := repo.GetCVsByUserId(testCase.inputUserID)
+		_, _, _, actualErr := repo.GetCVsByUserId(ctxWithLogger, testCase.inputUserID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -419,12 +516,14 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 	inputUserID := 1
 	expectedError := ErrEntityNotFound
 
+	mock.ExpectBegin()
 	mock.
 		ExpectQuery(testHelper.SELECT_QUERY).
 		WithArgs(inputUserID).
 		WillReturnRows(sqlmock.NewRows(cvColumns))
+	mock.ExpectRollback()
 
-	_, actualErr := repo.GetCVsByUserId(inputUserID)
+	_, _, _, actualErr := repo.GetCVsByUserId(ctxWithLogger, inputUserID)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -438,21 +537,29 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 var testAddCVSuccessCases = []struct {
 	inputUserID int
 	inputCV     domain.DbCV
+	inputExps   []domain.DbExperience
+	inputInsts  []domain.DbEducationInstitution
 	expected    int
 }{
 	{
 		inputUserID: 1,
 		inputCV:     cvID1,
+		inputExps:   []domain.DbExperience{},
+		inputInsts:  []domain.DbEducationInstitution{},
 		expected:    1,
 	},
 	{
 		inputUserID: 2,
 		inputCV:     cvID2,
+		inputExps:   []domain.DbExperience{},
+		inputInsts:  []domain.DbEducationInstitution{},
 		expected:    2,
 	},
 	{
 		inputUserID: 3,
 		inputCV:     cvID3,
+		inputExps:   []domain.DbExperience{},
+		inputInsts:  []domain.DbEducationInstitution{},
 		expected:    3,
 	},
 }
@@ -467,21 +574,36 @@ func TestAddCVSuccess(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testAddCVSuccessCases {
-		rows := sqlmock.NewRows([]string{"id"}).
+		cvRows := sqlmock.NewRows([]string{"id"}).
 			AddRow(testCase.expected)
+		// expRows := sqlmock.NewRows([]string{""})
 
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.INSERT_QUERY).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
+				testCase.inputCV.FirstName,
+				testCase.inputCV.LastName,
+				testCase.inputCV.MiddleName,
+				testCase.inputCV.Gender,
+				testCase.inputCV.Birthday,
+				testCase.inputCV.Location,
 				testCase.inputCV.Description,
-				testCase.inputCV.Status,
-				testCase.inputCV.Status,
+				testCase.inputCV.EducationLevel,
 				testCase.inputUserID,
 			).
-			WillReturnRows(rows)
+			WillReturnRows(cvRows)
+		// mock.
+		// 	ExpectExec(testHelper.INSERT_QUERY).
+		// 	WithArgs(testCase.inputCV.ID)
+		// mock.
+		// 	ExpectExec(testHelper.INSERT_QUERY).
+		// 	WithArgs(testCase.inputCV.ID)
 
-		actual, err := repo.AddCV(testCase.inputUserID, &testCase.inputCV)
+		mock.ExpectCommit()
+
+		actual, err := repo.AddCV(ctxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -500,18 +622,24 @@ func TestAddCVSuccess(t *testing.T) {
 var testAddCVQueryErrorCases = []struct {
 	inputUserID    int
 	inputCV        domain.DbCV
+	inputExps      []domain.DbExperience
+	inputInsts     []domain.DbEducationInstitution
 	returningError error
 	expectedError  error
 }{
 	{
 		inputUserID:    1,
 		inputCV:        cvID1,
+		inputExps:      []domain.DbExperience{},
+		inputInsts:     []domain.DbEducationInstitution{},
 		returningError: testHelper.ErrQuery,
 		expectedError:  testHelper.ErrQuery,
 	},
 	{
 		inputUserID:    1,
 		inputCV:        cvID1,
+		inputExps:      []domain.DbExperience{},
+		inputInsts:     []domain.DbEducationInstitution{},
 		returningError: sql.ErrNoRows,
 		expectedError:  ErrNotInserted,
 	},
@@ -527,18 +655,25 @@ func TestAddCVQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testAddCVQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.INSERT_QUERY).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
+				testCase.inputCV.FirstName,
+				testCase.inputCV.LastName,
+				testCase.inputCV.MiddleName,
+				testCase.inputCV.Gender,
+				testCase.inputCV.Birthday,
+				testCase.inputCV.Location,
 				testCase.inputCV.Description,
-				testCase.inputCV.Status,
-				testCase.inputCV.Status,
+				testCase.inputCV.EducationLevel,
 				testCase.inputUserID,
 			).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		_, actualErr := repo.AddCV(testCase.inputUserID, &testCase.inputCV)
+		_, actualErr := repo.AddCV(ctxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -587,18 +722,35 @@ func TestGetOneOfUsersCVSuccess(t *testing.T) {
 				testCase.expected.ID,
 				testCase.expected.ApplicantID,
 				testCase.expected.ProfessionName,
+				testCase.expected.FirstName,
+				testCase.expected.LastName,
+				testCase.expected.MiddleName,
+				testCase.expected.Gender,
+				testCase.expected.Birthday,
+				testCase.expected.Location,
 				testCase.expected.Description,
+				testCase.expected.EducationLevel,
 				testCase.expected.Status,
 				testCase.expected.CreatedAt,
 				testCase.expected.UpdatedAt,
 			)
 
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputUserID, testCase.inputCVID).
 			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnRows(rows)
+		mock.
+			ExpectQuery(testHelper.SELECT_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnRows(rows)
+		mock.ExpectCommit()
 
-		actual, err := repo.GetOneOfUsersCV(testCase.inputUserID, testCase.inputCVID)
+		actual, _, _, err := repo.GetOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -644,12 +796,14 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testGetOneOfUsersCVQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectQuery(testHelper.SELECT_QUERY).
 			WithArgs(testCase.inputUserID, testCase.inputCVID).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		_, actualErr := repo.GetOneOfUsersCV(testCase.inputUserID, testCase.inputCVID)
+		_, _, _, actualErr := repo.GetOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -662,24 +816,48 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 }
 
 var testUpdateOneOfUsersCVSuccessCases = []struct {
-	inputUserID int
-	inputCVID   int
-	inputCV     domain.DbCV
+	inputUserID           int
+	inputCVID             int
+	inputCV               domain.DbCV
+	inputExpsIDsToDelete  []int
+	inputExpsToUpdate     []domain.DbExperience
+	inputExpsToInsert     []domain.DbExperience
+	inputInstsIDsToDelete []int
+	inputInstsToUpdate    []domain.DbEducationInstitution
+	inputInstsToInsert    []domain.DbEducationInstitution
 }{
 	{
-		inputUserID: 1,
-		inputCVID:   1,
-		inputCV:     cvID1,
+		inputUserID:           1,
+		inputCVID:             1,
+		inputCV:               cvID1,
+		inputExpsIDsToDelete:  []int{},
+		inputExpsToUpdate:     []domain.DbExperience{},
+		inputExpsToInsert:     []domain.DbExperience{},
+		inputInstsIDsToDelete: []int{},
+		inputInstsToUpdate:    []domain.DbEducationInstitution{},
+		inputInstsToInsert:    []domain.DbEducationInstitution{},
 	},
 	{
-		inputUserID: 2,
-		inputCVID:   2,
-		inputCV:     cvID2,
+		inputUserID:           2,
+		inputCVID:             2,
+		inputCV:               cvID2,
+		inputExpsIDsToDelete:  []int{},
+		inputExpsToUpdate:     []domain.DbExperience{},
+		inputExpsToInsert:     []domain.DbExperience{},
+		inputInstsIDsToDelete: []int{},
+		inputInstsToUpdate:    []domain.DbEducationInstitution{},
+		inputInstsToInsert:    []domain.DbEducationInstitution{},
 	},
 	{
-		inputUserID: 3,
-		inputCVID:   3,
-		inputCV:     cvID2,
+		inputUserID:           3,
+		inputCVID:             3,
+		inputCV:               cvID2,
+		inputExpsIDsToDelete:  []int{},
+		inputExpsToUpdate:     []domain.DbExperience{},
+		inputExpsToInsert:     []domain.DbExperience{},
+		inputInstsIDsToDelete: []int{},
+		inputInstsToUpdate:    []domain.DbEducationInstitution{},
+		inputInstsToInsert:    []domain.DbEducationInstitution{},
 	},
 }
 
@@ -693,18 +871,47 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testUpdateOneOfUsersCVSuccessCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectExec(testHelper.UPDATE_QUERY).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
+				testCase.inputCV.FirstName,
+				testCase.inputCV.LastName,
+				testCase.inputCV.MiddleName,
+				testCase.inputCV.Gender,
+				testCase.inputCV.Birthday,
+				testCase.inputCV.Location,
 				testCase.inputCV.Description,
 				testCase.inputCV.Status,
+				testCase.inputCV.EducationLevel,
 				testCase.inputCVID,
 				testCase.inputUserID,
 			).
 			WillReturnResult(driver.RowsAffected(1))
+		// mock.
+		// 	ExpectExec(testHelper.UPDATE_QUERY).
+		// 	WithArgs(
+		// 		testCase.inputCV.ProfessionName,
+		// 		testCase.inputCV.Description,
+		// 		testCase.inputCV.Status,
+		// 		testCase.inputCVID,
+		// 		testCase.inputUserID,
+		// 	)
+		mock.ExpectCommit()
 
-		err := repo.UpdateOneOfUsersCV(testCase.inputUserID, testCase.inputCVID, &testCase.inputCV)
+		err := repo.UpdateOneOfUsersCV(
+			ctxWithLogger,
+			testCase.inputUserID,
+			testCase.inputCVID,
+			&testCase.inputCV,
+			testCase.inputExpsIDsToDelete,
+			testCase.inputExpsToUpdate,
+			testCase.inputExpsToInsert,
+			testCase.inputInstsIDsToDelete,
+			testCase.inputInstsToUpdate,
+			testCase.inputInstsToInsert,
+		)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -717,25 +924,43 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 }
 
 var testUpdateOneOfUsersCVQueryErrorCases = []struct {
-	inputUserID    int
-	inputCVID      int
-	inputCV        domain.DbCV
-	returningError error
-	expectedError  error
+	inputUserID           int
+	inputCVID             int
+	inputCV               domain.DbCV
+	inputExpsIDsToDelete  []int
+	inputExpsToUpdate     []domain.DbExperience
+	inputExpsToInsert     []domain.DbExperience
+	inputInstsIDsToDelete []int
+	inputInstsToUpdate    []domain.DbEducationInstitution
+	inputInstsToInsert    []domain.DbEducationInstitution
+	returningError        error
+	expectedError         error
 }{
 	{
-		inputUserID:    1,
-		inputCVID:      1,
-		inputCV:        cvID1,
-		returningError: testHelper.ErrQuery,
-		expectedError:  testHelper.ErrQuery,
+		inputUserID:           1,
+		inputCVID:             1,
+		inputCV:               cvID1,
+		inputExpsIDsToDelete:  []int{},
+		inputExpsToUpdate:     []domain.DbExperience{},
+		inputExpsToInsert:     []domain.DbExperience{},
+		inputInstsIDsToDelete: []int{},
+		inputInstsToUpdate:    []domain.DbEducationInstitution{},
+		inputInstsToInsert:    []domain.DbEducationInstitution{},
+		returningError:        testHelper.ErrQuery,
+		expectedError:         testHelper.ErrQuery,
 	},
 	{
-		inputUserID:    1,
-		inputCVID:      1,
-		inputCV:        cvID1,
-		returningError: sql.ErrNoRows,
-		expectedError:  ErrNoRowsUpdated,
+		inputUserID:           1,
+		inputCVID:             1,
+		inputCV:               cvID1,
+		inputExpsIDsToDelete:  []int{},
+		inputExpsToUpdate:     []domain.DbExperience{},
+		inputExpsToInsert:     []domain.DbExperience{},
+		inputInstsIDsToDelete: []int{},
+		inputInstsToUpdate:    []domain.DbEducationInstitution{},
+		inputInstsToInsert:    []domain.DbEducationInstitution{},
+		returningError:        sql.ErrNoRows,
+		expectedError:         ErrNoRowsUpdated,
 	},
 }
 
@@ -749,18 +974,38 @@ func TestUpdateOneOfUsersCVQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testUpdateOneOfUsersCVQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectExec(testHelper.UPDATE_QUERY).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
+				testCase.inputCV.FirstName,
+				testCase.inputCV.LastName,
+				testCase.inputCV.MiddleName,
+				testCase.inputCV.Gender,
+				testCase.inputCV.Birthday,
+				testCase.inputCV.Location,
 				testCase.inputCV.Description,
 				testCase.inputCV.Status,
+				testCase.inputCV.EducationLevel,
 				testCase.inputCVID,
 				testCase.inputUserID,
 			).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		actualErr := repo.UpdateOneOfUsersCV(testCase.inputUserID, testCase.inputCVID, &testCase.inputCV)
+		actualErr := repo.UpdateOneOfUsersCV(
+			ctxWithLogger,
+			testCase.inputUserID,
+			testCase.inputCVID,
+			&testCase.inputCV,
+			testCase.inputExpsIDsToDelete,
+			testCase.inputExpsToUpdate,
+			testCase.inputExpsToInsert,
+			testCase.inputInstsIDsToDelete,
+			testCase.inputInstsToUpdate,
+			testCase.inputInstsToInsert,
+		)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -800,12 +1045,22 @@ func TestDeleteOneOfUsersCVSuccess(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testDeleteOneOfUsersCVSuccessCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectExec(testHelper.DELETE_QUERY).
 			WithArgs(testCase.inputCVID, testCase.inputUserID).
 			WillReturnResult(driver.RowsAffected(1))
+		mock.
+			ExpectExec(testHelper.DELETE_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnResult(driver.RowsAffected(1))
+		mock.
+			ExpectExec(testHelper.DELETE_QUERY).
+			WithArgs(testCase.inputCVID).
+			WillReturnResult(driver.RowsAffected(1))
+		mock.ExpectCommit()
 
-		err := repo.DeleteOneOfUsersCV(testCase.inputUserID, testCase.inputCVID)
+		err := repo.DeleteOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -847,12 +1102,14 @@ func TestDeleteOneOfUsersCVQueryError(t *testing.T) {
 	repo := NewPsqlCVRepository(db)
 
 	for _, testCase := range testDeleteOneOfUsersCVQueryErrorCases {
+		mock.ExpectBegin()
 		mock.
 			ExpectExec(testHelper.DELETE_QUERY).
 			WithArgs(testCase.inputCVID, testCase.inputUserID).
 			WillReturnError(testCase.returningError)
+		mock.ExpectRollback()
 
-		actualErr := repo.DeleteOneOfUsersCV(testCase.inputUserID, testCase.inputCVID)
+		actualErr := repo.DeleteOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return

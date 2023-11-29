@@ -2,5 +2,5 @@
 deploy/.env
 configs/secret_key.go
 *.rdb
-c.out
+*.out
 *tern.conf
