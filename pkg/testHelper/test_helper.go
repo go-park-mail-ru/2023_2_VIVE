@@ -47,7 +47,7 @@ func InitCtxLogger() *logrus.Entry {
 
 func ErrNotEqual(expected, actual any) string {
 	return fmt.Sprintf(
-		"actual does not match expected:\n\tactual: %s\n\texpected: %s\n",
+		"actual does not match expected:\n\tactual: %v\n\texpected: %v\n",
 		actual,
 		expected,
 	)

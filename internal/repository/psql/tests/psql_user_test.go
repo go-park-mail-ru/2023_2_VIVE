@@ -163,7 +163,7 @@ func TestCheckUserSuccess(t *testing.T) {
 
 		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
 		if actual != nil {
-			t.Errorf("unexpected err: %s", err)
+			t.Errorf("unexpected err: %s", actual)
 			return
 		}
 		if err := mock.ExpectationsWereMet(); err != nil {
