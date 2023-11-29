@@ -199,7 +199,7 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 }
 
 func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
-	first_name, last_name, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
+	first_name, last_name, compName, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
 	if err != nil {
 		return nil, err
 	}
@@ -207,9 +207,10 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 	vacsToReturn := vacancyUsecase.collectApiVacs(empVacs)
 
 	info := &domain.EmployerInfo{
-		FirstName: first_name,
-		LastName:  last_name,
-		Vacancies: vacsToReturn,
+		FirstName:   first_name,
+		LastName:    last_name,
+		CompanyName: compName,
+		Vacancies:   vacsToReturn,
 	}
 
 	return info, nil
