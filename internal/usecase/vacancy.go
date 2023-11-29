@@ -6,8 +6,11 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/castUtils"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
+
+	"github.com/sirupsen/logrus"
 )
 
 type IVacancyUsecase interface {
@@ -137,6 +140,13 @@ func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
+
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy": vacancy,
+	}).
+		Debug("got vacancy")
 
 	companyName, err := vacancyUsecase.vacancyRepo.GetCompanyName(ctx, vacancyID)
 	if err != nil {

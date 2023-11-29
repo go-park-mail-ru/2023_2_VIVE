@@ -7,7 +7,6 @@ import (
 	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
-	"HnH/pkg/serverErrors"
 	"HnH/pkg/utils"
 	"context"
 
@@ -111,28 +110,28 @@ func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExpe
 
 // Finds cv that responded to one of the current user's vacancy
 func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, sessionID string, cvID int) (*domain.ApiCV, error) {
-	userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Employer)
-	if validStatus != nil {
-		return nil, validStatus
-	}
+	// userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Employer)
+	// if validStatus != nil {
+	// 	return nil, validStatus
+	// }
 
-	vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(ctx, cvID)
-	if err != nil {
-		return nil, err
-	}
+	// vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(ctx, cvID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	userEmpID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
+	// userEmpID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	_, err = cvUsecase.vacancyRepo.GetEmpVacanciesByIds(ctx, userEmpID, vacIdsList)
-	if err == psql.ErrEntityNotFound {
-		return nil, serverErrors.FORBIDDEN
-	}
-	if err != nil {
-		return nil, err
-	}
+	// _, err = cvUsecase.vacancyRepo.GetEmpVacanciesByIds(ctx, userEmpID, vacIdsList)
+	// if err == psql.ErrEntityNotFound {
+	// 	return nil, serverErrors.FORBIDDEN
+	// }
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	cv, exps, edInsts, err := cvUsecase.cvRepo.GetCVById(ctx, cvID)
 	if err != nil {
@@ -347,6 +346,10 @@ func (cvUsecase *CVUsecase) UpdateCVOfUserById(ctx context.Context, sessionID st
 	)
 	if updStatus != nil {
 		return updStatus
+	}
+	updSkillsErr := cvUsecase.skillRepo.UpdateSkillsByCvID(ctx, cvID, cv.Skills)
+	if updSkillsErr != nil && updSkillsErr != psql.ErrNoRowsUpdated {
+		return updSkillsErr
 	}
 
 	return nil

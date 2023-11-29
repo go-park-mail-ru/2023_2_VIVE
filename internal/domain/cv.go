@@ -52,6 +52,7 @@ type DbCV struct {
 func (cv *DbCV) ToAPI() *ApiCV {
 	res := ApiCV{
 		ID:             cv.ID,
+		ApplicantID:    cv.ApplicantID,
 		ProfessionName: cv.ProfessionName,
 		FirstName:      cv.FirstName,
 		LastName:       cv.LastName,
@@ -79,6 +80,7 @@ func (cv *DbCV) ToAPI() *ApiCV {
 
 type ApiCV struct {
 	ID                    int                       `json:"id"`
+	ApplicantID           int                       `json:"applicant_id"`
 	FirstName             string                    `json:"first_name"`            // имя
 	LastName              string                    `json:"last_name"`             // фамилия
 	MiddleName            *string                   `json:"middle_name,omitempty"` // отчество
@@ -91,7 +93,7 @@ type ApiCV struct {
 	EducationInstitutions []ApiEducationInstitution `json:"institutions"`
 	Experience            []ApiExperience           `json:"companies"`
 	Description           *string                   `json:"description,omitempty"`
-	Skills                []string                  `json:"skills,omitempty"`
+	Skills                []string                  `json:"skills"`
 	CreatedAt             time.Time                 `json:"created_at,omitempty"`
 	UpdatedAt             time.Time                 `json:"updated_at,omitempty"`
 }
@@ -99,6 +101,7 @@ type ApiCV struct {
 func (cv *ApiCV) ToDb() *DbCV {
 	return &DbCV{
 		ID:             cv.ID,
+		ApplicantID:    cv.ApplicantID,
 		ProfessionName: cv.ProfessionName,
 		FirstName:      cv.FirstName,
 		LastName:       cv.LastName,

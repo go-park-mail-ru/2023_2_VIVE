@@ -4,15 +4,19 @@ import (
 	"HnH/pkg/contextUtils"
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
+// TODO: add tranzactions
 type ISkillRepository interface {
 	AddSkillsByVacID(ctx context.Context, vacID int, skills []string) error
 	GetSkillsByVacID(ctx context.Context, vacID int) ([]string, error)
 	AddSkillsByCvID(ctx context.Context, cvsID int, skills []string) error
 	GetSkillsByCvID(ctx context.Context, cvID int) ([]string, error)
+	UpdateSkillsByCvID(ctx context.Context, cvID int, skills []string) error
+	DeleteSkillsByCvID(ctx context.Context, cvID int) error
 }
 
 type psqlSkillRepository struct {
@@ -36,6 +40,10 @@ func (repo *psqlSkillRepository) AddSkillsByVacID(ctx context.Context, vacID int
 		Info("adding 'skills' by 'vacancy_id'")
 
 	for _, skill := range skills {
+		if strings.TrimSpace(skill) == "" {
+			continue
+		}
+
 		skillQuery := `INSERT INTO hnh_data.skill ("name")
 		VALUES ($1)
 		ON CONFLICT ("name") DO NOTHING
@@ -124,6 +132,10 @@ func (repo *psqlSkillRepository) AddSkillsByCvID(ctx context.Context, cvID int, 
 		Info("adding 'skills' by 'cv_id'")
 
 	for _, skill := range skills {
+		if strings.TrimSpace(skill) == "" {
+			continue
+		}
+
 		skillQuery := `INSERT INTO hnh_data.skill ("name")
 		VALUES ($1)
 		ON CONFLICT ("name") DO NOTHING
@@ -210,4 +222,56 @@ func (repo *psqlSkillRepository) GetSkillsByCvID(ctx context.Context, cvID int) 
 	}
 
 	return skillsToReturn, nil
+}
+
+func (repo *psqlSkillRepository) UpdateSkillsByCvID(ctx context.Context, cvID int, skills []string) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"cv_id":  cvID,
+		"skills": skills,
+	}).
+		Info("updating skills by 'cv_id'")
+
+	deleteErr := repo.DeleteSkillsByCvID(ctx, cvID)
+	if deleteErr != nil && deleteErr != ErrNoRowsDeleted {
+		return deleteErr
+	}
+
+	addErr := repo.AddSkillsByCvID(ctx, cvID, skills)
+	if addErr != nil {
+		return addErr
+	}
+
+	return nil
+}
+
+func (repo *psqlSkillRepository) DeleteSkillsByCvID(ctx context.Context, cvID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"cv_id": cvID,
+	}).
+		Info("deleting skills by 'cv_id'")
+
+	query := `DELETE
+		FROM
+			hnh_data.cv_skill_assign csa
+		WHERE
+			csa.cv_id = $1`
+
+	result, err := repo.DB.Exec(query, cvID)
+	if err == sql.ErrNoRows {
+		return ErrNoRowsDeleted
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

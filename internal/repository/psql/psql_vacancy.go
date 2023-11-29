@@ -303,7 +303,7 @@ func (repo *psqlVacancyRepository) GetCompanyName(ctx context.Context, vacancyID
 	err := repo.DB.QueryRow(`SELECT e.organization_name 
 							FROM hnh_data.vacancy v 
 							JOIN hnh_data.employer e ON v.employer_id = e.id
-							WHERE e.id = $1`, vacancyID).Scan(&companyName)
+							WHERE v.id = $1`, vacancyID).Scan(&companyName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrEntityNotFound
 	} else if err != nil {
