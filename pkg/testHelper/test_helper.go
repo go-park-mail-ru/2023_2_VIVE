@@ -3,7 +3,10 @@ package testHelper
 import (
 	"database/sql/driver"
 	"fmt"
+	"io"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -15,11 +18,11 @@ var (
 )
 
 const (
-	SELECT_QUERY = "SELECT(.|\n)+FROM(.|\n)+"
-	SELECT_EXISTS_QUERY = "SELECT EXISTS(.|\n)+"
-	INSERT_QUERY = "INSERT(.|\n)+INTO(.|\n)+"
-	UPDATE_QUERY = "UPDATE(.|\n)+SET(.|\n)+FROM(.|\n)+WHERE(.|\n)+"
-	DELETE_QUERY = "DELETE(.|\n)+FROM(.|\n)+"
+	SelectQuery      = "SELECT(.|\n)+FROM(.|\n)+"
+	SelectExistQuery = "SELECT EXISTS(.|\n)+"
+	InsertQuery      = "INSERT(.|\n)+INTO(.|\n)+"
+	UpdateQuery      = "UPDATE(.|\n)+SET(.|\n)+WHERE(.|\n)+"
+	DeleteQuery      = "DELETE(.|\n)+FROM(.|\n)+"
 )
 
 // Converts given slice of ints into slice of driver.Vilue
@@ -31,4 +34,21 @@ func SliceIntToDriverValue(slice []int) []driver.Value {
 	}
 
 	return result
+}
+
+func InitCtxLogger() *logrus.Entry {
+	logger := &logrus.Entry{
+		Logger: &logrus.Logger{
+			Out: io.Discard,
+		},
+	}
+	return logger
+}
+
+func ErrNotEqual(expected, actual any) string {
+	return fmt.Sprintf(
+		"actual does not match expected:\n\tactual: %s\n\texpected: %s\n",
+		actual,
+		expected,
+	)
 }

@@ -126,15 +126,15 @@ func TestGetCVByIdSuccess(t *testing.T) {
 
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.ExpectCommit()
@@ -184,7 +184,7 @@ func TestGetCVByIdQueryError(t *testing.T) {
 	for _, testCase := range testGetCVByIdQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
@@ -259,15 +259,15 @@ func TestGetCVsByIdsSuccess(t *testing.T) {
 
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnRows(rows)
 		mock.ExpectCommit()
@@ -312,7 +312,7 @@ func TestGetCVsByIdsQueryError(t *testing.T) {
 	for _, testCase := range testGetCVsByIdsQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.inputCVIDs)...).
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
@@ -364,7 +364,7 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 	expectedErr := ErrEntityNotFound
 	mock.ExpectBegin()
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(testHelper.SliceIntToDriverValue(inputCVIDs)...).
 		WillReturnError(expectedErr)
 	mock.ExpectRollback()
@@ -434,15 +434,15 @@ func TestGetCVsByUserIdSuccess(t *testing.T) {
 
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputUserID).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.expectedIDs)...).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(testCase.expectedIDs)...).
 			WillReturnRows(rows)
 		mock.ExpectCommit()
@@ -487,7 +487,7 @@ func TestGetCVsByUserIdQueryError(t *testing.T) {
 	for _, testCase := range testGetCVsByUserIdQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputUserID).
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
@@ -518,7 +518,7 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(inputUserID).
 		WillReturnRows(sqlmock.NewRows(cvColumns))
 	mock.ExpectRollback()
@@ -580,7 +580,7 @@ func TestAddCVSuccess(t *testing.T) {
 
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.INSERT_QUERY).
+			ExpectQuery(testHelper.InsertQuery).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
 				testCase.inputCV.FirstName,
@@ -657,7 +657,7 @@ func TestAddCVQueryError(t *testing.T) {
 	for _, testCase := range testAddCVQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.INSERT_QUERY).
+			ExpectQuery(testHelper.InsertQuery).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
 				testCase.inputCV.FirstName,
@@ -737,15 +737,15 @@ func TestGetOneOfUsersCVSuccess(t *testing.T) {
 
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputUserID, testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnRows(rows)
 		mock.ExpectCommit()
@@ -798,7 +798,7 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 	for _, testCase := range testGetOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.inputUserID, testCase.inputCVID).
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
@@ -873,7 +873,7 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 	for _, testCase := range testUpdateOneOfUsersCVSuccessCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectExec(testHelper.UPDATE_QUERY).
+			ExpectExec(testHelper.UpdateQuery).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
 				testCase.inputCV.FirstName,
@@ -976,7 +976,7 @@ func TestUpdateOneOfUsersCVQueryError(t *testing.T) {
 	for _, testCase := range testUpdateOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectExec(testHelper.UPDATE_QUERY).
+			ExpectExec(testHelper.UpdateQuery).
 			WithArgs(
 				testCase.inputCV.ProfessionName,
 				testCase.inputCV.FirstName,
@@ -1047,15 +1047,15 @@ func TestDeleteOneOfUsersCVSuccess(t *testing.T) {
 	for _, testCase := range testDeleteOneOfUsersCVSuccessCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
+			ExpectExec(testHelper.DeleteQuery).
 			WithArgs(testCase.inputCVID, testCase.inputUserID).
 			WillReturnResult(driver.RowsAffected(1))
 		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
+			ExpectExec(testHelper.DeleteQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnResult(driver.RowsAffected(1))
 		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
+			ExpectExec(testHelper.DeleteQuery).
 			WithArgs(testCase.inputCVID).
 			WillReturnResult(driver.RowsAffected(1))
 		mock.ExpectCommit()
@@ -1104,7 +1104,7 @@ func TestDeleteOneOfUsersCVQueryError(t *testing.T) {
 	for _, testCase := range testDeleteOneOfUsersCVQueryErrorCases {
 		mock.ExpectBegin()
 		mock.
-			ExpectExec(testHelper.DELETE_QUERY).
+			ExpectExec(testHelper.DeleteQuery).
 			WithArgs(testCase.inputCVID, testCase.inputUserID).
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()

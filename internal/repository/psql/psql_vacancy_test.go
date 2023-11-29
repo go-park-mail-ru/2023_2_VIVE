@@ -125,7 +125,7 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 			)
 		}
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WillReturnRows(rows)
 
 		actual, err := repo.GetAllVacancies(ctxWithLogger)
@@ -154,7 +154,7 @@ func TestGetAllVacanciesQueryError(t *testing.T) {
 	repo := NewPsqlVacancyRepository(db)
 
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WillReturnError(testHelper.ErrQuery)
 
 	_, returnedErr := repo.GetAllVacancies(ctxWithLogger)
@@ -180,7 +180,7 @@ func TestGetAllVacanciesEntityNotFoundError(t *testing.T) {
 	rows := sqlmock.NewRows(vacanciesColumns)
 
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WillReturnRows(rows)
 
 	_, returnedErr := repo.GetAllVacancies(ctxWithLogger)
@@ -244,7 +244,7 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 		}
 
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testHelper.SliceIntToDriverValue(items)...).
 			WillReturnRows(rows)
 
@@ -296,7 +296,7 @@ func TestGetVacanciesByIdsQueryError(t *testing.T) {
 		items[i] = input[i]
 	}
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnError(testHelper.ErrQuery)
 
@@ -329,7 +329,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 	}
 	rows := sqlmock.NewRows(vacanciesColumns)
 	mock.
-		ExpectQuery(testHelper.SELECT_QUERY).
+		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(testHelper.SliceIntToDriverValue(items)...).
 		WillReturnRows(rows)
 
@@ -389,7 +389,7 @@ func TestGetVacancySuccess(t *testing.T) {
 			)
 
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.input).
 			WillReturnRows(rows)
 
@@ -437,7 +437,7 @@ func TestGetVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testGetVacancyQueryErrorCases {
 		mock.
-			ExpectQuery(testHelper.SELECT_QUERY).
+			ExpectQuery(testHelper.SelectQuery).
 			WithArgs(testCase.input).
 			WillReturnError(testCase.returningErr)
 
@@ -587,7 +587,7 @@ func TestAddVacancySuccess(t *testing.T) {
 			AddRow(testCase.expected)
 
 		mock.
-			ExpectQuery(testHelper.INSERT_QUERY).
+			ExpectQuery(testHelper.InsertQuery).
 			WithArgs(
 				testCase.inputVacancy.VacancyName,
 				testCase.inputVacancy.Description,
@@ -660,7 +660,7 @@ func TestAddVacancyQueryError(t *testing.T) {
 
 	for _, testCase := range testAddVacancyErrorCases {
 		mock.
-			ExpectQuery(testHelper.INSERT_QUERY).
+			ExpectQuery(testHelper.InsertQuery).
 			WithArgs(
 				testCase.inputVacancy.VacancyName,
 				testCase.inputVacancy.Description,
