@@ -110,6 +110,7 @@ func Run() error {
 	experienceRepo := psql.NewPsqlExperienceRepository(db)
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 	csatRepo := grpcRepo.NewGrpcCsatRepository(csatClient)
+	skillRepo := psql.NewPsqlSkillRepository(db)
 
 	searchEngineClient, err := initSearchEngineClient(searchConfig.SearchEngineServiceConfig)
 	if err != nil {
@@ -119,8 +120,8 @@ func Run() error {
 
 	sessionUsecase := usecase.NewSessionUsecase(authRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, authRepo)
-	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, authRepo, userRepo, searchEngineClientRepo)
-	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo)
+	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, authRepo, userRepo, searchEngineClientRepo, skillRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo, skillRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo)
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
 
