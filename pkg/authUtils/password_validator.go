@@ -25,16 +25,6 @@ func ValidatePassword(password string) error {
 		if !hasCapital {
 			hasCapital = unicode.Is(unicode.Latin, char) && unicode.IsUpper(char)
 		}
-
-		// if !hasSpecialChar {
-		// 	for _, specCh := range specialChars {
-		// 		hasSpecialChar = (char == specCh)
-
-		// 		if hasSpecialChar {
-		// 			break
-		// 		}
-		// 	}
-		// }
 	}
 
 	if !(hasDigit && hasCapital /* && hasSpecialChar */) {
