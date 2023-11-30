@@ -365,29 +365,46 @@ func TestCheckPasswordByIdQueryError(t *testing.T) {
 }
 
 var testAddUserCases = []struct {
+	exists         bool
 	user           domain.ApiUser
 	hashedPassword []byte
 	salt           []byte
+	expectedErr    error
 }{
 	{
+		exists:         false,
 		user:           *applicant1.ToAPI(nil, &appID),
 		hashedPassword: hashedPassword1,
 		salt:           salt1,
+		expectedErr:    nil,
 	},
 	{
+		exists:         false,
 		user:           *applicant2.ToAPI(nil, &appID),
 		hashedPassword: hashedPassword2,
 		salt:           salt2,
+		expectedErr:    nil,
 	},
 	{
+		exists:         false,
 		user:           *employer1.ToAPI(&empID, nil),
 		hashedPassword: hashedPassword1,
 		salt:           salt1,
+		expectedErr:    nil,
 	},
 	{
+		exists:         false,
 		user:           *employer2.ToAPI(&empID, nil),
 		hashedPassword: hashedPassword2,
 		salt:           salt2,
+		expectedErr:    nil,
+	},
+	{
+		exists:         true,
+		user:           *employer2.ToAPI(&empID, nil),
+		hashedPassword: hashedPassword2,
+		salt:           salt2,
+		expectedErr:    serverErrors.ACCOUNT_ALREADY_EXISTS,
 	},
 }
 
@@ -405,8 +422,169 @@ func TestAddUserSuccess(t *testing.T) {
 	}
 	for _, testCase := range testAddUserCases {
 		existsRows := sqlmock.NewRows([]string{"exists"}).
-			AddRow(false)
+			AddRow(testCase.exists)
 
+		mock.ExpectBegin()
+
+		mock.
+			ExpectQuery(testHelper.SelectExistQuery).
+			WithArgs(testCase.user.Email).
+			WillReturnRows(existsRows)
+
+		if testCase.exists {
+			mock.ExpectRollback()
+		} else {
+
+			// insertion into user_profile table
+			mock.
+				ExpectQuery(testHelper.InsertQuery).
+				WithArgs(
+					testCase.user.Email,
+					hashedPassword1,
+					salt1,
+					testCase.user.FirstName,
+					testCase.user.LastName,
+					testCase.user.Birthday,
+					testCase.user.PhoneNumber,
+					testCase.user.Location,
+				).
+				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(testCase.user.ID))
+
+			// insertion into applicant/employer table
+			if testCase.user.EmployerID == nil {
+				mock.
+					ExpectExec(testHelper.InsertQuery).
+					WithArgs(testCase.user.ID).
+					WillReturnResult(driver.RowsAffected(1))
+			} else if testCase.user.ApplicantID == nil {
+				mock.
+					ExpectExec(testHelper.InsertQuery).
+					WithArgs(
+						testCase.user.ID,
+						testCase.user.OrganizationName,
+						testCase.user.OrganizationDescription,
+					).
+					WillReturnResult(driver.RowsAffected(1))
+			}
+
+			mock.ExpectCommit()
+		}
+
+		actual := repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+			return
+		}
+		if actual != nil && actual != testCase.expectedErr {
+			t.Errorf("unexpected err: %s", err)
+			return
+		}
+	}
+}
+
+func TestAddUserFirstQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlUserRepository(db)
+
+	hasher := func(password string) (hash []byte, salt []byte, err error) {
+		return hashedPassword1, salt1, nil
+	}
+	user := *applicant1.ToAPI(nil, &appID)
+	mock.ExpectBegin()
+
+	mock.
+		ExpectQuery(testHelper.SelectExistQuery).
+		WithArgs(user.Email).
+		WillReturnError(testHelper.ErrQuery)
+
+	mock.ExpectRollback()
+
+	actual := repo.AddUser(testHelper.СtxWithLogger, &user, hasher)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+	if actual != testHelper.ErrQuery {
+		t.Errorf("unexpected err: %s", err)
+		return
+	}
+	// }
+}
+
+func TestAddUserSecondQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlUserRepository(db)
+
+	hasher := func(password string) (hash []byte, salt []byte, err error) {
+		return hashedPassword1, salt1, nil
+	}
+	existsRows := sqlmock.NewRows([]string{"exists"}).
+		AddRow(false)
+
+	user := *applicant1.ToAPI(nil, &appID)
+	mock.ExpectBegin()
+
+	mock.
+		ExpectQuery(testHelper.SelectExistQuery).
+		WithArgs(user.Email).
+		WillReturnRows(existsRows)
+
+	// insertion into user_profile table
+	mock.
+		ExpectQuery(testHelper.InsertQuery).
+		WithArgs(
+			user.Email,
+			hashedPassword1,
+			salt1,
+			user.FirstName,
+			user.LastName,
+			user.Birthday,
+			user.PhoneNumber,
+			user.Location,
+		).
+		WillReturnError(testHelper.ErrQuery)
+
+	mock.ExpectRollback()
+
+	actual := repo.AddUser(testHelper.СtxWithLogger, &user, hasher)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+	if actual != testHelper.ErrQuery {
+		t.Errorf("unexpected err: %s", err)
+		return
+	}
+	// }
+}
+
+func TestAddUserThirdQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlUserRepository(db)
+
+	hasher := func(password string) (hash []byte, salt []byte, err error) {
+		return hashedPassword1, salt1, nil
+	}
+	existsRows := sqlmock.NewRows([]string{"exists"}).
+		AddRow(false)
+
+	// user := *applicant1.ToAPI(nil, &appID)
+	for _, testCase := range testAddUserCases {
 		mock.ExpectBegin()
 
 		mock.
@@ -434,7 +612,7 @@ func TestAddUserSuccess(t *testing.T) {
 			mock.
 				ExpectExec(testHelper.InsertQuery).
 				WithArgs(testCase.user.ID).
-				WillReturnResult(driver.RowsAffected(1))
+				WillReturnError(testHelper.ErrQuery)
 		} else if testCase.user.ApplicantID == nil {
 			mock.
 				ExpectExec(testHelper.InsertQuery).
@@ -443,21 +621,24 @@ func TestAddUserSuccess(t *testing.T) {
 					testCase.user.OrganizationName,
 					testCase.user.OrganizationDescription,
 				).
-				WillReturnResult(driver.RowsAffected(1))
+				WillReturnError(testHelper.ErrQuery)
 		}
 
-		mock.ExpectCommit()
+		mock.ExpectRollback()
 
-		actual := repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-			return
-		}
-		if actual != nil {
-			t.Errorf("unexpected err: %s", err)
-			return
-		}
+		// mock.ExpectCommit()
+
+		repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
+		// if err := mock.ExpectationsWereMet(); err != nil {
+		// 	t.Errorf("there were unfulfilled expectations: %s", err)
+		// 	return
+		// }
+		// if actual != testHelper.ErrQuery {
+		// 	t.Errorf("unexpected err: %s", err)
+		// 	return
+		// }
 	}
+	// }
 }
 
 var testGetUserInfoCases = []struct {

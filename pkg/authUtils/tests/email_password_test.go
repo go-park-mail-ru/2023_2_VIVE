@@ -64,3 +64,27 @@ func TestValidatePassword(t *testing.T) {
 		}
 	}
 }
+
+
+var testIsPasswordEmptyCases = []struct {
+	password    string
+	expectedErr error
+}{
+	{
+		password:    "Qwerty123",
+		expectedErr: nil,
+	},
+	{
+		password:    "",
+		expectedErr: authUtils.EMPTY_PASSWORD,
+	},
+}
+
+func TestIsPasswordEmpty(t *testing.T) {
+	for _, testCase := range testIsPasswordEmptyCases {
+		actualErr := authUtils.IsPasswordEmpty(testCase.password)
+		if actualErr != testCase.expectedErr {
+			t.Errorf(testHelper.ErrNotEqual(testCase.expectedErr, actualErr))
+		}
+	}
+}
