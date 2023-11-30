@@ -140,7 +140,7 @@ func TestGetCVByIdSuccess(t *testing.T) {
 			WillReturnRows(rows)
 		mock.ExpectCommit()
 
-		actual, _, _, err := repo.GetCVById(ctxWithLogger, testCase.inputCVID)
+		actual, _, _, err := repo.GetCVById(testHelper.СtxWithLogger, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -190,7 +190,7 @@ func TestGetCVByIdQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		_, _, _, actualErr := repo.GetCVById(ctxWithLogger, testCase.inputCVID)
+		_, _, _, actualErr := repo.GetCVById(testHelper.СtxWithLogger, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -273,7 +273,7 @@ func TestGetCVsByIdsSuccess(t *testing.T) {
 			WillReturnRows(rows)
 		mock.ExpectCommit()
 
-		actual, _, _, err := repo.GetCVsByIds(ctxWithLogger, testCase.inputCVIDs)
+		actual, _, _, err := repo.GetCVsByIds(testHelper.СtxWithLogger, testCase.inputCVIDs)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -318,7 +318,7 @@ func TestGetCVsByIdsQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, testCase.inputCVIDs)
+		_, _, _, actualErr := repo.GetCVsByIds(testHelper.СtxWithLogger, testCase.inputCVIDs)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -345,7 +345,7 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyArgs(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectCommit()
 
-	_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, inputCVIDs)
+	_, _, _, actualErr := repo.GetCVsByIds(testHelper.СtxWithLogger, inputCVIDs)
 	if actualErr != expectedErr {
 		t.Errorf("expected query error: %s\ngot: '%s'", expectedErr, actualErr)
 		return
@@ -370,7 +370,7 @@ func TestGetCVsByIdsErrEntityNotFoundEmptyResult(t *testing.T) {
 		WillReturnError(expectedErr)
 	mock.ExpectRollback()
 
-	_, _, _, actualErr := repo.GetCVsByIds(ctxWithLogger, inputCVIDs)
+	_, _, _, actualErr := repo.GetCVsByIds(testHelper.СtxWithLogger, inputCVIDs)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -448,7 +448,7 @@ func TestGetCVsByUserIdSuccess(t *testing.T) {
 			WillReturnRows(rows)
 		mock.ExpectCommit()
 
-		actual, _, _, err := repo.GetCVsByUserId(ctxWithLogger, testCase.inputUserID)
+		actual, _, _, err := repo.GetCVsByUserId(testHelper.СtxWithLogger, testCase.inputUserID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -493,7 +493,7 @@ func TestGetCVsByUserIdQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		_, _, _, actualErr := repo.GetCVsByUserId(ctxWithLogger, testCase.inputUserID)
+		_, _, _, actualErr := repo.GetCVsByUserId(testHelper.СtxWithLogger, testCase.inputUserID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -524,7 +524,7 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(cvColumns))
 	mock.ExpectRollback()
 
-	_, _, _, actualErr := repo.GetCVsByUserId(ctxWithLogger, inputUserID)
+	_, _, _, actualErr := repo.GetCVsByUserId(testHelper.СtxWithLogger, inputUserID)
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
@@ -604,7 +604,7 @@ func TestAddCVSuccess(t *testing.T) {
 
 		mock.ExpectCommit()
 
-		actual, err := repo.AddCV(ctxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
+		actual, err := repo.AddCV(testHelper.СtxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -674,7 +674,7 @@ func TestAddCVQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		_, actualErr := repo.AddCV(ctxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
+		_, actualErr := repo.AddCV(testHelper.СtxWithLogger, testCase.inputUserID, &testCase.inputCV, testCase.inputExps, testCase.inputInsts)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -751,7 +751,7 @@ func TestGetOneOfUsersCVSuccess(t *testing.T) {
 			WillReturnRows(rows)
 		mock.ExpectCommit()
 
-		actual, _, _, err := repo.GetOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
+		actual, _, _, err := repo.GetOneOfUsersCV(testHelper.СtxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -804,7 +804,7 @@ func TestGetOneOfUsersCVQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		_, _, _, actualErr := repo.GetOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
+		_, _, _, actualErr := repo.GetOneOfUsersCV(testHelper.СtxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -902,7 +902,7 @@ func TestUpdateOneOfUsersCVSuccess(t *testing.T) {
 		mock.ExpectCommit()
 
 		err := repo.UpdateOneOfUsersCV(
-			ctxWithLogger,
+			testHelper.СtxWithLogger,
 			testCase.inputUserID,
 			testCase.inputCVID,
 			&testCase.inputCV,
@@ -996,7 +996,7 @@ func TestUpdateOneOfUsersCVQueryError(t *testing.T) {
 		mock.ExpectRollback()
 
 		actualErr := repo.UpdateOneOfUsersCV(
-			ctxWithLogger,
+			testHelper.СtxWithLogger,
 			testCase.inputUserID,
 			testCase.inputCVID,
 			&testCase.inputCV,
@@ -1061,7 +1061,7 @@ func TestDeleteOneOfUsersCVSuccess(t *testing.T) {
 			WillReturnResult(driver.RowsAffected(1))
 		mock.ExpectCommit()
 
-		err := repo.DeleteOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
+		err := repo.DeleteOneOfUsersCV(testHelper.СtxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -1110,7 +1110,7 @@ func TestDeleteOneOfUsersCVQueryError(t *testing.T) {
 			WillReturnError(testCase.returningError)
 		mock.ExpectRollback()
 
-		actualErr := repo.DeleteOneOfUsersCV(ctxWithLogger, testCase.inputUserID, testCase.inputCVID)
+		actualErr := repo.DeleteOneOfUsersCV(testHelper.СtxWithLogger, testCase.inputUserID, testCase.inputCVID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return

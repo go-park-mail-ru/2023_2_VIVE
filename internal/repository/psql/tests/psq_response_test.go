@@ -39,7 +39,7 @@ func TestRespondToVacancy(t *testing.T) {
 			WithArgs(testCase.vacancyID, testCase.cvID).
 			WillReturnResult(driver.RowsAffected(1))
 
-		addErr := repo.RespondToVacancy(ctxWithLogger, testCase.vacancyID, testCase.cvID)
+		addErr := repo.RespondToVacancy(testHelper.СtxWithLogger, testCase.vacancyID, testCase.cvID)
 		if addErr != nil {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -86,7 +86,7 @@ func TestRespondToVacancyQueryError(t *testing.T) {
 			WithArgs(testCase.vacancyID, testCase.cvID).
 			WillReturnError(testCase.queryError)
 
-		addErr := repo.RespondToVacancy(ctxWithLogger, testCase.vacancyID, testCase.cvID)
+		addErr := repo.RespondToVacancy(testHelper.СtxWithLogger, testCase.vacancyID, testCase.cvID)
 		if addErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -130,7 +130,7 @@ func TestGetVacanciesIdsByCVId(t *testing.T) {
 			WithArgs(testCase.cvID).
 			WillReturnRows(rows)
 
-		actual, getErr := repo.GetVacanciesIdsByCVId(ctxWithLogger, testCase.cvID)
+		actual, getErr := repo.GetVacanciesIdsByCVId(testHelper.СtxWithLogger, testCase.cvID)
 		if getErr != nil {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -177,7 +177,7 @@ func TestGetVacanciesIdsByCVIdQueryError(t *testing.T) {
 			WithArgs(testCase.cvID).
 			WillReturnError(testCase.queryError)
 
-		_, getErr := repo.GetVacanciesIdsByCVId(ctxWithLogger, testCase.cvID)
+		_, getErr := repo.GetVacanciesIdsByCVId(testHelper.СtxWithLogger, testCase.cvID)
 		if getErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -221,7 +221,7 @@ func TestGetAttachedCVs(t *testing.T) {
 			WithArgs(testCase.vacancyID).
 			WillReturnRows(rows)
 
-		actual, getErr := repo.GetAttachedCVs(ctxWithLogger, testCase.vacancyID)
+		actual, getErr := repo.GetAttachedCVs(testHelper.СtxWithLogger, testCase.vacancyID)
 		if getErr != nil {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -268,7 +268,7 @@ func TestGetAttachedCVsQueryError(t *testing.T) {
 			WithArgs(testCase.cvID).
 			WillReturnError(testCase.queryError)
 
-		_, getErr := repo.GetAttachedCVs(ctxWithLogger, testCase.cvID)
+		_, getErr := repo.GetAttachedCVs(testHelper.СtxWithLogger, testCase.cvID)
 		if getErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", getErr)
 			return

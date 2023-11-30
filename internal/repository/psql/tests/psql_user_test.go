@@ -4,9 +4,7 @@ import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/pkg/authUtils"
-	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
-	"context"
 	"database/sql"
 	"database/sql/driver"
 
@@ -17,8 +15,6 @@ import (
 )
 
 var (
-	ctxWithLogger = context.WithValue(context.Background(), contextUtils.LOGGER_KEY, testHelper.InitCtxLogger())
-
 	password1                 = "password_number_1"
 	hashedPassword1, salt1, _ = authUtils.GenerateHash(password1)
 	birthday                  = "2000-01-01"
@@ -161,7 +157,7 @@ func TestCheckUserSuccess(t *testing.T) {
 			WithArgs(testCase.inputUser.Email).
 			WillReturnRows(checkRoleRows)
 
-		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
+		actual := repo.CheckUser(testHelper.СtxWithLogger, &testCase.inputUser)
 		if actual != nil {
 			t.Errorf("unexpected err: %s", actual)
 			return
@@ -198,7 +194,7 @@ func TestCheckUserIncorrectRole(t *testing.T) {
 			WithArgs(testCase.inputUser.Email).
 			WillReturnRows(checkRoleRows)
 
-		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
+		actual := repo.CheckUser(testHelper.СtxWithLogger, &testCase.inputUser)
 		if actual != serverErrors.INCORRECT_ROLE {
 			t.Errorf("got unexpected err: %s\nexpected: %s", err, serverErrors.INCORRECT_ROLE)
 			return
@@ -232,7 +228,7 @@ func TestCheckUserQueryError(t *testing.T) {
 			WithArgs(testCase.inputUser.Email).
 			WillReturnError(testHelper.ErrQuery)
 
-		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
+		actual := repo.CheckUser(testHelper.СtxWithLogger, &testCase.inputUser)
 		if actual != testHelper.ErrQuery {
 			t.Errorf("got unexpected err: %s\nexpected: %s", err, testHelper.ErrQuery)
 			return
@@ -249,7 +245,7 @@ func TestCheckUserQueryError(t *testing.T) {
 			WithArgs(testCase.inputUser.Email).
 			WillReturnError(testHelper.ErrQuery)
 
-		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
+		actual := repo.CheckUser(testHelper.СtxWithLogger, &testCase.inputUser)
 		if actual != testHelper.ErrQuery {
 			t.Errorf("got unexpected err: %s\nexpected: %s", err, testHelper.ErrQuery)
 			return
@@ -275,7 +271,7 @@ func TestCheckUserErrEntityNotFound(t *testing.T) {
 			WithArgs(testCase.inputUser.Email).
 			WillReturnError(sql.ErrNoRows)
 
-		actual := repo.CheckUser(ctxWithLogger, &testCase.inputUser)
+		actual := repo.CheckUser(testHelper.СtxWithLogger, &testCase.inputUser)
 		if actual != psql.ErrEntityNotFound {
 			t.Errorf("got unexpected err: %s\nexpected: %s", err, testHelper.ErrQuery)
 			return
@@ -330,7 +326,7 @@ func TestCheckPasswordByIdSuccess(t *testing.T) {
 			WithArgs(testCase.inputID).
 			WillReturnRows(rows)
 
-		actual := repo.CheckPasswordById(ctxWithLogger, testCase.inputID, testCase.passwordToCheck)
+		actual := repo.CheckPasswordById(testHelper.СtxWithLogger, testCase.inputID, testCase.passwordToCheck)
 		if actual != nil {
 			t.Errorf("unexpected err: %s", err)
 			return
@@ -356,7 +352,7 @@ func TestCheckPasswordByIdQueryError(t *testing.T) {
 			WithArgs(testCase.inputID).
 			WillReturnError(testCase.returningQueryError)
 
-		actual := repo.CheckPasswordById(ctxWithLogger, testCase.inputID, testCase.passwordToCheck)
+		actual := repo.CheckPasswordById(testHelper.СtxWithLogger, testCase.inputID, testCase.passwordToCheck)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -452,7 +448,7 @@ func TestAddUserSuccess(t *testing.T) {
 
 		mock.ExpectCommit()
 
-		actual := repo.AddUser(ctxWithLogger, &testCase.user, hasher)
+		actual := repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -533,7 +529,7 @@ func TestGetUserInfoSuccess(t *testing.T) {
 					AddRow(true),
 			)
 
-		actualUser, actualAppID, actualEmpID, getErr := repo.GetUserInfo(ctxWithLogger, testCase.inputUserID)
+		actualUser, actualAppID, actualEmpID, getErr := repo.GetUserInfo(testHelper.СtxWithLogger, testCase.inputUserID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -604,7 +600,7 @@ func TestGetUserIdByEmailSuccess(t *testing.T) {
 			WithArgs(testCase.inputEmail).
 			WillReturnRows(rows)
 
-		actual, getErr := repo.GetUserIdByEmail(ctxWithLogger, testCase.inputEmail)
+		actual, getErr := repo.GetUserIdByEmail(testHelper.СtxWithLogger, testCase.inputEmail)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -675,7 +671,7 @@ func TestGetRoleByIdSuccess(t *testing.T) {
 				WillReturnRows(empRows)
 		}
 
-		actual, getErr := repo.GetRoleById(ctxWithLogger, testCase.inputUserID)
+		actual, getErr := repo.GetRoleById(testHelper.СtxWithLogger, testCase.inputUserID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return
@@ -753,7 +749,7 @@ func TestUpdateUserInfoSuccess(t *testing.T) {
 			// WillReturnResult(driver.RowsAffected(1))
 		}
 
-		repo.UpdateUserInfo(ctxWithLogger, testCase.inputUserID, &testCase.inputUser)
+		repo.UpdateUserInfo(testHelper.СtxWithLogger, testCase.inputUserID, &testCase.inputUser)
 		// if err := mock.ExpectationsWereMet(); err != nil {
 		// 	t.Errorf("there were unfulfilled expectations: %s", err)
 		// 	return
@@ -797,7 +793,7 @@ func TestGetUserEmpIdSuccess(t *testing.T) {
 					AddRow(testCase.expected),
 			)
 
-		actual, empErr := repo.GetUserEmpId(ctxWithLogger, testCase.inputUserID)
+		actual, empErr := repo.GetUserEmpId(testHelper.СtxWithLogger, testCase.inputUserID)
 		if err := mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
 			return

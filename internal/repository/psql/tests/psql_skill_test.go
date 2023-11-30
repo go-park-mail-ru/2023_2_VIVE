@@ -49,7 +49,7 @@ func TestAddSkillsByVacID(t *testing.T) {
 				WillReturnResult(driver.RowsAffected(1))
 
 		}
-		actual := repo.AddSkillsByVacID(ctxWithLogger, testCase.vacancyID, testCase.skills)
+		actual := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID, testCase.skills)
 		if actual != nil {
 			t.Errorf("unexpected err: %v", actual)
 			return
@@ -96,7 +96,7 @@ func TestAddSkillsByVacIDFirstQueryError(t *testing.T) {
 			WithArgs(testCase.skills[0]).
 			WillReturnError(testHelper.ErrQuery)
 
-		addErr := repo.AddSkillsByVacID(ctxWithLogger, testCase.vacancyID, testCase.skills)
+		addErr := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID, testCase.skills)
 		if addErr != testHelper.ErrQuery {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -127,7 +127,7 @@ func TestAddSkillsByVacIDSecondQueryError(t *testing.T) {
 			WithArgs(testCase.skills[0]).
 			WillReturnError(testCase.queryError)
 
-		addErr := repo.AddSkillsByVacID(ctxWithLogger, testCase.vacancyID, testCase.skills)
+		addErr := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID, testCase.skills)
 		if addErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -161,7 +161,7 @@ func TestAddSkillsByVacIDThirdQueryError(t *testing.T) {
 			WithArgs(testCase.vacancyID, 0).
 			WillReturnError(testCase.queryError)
 
-		addErr := repo.AddSkillsByVacID(ctxWithLogger, testCase.vacancyID, testCase.skills)
+		addErr := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID, testCase.skills)
 		if addErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -216,7 +216,7 @@ func TestAddSkillsByVacIDOnExistance(t *testing.T) {
 				WillReturnResult(driver.RowsAffected(1))
 
 		}
-		actual := repo.AddSkillsByVacID(ctxWithLogger, testCase.vacancyID, testCase.skills)
+		actual := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID, testCase.skills)
 		if actual != nil {
 			t.Errorf("unexpected err: %v", actual)
 			return
@@ -267,7 +267,7 @@ func TestAddSkillsByCvID(t *testing.T) {
 				WillReturnResult(driver.RowsAffected(1))
 
 		}
-		actual := repo.AddSkillsByCvID(ctxWithLogger, testCase.cvID, testCase.skills)
+		actual := repo.AddSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID, testCase.skills)
 		if actual != nil {
 			t.Errorf("unexpected err: %v", actual)
 			return
@@ -314,7 +314,7 @@ func TestAddSkillsByCvIDFirstQueryError(t *testing.T) {
 			WithArgs(testCase.skills[0]).
 			WillReturnError(testHelper.ErrQuery)
 
-		addErr := repo.AddSkillsByCvID(ctxWithLogger, testCase.cvID, testCase.skills)
+		addErr := repo.AddSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID, testCase.skills)
 		if addErr != testHelper.ErrQuery {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -345,7 +345,7 @@ func TestAddSkillsByCvIDSecondQueryError(t *testing.T) {
 			WithArgs(testCase.skills[0]).
 			WillReturnError(testCase.queryError)
 
-		addErr := repo.AddSkillsByCvID(ctxWithLogger, testCase.cvID, testCase.skills)
+		addErr := repo.AddSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID, testCase.skills)
 		if addErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -379,7 +379,7 @@ func TestAddSkillsByCvIDThirdQueryError(t *testing.T) {
 			WithArgs(testCase.cvID, 0).
 			WillReturnError(testCase.queryError)
 
-		addErr := repo.AddSkillsByCvID(ctxWithLogger, testCase.cvID, testCase.skills)
+		addErr := repo.AddSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID, testCase.skills)
 		if addErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", addErr)
 			return
@@ -434,7 +434,7 @@ func TestAddSkillsByCvIDOnExistance(t *testing.T) {
 				WillReturnResult(driver.RowsAffected(1))
 
 		}
-		actual := repo.AddSkillsByVacID(ctxWithLogger, testCase.cvID, testCase.skills)
+		actual := repo.AddSkillsByVacID(testHelper.СtxWithLogger, testCase.cvID, testCase.skills)
 		if actual != nil {
 			t.Errorf("unexpected err: %v", actual)
 			return
@@ -483,7 +483,7 @@ func TestGetSkillsByVacID(t *testing.T) {
 			WithArgs(testCase.vacancyID).
 			WillReturnRows(rows)
 
-		actualSkills, getErr := repo.GetSkillsByVacID(ctxWithLogger, testCase.vacancyID)
+		actualSkills, getErr := repo.GetSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID)
 		if getErr != nil {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -525,7 +525,7 @@ func TestGetSkillsByVacIDQueryError(t *testing.T) {
 			WithArgs(testCase.vacancyID).
 			WillReturnError(testCase.queryError)
 
-		_, getErr := repo.GetSkillsByVacID(ctxWithLogger, testCase.vacancyID)
+		_, getErr := repo.GetSkillsByVacID(testHelper.СtxWithLogger, testCase.vacancyID)
 		if getErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -573,7 +573,7 @@ func TestGetSkillsByCvID(t *testing.T) {
 			WithArgs(testCase.cvID).
 			WillReturnRows(rows)
 
-		actualSkills, getErr := repo.GetSkillsByCvID(ctxWithLogger, testCase.cvID)
+		actualSkills, getErr := repo.GetSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID)
 		if getErr != nil {
 			t.Errorf("unexpected err: %v", getErr)
 			return
@@ -615,7 +615,7 @@ func TestGetSkillsByCvIDQueryError(t *testing.T) {
 			WithArgs(testCase.cvID).
 			WillReturnError(testCase.queryError)
 
-		_, getErr := repo.GetSkillsByCvID(ctxWithLogger, testCase.cvID)
+		_, getErr := repo.GetSkillsByCvID(testHelper.СtxWithLogger, testCase.cvID)
 		if getErr != testCase.expectedError {
 			t.Errorf("unexpected err: %v", getErr)
 			return

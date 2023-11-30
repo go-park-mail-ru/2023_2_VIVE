@@ -1,6 +1,8 @@
 package testHelper
 
 import (
+	"HnH/pkg/contextUtils"
+	"context"
 	"database/sql/driver"
 	"fmt"
 	"io"
@@ -15,6 +17,8 @@ var (
 	location, _ = time.LoadLocation("Local")
 	Created_at  = time.Date(2023, 11, 1, 0, 0, 0, 0, location)
 	Updated_at  = time.Date(2023, 11, 2, 0, 0, 0, 0, location)
+
+	СtxWithLogger = context.WithValue(context.Background(), contextUtils.LOGGER_KEY, InitCtxLogger())
 )
 
 const (
