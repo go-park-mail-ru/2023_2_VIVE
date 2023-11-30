@@ -916,8 +916,8 @@ func TestGetEmployerInfoSuccess(t *testing.T) {
 				ExpectQuery(testHelper.SelectQuery).
 				WithArgs(testCase.employerID).
 				WillReturnRows(
-					sqlmock.NewRows([]string{"user_id"}).
-						AddRow(1),
+					sqlmock.NewRows([]string{"user_id", "company_name"}).
+						AddRow(1, "company name"),
 				)
 
 			mock.
@@ -926,14 +926,6 @@ func TestGetEmployerInfoSuccess(t *testing.T) {
 				WillReturnRows(
 					sqlmock.NewRows([]string{"first_name", "last_name"}).
 						AddRow(testCase.expectedFirstName, testCase.expectedLastName),
-				)
-
-			mock.
-				ExpectQuery(testHelper.SelectQuery).
-				WithArgs(testCase.employerID).
-				WillReturnRows(
-					sqlmock.NewRows([]string{"company_name"}).
-						AddRow(testCase.expectedCompanyName),
 				)
 
 			mock.
@@ -1037,8 +1029,8 @@ func TestGetEmployerInfoSecondQueryError(t *testing.T) {
 		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(employerID).
 		WillReturnRows(
-			sqlmock.NewRows([]string{"user_id"}).
-				AddRow(1),
+			sqlmock.NewRows([]string{"is_employer"}).
+				AddRow(true),
 		)
 
 	mock.
@@ -1072,74 +1064,21 @@ func TestGetEmployerInfoThirdQueryError(t *testing.T) {
 		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(employerID).
 		WillReturnRows(
-			sqlmock.NewRows([]string{"user_id"}).
-				AddRow(1),
+			sqlmock.NewRows([]string{"is_employer"}).
+				AddRow(true),
 		)
 
 	mock.
 		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(employerID).
 		WillReturnRows(
-			sqlmock.NewRows([]string{"user_id"}).
-				AddRow(1),
+			sqlmock.NewRows([]string{"user_id", "company_name"}).
+				AddRow(1, "company name"),
 		)
 
 	mock.
 		ExpectQuery(testHelper.SelectQuery).
 		WithArgs(1).
-		WillReturnError(testHelper.ErrQuery)
-
-	_, _, _, _, err = repo.GetEmployerInfo(testHelper.СtxWithLogger, employerID)
-	if err != testHelper.ErrQuery {
-		t.Errorf("unexpected err: %s", err)
-		return
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-		return
-	}
-}
-
-func TestGetEmployerInfoFourthQueryError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-
-	repo := psql.NewPsqlVacancyRepository(db)
-
-	employerID := 1
-	expectedFirstName := "first name"
-	expectedLastName := "last name"
-
-	mock.
-		ExpectQuery(testHelper.SelectQuery).
-		WithArgs(employerID).
-		WillReturnRows(
-			sqlmock.NewRows([]string{"user_id"}).
-				AddRow(1),
-		)
-
-	mock.
-		ExpectQuery(testHelper.SelectQuery).
-		WithArgs(employerID).
-		WillReturnRows(
-			sqlmock.NewRows([]string{"user_id"}).
-				AddRow(1),
-		)
-
-	mock.
-		ExpectQuery(testHelper.SelectQuery).
-		WithArgs(1).
-		WillReturnRows(
-			sqlmock.NewRows([]string{"first_name", "last_name"}).
-				AddRow(expectedFirstName, expectedLastName),
-		)
-
-	mock.
-		ExpectQuery(testHelper.SelectQuery).
-		WithArgs(employerID).
 		WillReturnError(testHelper.ErrQuery)
 
 	_, _, _, _, err = repo.GetEmployerInfo(testHelper.СtxWithLogger, employerID)
