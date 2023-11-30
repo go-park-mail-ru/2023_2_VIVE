@@ -1153,14 +1153,6 @@ func TestGetEmployerInfoFourthQueryError(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
-
-
 var testGetEmpIdSuccessCases = []struct {
 	vacancyID int
 	expected  int
@@ -1256,22 +1248,6 @@ func TestGetEmpIdQueryError(t *testing.T) {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 var testAddVacancySuccessCases = []struct {
 	inputUserID  int

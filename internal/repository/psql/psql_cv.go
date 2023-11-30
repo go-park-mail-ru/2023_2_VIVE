@@ -15,7 +15,7 @@ type ICVRepository interface {
 	GetCVById(ctx context.Context, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	GetCVsByIds(ctx context.Context, idList []int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	GetCVsByUserId(ctx context.Context, userID int) ([]domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
-	GetApplicantInfo(ctx context.Context, applicantID int) (string, string, []domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
+	GetApplicantInfo(ctx context.Context, applicantID int) (string, string, []domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error) //
 	AddCV(ctx context.Context, userID int, cv *domain.DbCV, experiences []domain.DbExperience, insitutions []domain.DbEducationInstitution) (int, error)
 	GetOneOfUsersCV(ctx context.Context, userID, cvID int) (*domain.DbCV, []domain.DbExperience, []domain.DbEducationInstitution, error)
 	UpdateOneOfUsersCV(ctx context.Context, userID, cvID int, cv *domain.DbCV,

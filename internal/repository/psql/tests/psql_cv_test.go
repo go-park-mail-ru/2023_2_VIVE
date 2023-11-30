@@ -535,6 +535,262 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 	}
 }
 
+var testGetApplicantInfoSuccessCases = []struct {
+	isApplicant       bool
+	applicantID       int
+	expectedFirstName string
+	expectedLastName  string
+	expectedCVs       []domain.DbCV
+	expectedExps      []domain.DbExperience
+	expectedInsts     []domain.DbEducationInstitution
+	expectedErr       error
+}{
+	{
+		isApplicant:       true,
+		applicantID:       1,
+		expectedFirstName: "first name",
+		expectedLastName:  "last name",
+		expectedCVs:       []domain.DbCV{cvID1, cvID2},
+		expectedExps:      []domain.DbExperience{},
+		expectedInsts:     []domain.DbEducationInstitution{},
+		expectedErr:       nil,
+	},
+	{
+		isApplicant:       true,
+		applicantID:       2,
+		expectedFirstName: "first name",
+		expectedLastName:  "last name",
+		expectedCVs:       []domain.DbCV{cvID3},
+		expectedExps:      []domain.DbExperience{},
+		expectedInsts:     []domain.DbEducationInstitution{},
+		expectedErr:       nil,
+	},
+	{
+		isApplicant:       false,
+		applicantID:       2,
+		expectedFirstName: "",
+		expectedLastName:  "",
+		expectedCVs:       nil,
+		expectedExps:      nil,
+		expectedInsts:     nil,
+		expectedErr:       psql.ErrEntityNotFound,
+	},
+}
+
+func TestGetApplicantInfoSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlCVRepository(db)
+
+	for _, testCase := range testGetApplicantInfoSuccessCases {
+		mock.
+			ExpectQuery(testHelper.SelectQuery).
+			WithArgs(testCase.applicantID).
+			WillReturnRows(
+				sqlmock.NewRows([]string{"is_applicant"}).
+					AddRow(testCase.isApplicant),
+			)
+
+		if testCase.isApplicant {
+			mock.
+				ExpectQuery(testHelper.SelectQuery).
+				WithArgs(testCase.applicantID).
+				WillReturnRows(
+					sqlmock.NewRows([]string{"user_id"}).
+						AddRow(1),
+				)
+
+			if testCase.isApplicant {
+				mock.
+					ExpectQuery(testHelper.SelectQuery).
+					WithArgs(1).
+					WillReturnRows(
+						sqlmock.NewRows([]string{"first_name", "last_name"}).
+							AddRow(testCase.expectedFirstName, testCase.expectedLastName),
+					)
+			}
+
+			rows := sqlmock.NewRows(cvColumns)
+			for _, cv := range testCase.expectedCVs {
+				rows = rows.AddRow(
+					cv.ID,
+					cv.ApplicantID,
+					cv.ProfessionName,
+					cv.FirstName,
+					cv.LastName,
+					cv.MiddleName,
+					cv.Gender,
+					cv.Birthday,
+					cv.Location,
+					cv.Description,
+					cv.EducationLevel,
+					cv.Status,
+					cv.CreatedAt,
+					cv.UpdatedAt,
+				)
+			}
+
+			mock.ExpectBegin()
+			mock.
+				ExpectQuery(testHelper.SelectQuery).
+				WithArgs(1).
+				WillReturnRows(rows)
+			expectedIDs := make([]int, len(testCase.expectedCVs))
+			for i := range testCase.expectedCVs {
+				expectedIDs[i] = testCase.expectedCVs[i].ID
+			}
+			mock.
+				ExpectQuery(testHelper.SelectQuery).
+				WithArgs(testHelper.SliceIntToDriverValue(expectedIDs)...).
+				WillReturnRows(rows)
+			mock.
+				ExpectQuery(testHelper.SelectQuery).
+				WithArgs(testHelper.SliceIntToDriverValue(expectedIDs)...).
+				WillReturnRows(rows)
+			mock.ExpectCommit()
+		}
+
+		aFirstName, aLastName, aCVs, aExps, aInsts, err := repo.GetApplicantInfo(testHelper.СtxWithLogger, testCase.applicantID)
+		if err != nil && err != testCase.expectedErr {
+			t.Errorf("unexpected err: %s", err)
+			return
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+			return
+		}
+		if aFirstName != testCase.expectedFirstName {
+			t.Errorf("results not match, want %v, have %v", testCase.expectedFirstName, aFirstName)
+			return
+		}
+		if aLastName != testCase.expectedLastName {
+			t.Errorf("results not match, want %v, have %v", testCase.expectedLastName, aLastName)
+			return
+		}
+		if !reflect.DeepEqual(aCVs, testCase.expectedCVs) {
+			t.Errorf("results not match, want %v, have %v", testCase.expectedCVs, aCVs)
+			return
+		}
+		if !reflect.DeepEqual(aExps, testCase.expectedExps) {
+			t.Errorf("results not match, want %v, have %v", testCase.expectedExps, aExps)
+			return
+		}
+		if !reflect.DeepEqual(aInsts, testCase.expectedInsts) {
+			t.Errorf("results not match, want %v, have %v", testCase.expectedInsts, aInsts)
+			return
+		}
+	}
+}
+
+func TestGetApplicantInfoFirstQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlCVRepository(db)
+
+	applicantID := 1
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(applicantID).
+		WillReturnError(testHelper.ErrQuery)
+
+	_, _, _, _, _, err = repo.GetApplicantInfo(testHelper.СtxWithLogger, applicantID)
+	if err != testHelper.ErrQuery {
+		t.Errorf("unexpected err: %s", err)
+		return
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+}
+
+func TestGetApplicantInfoSecondQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlCVRepository(db)
+
+	applicantID := 1
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(applicantID).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"is_applicant"}).
+				AddRow(true),
+		)
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(applicantID).
+		WillReturnError(testHelper.ErrQuery)
+
+	_, _, _, _, _, err = repo.GetApplicantInfo(testHelper.СtxWithLogger, applicantID)
+	if err != testHelper.ErrQuery {
+		t.Errorf("unexpected err: %s", err)
+		return
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+}
+
+func TestGetApplicantInfoThirdQueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	repo := psql.NewPsqlCVRepository(db)
+
+	applicantID := 1
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(applicantID).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"is_applicant"}).
+				AddRow(true),
+		)
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(applicantID).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"user_id"}).
+				AddRow(1),
+		)
+
+	mock.
+		ExpectQuery(testHelper.SelectQuery).
+		WithArgs(1).
+		WillReturnError(testHelper.ErrQuery)
+
+	_, _, _, _, _, err = repo.GetApplicantInfo(testHelper.СtxWithLogger, applicantID)
+	if err != testHelper.ErrQuery {
+		t.Errorf("unexpected err: %s", err)
+		return
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+		return
+	}
+}
+
 var testAddCVSuccessCases = []struct {
 	inputUserID int
 	inputCV     domain.DbCV
