@@ -49,7 +49,10 @@ func (repo *psqlSkillRepository) AddSkillsByVacID(ctx context.Context, vacID int
 				skill,
 			).
 				Scan(&skillID)
-			if selectErr != nil && selectErr != sql.ErrNoRows {
+			if selectErr == sql.ErrNoRows {
+				return ErrNotInserted
+			}
+			if selectErr != nil {
 				return selectErr
 			}
 		} else if err != nil {
@@ -61,7 +64,7 @@ func (repo *psqlSkillRepository) AddSkillsByVacID(ctx context.Context, vacID int
 
 		result, err := repo.DB.Exec(vacSkillQuery, vacID, skillID)
 		if err == sql.ErrNoRows {
-			return ErrNoRowsUpdated
+			return ErrNotInserted
 		}
 		if err != nil {
 			return err
@@ -142,7 +145,10 @@ func (repo *psqlSkillRepository) AddSkillsByCvID(ctx context.Context, cvID int, 
 				skill,
 			).
 				Scan(&skillID)
-			if selectErr != nil && selectErr != sql.ErrNoRows {
+			if selectErr == sql.ErrNoRows {
+				return ErrNotInserted
+			}
+			if selectErr != nil {
 				return selectErr
 			}
 		} else if err != nil {
@@ -160,7 +166,7 @@ func (repo *psqlSkillRepository) AddSkillsByCvID(ctx context.Context, cvID int, 
 
 		result, err := repo.DB.Exec(cvSkillQuery, cvID, skillID)
 		if err == sql.ErrNoRows {
-			return ErrNoRowsUpdated
+			return ErrNotInserted
 		}
 		if err != nil {
 			return err
