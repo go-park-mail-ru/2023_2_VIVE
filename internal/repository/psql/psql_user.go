@@ -436,16 +436,18 @@ func (p *psqlUserRepository) UploadAvatarByUserID(ctx context.Context, userID in
 }
 
 func (p *psqlUserRepository) GetAvatarByUserID(ctx context.Context, userID int) (string, error) {
-	var path string
+	var path *string
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.Info("getting avatar by 'user_id'")
 	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&path)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
+		return "", IncorrectUserID
 	} else if err != nil {
 		return "", err
+	} else if path == nil {
+		return "", nil
 	}
 
-	return path, nil
+	return *path, nil
 }

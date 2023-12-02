@@ -9,7 +9,12 @@ import (
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
-	"io/ioutil"
+	"io"
+	"mime"
+	"mime/multipart"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -18,7 +23,7 @@ type IUserUsecase interface {
 	SignUp(ctx context.Context, user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
 	GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error)
 	UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error
-	UploadAvatar(ctx context.Context, sessionID, path string) error
+	UploadAvatar(ctx context.Context, sessionID string, uploadedData multipart.File, header *multipart.FileHeader) error
 	GetAvatar(ctx context.Context, sessionID string) ([]byte, error)
 }
 
@@ -150,7 +155,28 @@ func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, sessionID string
 	return nil
 }
 
-func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID, path string) error {
+func contains(slice []string, item string) bool {
+	for _, elem := range slice {
+		if elem == item {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (userUsecase *UserUsecase) avatarExists(ctx context.Context, userID int) (bool, error) {
+	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+	if err != nil {
+		return false, err
+	} else if path == "" && err == nil {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID string, uploadedData multipart.File, header *multipart.FileHeader) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
 	if validStatus != nil {
@@ -158,7 +184,69 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID, pat
 	}
 
 	contextLogger.Info("uploading avatar")
-	err := userUsecase.userRepo.UploadAvatarByUserID(ctx, userID, path)
+
+	if header.Size > 2*1024*1024 {
+		return BadAvatarSize
+	}
+
+	mimeType := header.Header.Get("Content-Type")
+	ext, err := mime.ExtensionsByType(mimeType)
+	if ext == nil {
+		return BadAvatarType
+	} else if err != nil {
+		return err
+	}
+
+	if contains(ext, ".jpeg") {
+		header.Filename = strconv.Itoa(userID) + ".jpeg"
+	} else if contains(ext, ".png") {
+		header.Filename = strconv.Itoa(userID) + ".png"
+	} else if contains(ext, ".gif") {
+		header.Filename = strconv.Itoa(userID) + ".gif"
+	} else {
+		return BadAvatarType
+	}
+
+	avaExists, err := userUsecase.avatarExists(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if avaExists {
+		path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+		if err != nil {
+			return err
+		}
+
+		delErr := os.Remove(configs.CURRENT_DIR + path)
+		if delErr != nil {
+			return err
+		}
+	}
+
+	now := time.Now()
+	year := strconv.Itoa(now.Year())
+	month := strconv.Itoa(int(now.Month()))
+	day := strconv.Itoa(now.Day())
+
+	dirToSave := configs.UPLOADS_DIR + year + "/" + month + "/" + day
+	err = os.MkdirAll(configs.CURRENT_DIR+dirToSave, 0777)
+	if err != nil {
+		return err
+	}
+
+	filePath := dirToSave + "/" + header.Filename
+	f, err := os.OpenFile(configs.CURRENT_DIR+filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+
+	io.Copy(f, uploadedData)
+
+	f.Sync()
+	f.Close()
+
+	err = userUsecase.userRepo.UploadAvatarByUserID(ctx, userID, filePath)
 	if err != nil {
 		return err
 	}
@@ -183,7 +271,7 @@ func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string)
 		return nil, err
 	}
 
-	fileBytes, err := ioutil.ReadFile(configs.CURRENT_DIR + path)
+	fileBytes, err := os.ReadFile(configs.CURRENT_DIR + path)
 	if err != nil {
 		return nil, ErrReadAvatar
 	}
