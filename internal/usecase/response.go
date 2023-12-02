@@ -2,27 +2,28 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
-	"HnH/internal/repository/redisRepo"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
 )
 
 type IResponseUsecase interface {
-	RespondToVacancy(ctx context.Context, sessionID string, vacancyID, cvID int) error
-	GetApplicantsList(ctx context.Context, sessionID string, vacancyID int) ([]domain.ApiApplicant, error)
+	RespondToVacancy(ctx context.Context, vacancyID, cvID int) error
+	GetApplicantsList(ctx context.Context, vacancyID int) ([]domain.ApiApplicant, error)
 }
 
 type ResponseUsecase struct {
 	responseRepo psql.IResponseRepository
-	sessionRepo  redisRepo.ISessionRepository
+	sessionRepo  grpc.IAuthRepository
 	userRepo     psql.IUserRepository
 	vacancyRepo  psql.IVacancyRepository
 	cvRepo       psql.ICVRepository
 }
 
 func NewResponseUsecase(respondRepository psql.IResponseRepository,
-	sessionRepository redisRepo.ISessionRepository,
+	sessionRepository grpc.IAuthRepository,
 	userRepository psql.IUserRepository,
 	vacancyRepository psql.IVacancyRepository,
 	cvRepository psql.ICVRepository) IResponseUsecase {
@@ -35,25 +36,8 @@ func NewResponseUsecase(respondRepository psql.IResponseRepository,
 	}
 }
 
-func (responseUsecase *ResponseUsecase) validateSessionAndGetUserId(ctx context.Context, sessionID string) (int, error) {
-	validStatus := responseUsecase.sessionRepo.ValidateSession(ctx, sessionID)
-	if validStatus != nil {
-		return 0, validStatus
-	}
-
-	userID, err := responseUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, nil
-}
-
-func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, sessionID string, vacancyID, cvID int) error {
-	userID, validStatus := responseUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return validStatus
-	}
+func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, vacancyID, cvID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
@@ -69,11 +53,8 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, se
 	return nil
 }
 
-func (responseUsecase *ResponseUsecase) GetApplicantsList(ctx context.Context, sessionID string, vacancyID int) ([]domain.ApiApplicant, error) {
-	userID, validStatus := responseUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return nil, validStatus
-	}
+func (responseUsecase *ResponseUsecase) GetApplicantsList(ctx context.Context, vacancyID int) ([]domain.ApiApplicant, error) {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {

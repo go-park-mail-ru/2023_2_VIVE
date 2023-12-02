@@ -2,25 +2,25 @@ package usecase
 
 import (
 	"HnH/internal/repository/grpc"
-	"HnH/internal/repository/redisRepo"
+	"HnH/pkg/contextUtils"
 	pb "HnH/services/csat/csatPB"
 	"context"
 )
 
 type ICsatUsecase interface {
-	GetQuestions(ctx context.Context, sessionID string) (*pb.QuestionList, error)
+	GetQuestions(ctx context.Context) (*pb.QuestionList, error)
 	RegisterAnswer(ctx context.Context, answer *pb.Answer) error
 	GetStatistic(ctx context.Context) (*pb.Statistics, error)
 }
 
 type CvUsecase struct {
 	csatRepo    grpc.ICsatRepository
-	sessionRepo redisRepo.ISessionRepository
+	sessionRepo grpc.IAuthRepository
 }
 
 func NewCsatUsecase(
 	csatRepository grpc.ICsatRepository,
-	sessionRepository redisRepo.ISessionRepository,
+	sessionRepository grpc.IAuthRepository,
 ) ICsatUsecase {
 	return &CvUsecase{
 		csatRepo:    csatRepository,
@@ -28,11 +28,9 @@ func NewCsatUsecase(
 	}
 }
 
-func (u *CvUsecase) GetQuestions(ctx context.Context, sessionID string) (*pb.QuestionList, error) {
-	userID, err := u.sessionRepo.GetUserIdBySession(ctx, sessionID)
-	if err != nil {
-		return nil, err
-	}
+func (u *CvUsecase) GetQuestions(ctx context.Context) (*pb.QuestionList, error) {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
 	questions, err := u.csatRepo.GetQuestions(ctx, userID)
 	if err != nil {
 		return nil, err
