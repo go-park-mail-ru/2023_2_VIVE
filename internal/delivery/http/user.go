@@ -1,18 +1,16 @@
 package http
 
 import (
-	"HnH/configs"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 	"HnH/pkg/serverErrors"
+	"errors"
 
 	"encoding/json"
-	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -41,7 +39,7 @@ func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase, sessionU
 
 	router.Handle("/upload_avatar",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.UploadAvatar))).
-		Methods("PUT")
+		Methods("POST")
 
 	router.Handle("/get_avatar",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetAvatar))).
@@ -144,28 +142,23 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 }
 
 func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
-	uploadedData, handler, err := r.FormFile("avatar")
+	uploadedData, header, err := r.FormFile("avatar")
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
 	}
 	defer uploadedData.Close()
 
-	f, err := os.OpenFile(configs.CURRENT_DIR+configs.UPLOADS_DIR+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	io.Copy(f, uploadedData)
-
-	f.Sync()
-	f.Close()
-
 	cookie, _ := r.Cookie("session")
 
-	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), cookie.Value, configs.UPLOADS_DIR+handler.Filename)
-	if uplErr != nil {
+	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), cookie.Value, uploadedData, header)
+	if errors.Is(uplErr, usecase.BadAvatarSize) {
+		responseTemplates.SendErrorMessage(w, usecase.BadAvatarSize, http.StatusBadRequest)
+		return
+	} else if errors.Is(uplErr, usecase.BadAvatarType) {
+		responseTemplates.SendErrorMessage(w, usecase.BadAvatarType, http.StatusBadRequest)
+		return
+	} else if uplErr != nil {
 		responseTemplates.SendErrorMessage(w, uplErr, http.StatusInternalServerError)
 		return
 	}

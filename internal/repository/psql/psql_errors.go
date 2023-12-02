@@ -7,4 +7,5 @@ var (
 	ErrNotInserted    = fmt.Errorf("could not insert data into db")
 	ErrNoRowsUpdated  = fmt.Errorf("after your query no rows were updated")
 	ErrNoRowsDeleted  = fmt.Errorf("after your query no rows were deleted")
+	IncorrectUserID   = fmt.Errorf("Got an incorrect user id")
 )
