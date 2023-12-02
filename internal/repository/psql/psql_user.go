@@ -376,21 +376,58 @@ func (p *psqlUserRepository) UpdateUserInfo(ctx context.Context, userID int, use
 			return serverErrors.INTERNAL_SERVER_ERROR
 		}
 
-		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
-			`"email" = $1, "pswd" = $2, "salt" = $3, "first_name" = $4, "last_name" = $5, `+
-			`"birthday" = $6, "phone_number" = $7, "location" = $8 `+
-			`WHERE id = $9`,
-			user.Email, hashedPass, salt, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location, userID)
+		query := `UPDATE
+			hnh_data.user_profile
+		SET
+			"email" = $1,
+			"pswd" = $2,
+			"salt" = $3,
+			"first_name" = $4,
+			"last_name" = $5,
+			"birthday" = $6,
+			"phone_number" = $7,
+			"location" = $8
+		WHERE
+			id = $9`
+
+		_, updErr := p.userStorage.Exec(
+			query,
+			user.Email,
+			hashedPass,
+			salt,
+			user.FirstName,
+			user.LastName,
+			user.Birthday,
+			user.PhoneNumber,
+			user.Location,
+			userID,
+		)
 		if updErr != nil {
 			return updErr
 		}
 	} else {
 		contextLogger.Info("updating without new password")
-		_, updErr := p.userStorage.Exec(`UPDATE hnh_data.user_profile SET `+
-			`"email" = $1, "first_name" = $2, "last_name" = $3, `+
-			`"birthday" = $4, "phone_number" = $5, "location" = $6 `+
-			`WHERE id = $7`,
-			user.Email, user.FirstName, user.LastName, user.Birthday, user.PhoneNumber, user.Location, userID)
+		query := `UPDATE
+				hnh_data.user_profile
+			SET
+				"email" = $1,
+				"first_name" = $2,
+				"last_name" = $3,
+				"birthday" = $4,
+				"phone_number" = $5,
+				"location" = $6
+			WHERE
+				id = $7`
+		_, updErr := p.userStorage.Exec(
+			query,
+			user.Email,
+			user.FirstName,
+			user.LastName,
+			user.Birthday,
+			user.PhoneNumber,
+			user.Location,
+			userID,
+		)
 		if updErr != nil {
 			return updErr
 		}
@@ -436,16 +473,18 @@ func (p *psqlUserRepository) UploadAvatarByUserID(ctx context.Context, userID in
 }
 
 func (p *psqlUserRepository) GetAvatarByUserID(ctx context.Context, userID int) (string, error) {
-	var path string
+	var path *string
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.Info("getting avatar by 'user_id'")
 	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&path)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
+		return "", IncorrectUserID
 	} else if err != nil {
 		return "", err
+	} else if path == nil {
+		return "", nil
 	}
 
-	return path, nil
+	return *path, nil
 }

@@ -20,7 +20,7 @@ type IVacancyRepository interface {
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (string, string, string, []domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
-	GetEmpId(ctx context.Context, vacancyID int) (int, error)
+	GetEmpId(ctx context.Context, vacancyID int) (int, error) //
 	AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error)
 	UpdateEmpVacancy(ctx context.Context, empID, vacancyID int, vacancy *domain.DbVacancy) error
 	DeleteEmpVacancy(ctx context.Context, empID, vacancyID int) error
@@ -318,11 +318,14 @@ func (repo *psqlVacancyRepository) GetUserVacancies(ctx context.Context, userID 
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
-		"id_list": userID,
+		"user_id": userID,
 	}).
 		Info("getting vacancies by 'user_id' from postgres")
 
 	empErr := repo.DB.QueryRow(`SELECT id FROM hnh_data.employer WHERE user_id = $1`, userID).Scan(&empID)
+	if empErr == sql.ErrNoRows {
+		return nil, ErrEntityNotFound
+	}
 	if empErr != nil {
 		return nil, empErr
 	}
@@ -420,9 +423,9 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 		return "", "", "", nil, err
 	}
 
-	var first_name, last_name string
+	var firstName, lastName string
 
-	err = repo.DB.QueryRow(`SELECT first_name, last_name FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&first_name, &last_name)
+	err = repo.DB.QueryRow(`SELECT first_name, last_name FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&firstName, &lastName)
 	if err != nil {
 		return "", "", "", nil, err
 	}
@@ -438,7 +441,7 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 		return "", "", "", nil, err
 	}
 
-	return first_name, last_name, compName, vacancies, nil
+	return firstName, lastName, compName, vacancies, nil
 }
 
 // func (repo *psqlVacancyRepository) GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error) {
@@ -499,6 +502,7 @@ func (repo *psqlVacancyRepository) GetEmpId(ctx context.Context, vacancyID int) 
 		"vacancy_id": vacancyID,
 	}).
 		Info("getting employer id by 'vacancy_id' from postgres")
+		
 	query := `SELECT
 		v.employer_id 
 	FROM

@@ -1,9 +1,14 @@
 package testHelper
 
 import (
+	"HnH/pkg/contextUtils"
+	"context"
 	"database/sql/driver"
 	"fmt"
+	"io"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -12,14 +17,16 @@ var (
 	location, _ = time.LoadLocation("Local")
 	Created_at  = time.Date(2023, 11, 1, 0, 0, 0, 0, location)
 	Updated_at  = time.Date(2023, 11, 2, 0, 0, 0, 0, location)
+
+	СtxWithLogger = context.WithValue(context.Background(), contextUtils.LOGGER_KEY, InitCtxLogger())
 )
 
 const (
-	SELECT_QUERY = "SELECT(.|\n)+FROM(.|\n)+"
-	SELECT_EXISTS_QUERY = "SELECT EXISTS(.|\n)+"
-	INSERT_QUERY = "INSERT(.|\n)+INTO(.|\n)+"
-	UPDATE_QUERY = "UPDATE(.|\n)+SET(.|\n)+FROM(.|\n)+WHERE(.|\n)+"
-	DELETE_QUERY = "DELETE(.|\n)+FROM(.|\n)+"
+	SelectQuery      = "SELECT(.|\n)+FROM(.|\n)+"
+	SelectExistQuery = "SELECT EXISTS(.|\n)+"
+	InsertQuery      = "INSERT(.|\n)+INTO(.|\n)+"
+	UpdateQuery      = "UPDATE(.|\n)+SET(.|\n)+WHERE(.|\n)+"
+	DeleteQuery      = "DELETE(.|\n)+FROM(.|\n)+"
 )
 
 // Converts given slice of ints into slice of driver.Vilue
@@ -31,4 +38,21 @@ func SliceIntToDriverValue(slice []int) []driver.Value {
 	}
 
 	return result
+}
+
+func InitCtxLogger() *logrus.Entry {
+	logger := &logrus.Entry{
+		Logger: &logrus.Logger{
+			Out: io.Discard,
+		},
+	}
+	return logger
+}
+
+func ErrNotEqual(expected, actual any) string {
+	return fmt.Sprintf(
+		"actual does not match expected:\n\tactual: %v\n\texpected: %v\n",
+		actual,
+		expected,
+	)
 }

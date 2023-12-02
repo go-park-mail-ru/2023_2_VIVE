@@ -31,7 +31,7 @@ func (p *psqlResponseRepository) RespondToVacancy(ctx context.Context, vacancyID
 	contextLogger.Info("adding new responce to vacancy from cv to postgres")
 	result, err := p.responseStorage.Exec(`INSERT INTO hnh_data.response ("vacancy_id", "cv_id") VALUES ($1, $2)`, vacancyID, cvID)
 	if err == sql.ErrNoRows {
-		return ErrNoRowsDeleted
+		return ErrNotInserted
 	}
 	if err != nil {
 		return err

@@ -137,9 +137,9 @@ func Run() error {
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
 
 	router := mux.NewRouter()
-	// router.Use(func(h http.Handler) http.Handler {
-	// 	return middleware.CSRFProtectionMiddleware(sessionRepo, h)
-	// })
+	//router.Use(func(h http.Handler) http.Handler {
+	//return middleware.CSRFProtectionMiddleware(authRepo, h)
+	//})
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
 	deliveryHTTP.NewUserHandler(router, userUsecase, sessionUsecase)
