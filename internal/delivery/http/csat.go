@@ -34,9 +34,7 @@ func NewCsatHandler(router *mux.Router, csatUCase usecase.ICsatUsecase, sessionU
 }
 
 func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	questionList, err := handler.csatUsecase.GetQuestions(r.Context(), cookie.Value)
+	questionList, err := handler.csatUsecase.GetQuestions(r.Context())
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return

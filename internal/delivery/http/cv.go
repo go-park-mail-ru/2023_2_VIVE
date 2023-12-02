@@ -88,8 +88,6 @@ func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.ApiCV) []domain.ApiCV {
 }
 
 func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
@@ -97,7 +95,7 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cvID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return
@@ -159,9 +157,7 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context(), cookie.Value)
+	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context())
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
@@ -173,8 +169,6 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	defer r.Body.Close()
 
 	apiCV := new(domain.ApiCV)
@@ -187,7 +181,7 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println(cv)
 	// bdCV := apiCV.ToDb()
 
-	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), cookie.Value, apiCV)
+	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), apiCV)
 	if addErr != nil {
 		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
 		return
@@ -199,8 +193,6 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
@@ -208,7 +200,7 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cvID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return
@@ -220,8 +212,6 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 }
 
 func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
@@ -237,7 +227,7 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cookie.Value, cvID, cv)
+	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cvID, cv)
 	if udpErr != nil {
 		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
 		return
@@ -247,8 +237,6 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 }
 
 func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
@@ -256,7 +244,7 @@ func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cookie.Value, cvID)
+	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cvID)
 	if deleteErr != nil {
 		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusBadRequest)
 		return

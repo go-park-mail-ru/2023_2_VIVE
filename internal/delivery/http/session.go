@@ -4,6 +4,7 @@ import (
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 
 	"encoding/json"
@@ -68,24 +69,27 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 }
 
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context(), cookie.Value)
+	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context())
 	if deleteErr != nil {
 		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusUnauthorized)
 		return
 	}
 
-	cookie.Expires = time.Now().AddDate(0, 0, -1)
+	cookie := &http.Cookie{
+		Name:     "session",
+		Value:    contextUtils.GetSessionIDFromCtx(r.Context()),
+		Expires:  time.Now().AddDate(0, 0, -1),
+		Path:     "/",
+		Secure:   false,
+		HttpOnly: true,
+	}
 
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context(), cookie.Value)
+	_, sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context())
 	if sessionErr != nil {
 		responseTemplates.SendErrorMessage(w, sessionErr, http.StatusUnauthorized)
 		return

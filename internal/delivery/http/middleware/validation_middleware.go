@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"HnH/configs"
-	"HnH/internal/repository/redisRepo"
+	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/serverErrors"
+	"context"
 
 	"crypto/hmac"
 	"crypto/sha256"
@@ -50,7 +52,7 @@ func JSONBodyValidationMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func CSRFProtectionMiddleware(sessionRepo redisRepo.ISessionRepository, next http.Handler) http.Handler {
+func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && !ifAuthURL(r.URL.Path, r.Method) {
 			cookie, err := r.Cookie("session")
@@ -59,8 +61,8 @@ func CSRFProtectionMiddleware(sessionRepo redisRepo.ISessionRepository, next htt
 				return
 			}
 
-			sessionID := cookie.Value
-			userID, err := sessionRepo.GetUserIdBySession(r.Context(), sessionID)
+			ctxWithCookie := context.WithValue(r.Context(), contextUtils.SESSION_ID_KEY, cookie.Value)
+			userID, err := sessionUCase.CheckLogin(ctxWithCookie)
 			if err != nil {
 				responseTemplates.SendErrorMessage(w, err, http.StatusUnauthorized)
 				return
@@ -69,16 +71,16 @@ func CSRFProtectionMiddleware(sessionRepo redisRepo.ISessionRepository, next htt
 			csrfToken := r.Header.Get("X-CSRF-token")
 
 			if csrfToken == "" {
-				newToken := createToken(sessionID, userID, time.Now().Add(1*time.Hour).Unix())
+				newToken := createToken(cookie.Value, userID, time.Now().Add(1*time.Hour).Unix())
 				w.Header().Set("X-CSRF-token", newToken)
 
 				responseTemplates.SendErrorMessage(w, NO_TOKEN, http.StatusForbidden)
 				return
 			}
 
-			ok, err := checkToken(sessionID, userID, csrfToken)
+			ok, err := checkToken(cookie.Value, userID, csrfToken)
 			if !ok {
-				newToken := createToken(sessionID, userID, time.Now().Add(1*time.Hour).Unix())
+				newToken := createToken(cookie.Value, userID, time.Now().Add(1*time.Hour).Unix())
 				w.Header().Set("X-CSRF-token", newToken)
 
 				if err == nil {

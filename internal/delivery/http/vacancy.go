@@ -170,8 +170,6 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	defer r.Body.Close()
 
 	apiVac := new(domain.ApiVacancy)
@@ -182,7 +180,7 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(r.Context(), cookie.Value, apiVac)
+	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(r.Context(), apiVac)
 	if addStatus != nil {
 		responseTemplates.SendErrorMessage(w, addStatus, http.StatusBadRequest)
 		return
@@ -194,8 +192,6 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 }
 
 func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
 	if convErr != nil {
@@ -213,7 +209,7 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 		return
 	}
 
-	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(r.Context(), cookie.Value, vacancyID, updatedVac)
+	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(r.Context(), vacancyID, updatedVac)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
@@ -223,8 +219,6 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 }
 
 func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
 	if convErr != nil {
@@ -232,7 +226,7 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 		return
 	}
 
-	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(r.Context(), cookie.Value, vacancyID)
+	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(r.Context(), vacancyID)
 	if delStatus != nil {
 		responseTemplates.SendErrorMessage(w, delStatus, http.StatusBadRequest)
 		return
@@ -242,9 +236,7 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 }
 
 func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(r.Context(), cookie.Value)
+	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(r.Context())
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		return

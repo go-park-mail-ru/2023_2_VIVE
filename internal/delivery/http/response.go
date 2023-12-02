@@ -49,8 +49,6 @@ func (responseHandler *ResponseHandler) sanitizeApplicants(applicants ...domain.
 }
 
 func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
@@ -65,7 +63,7 @@ func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r 
 		return
 	}
 
-	createStatus := responseHandler.responseUsecase.RespondToVacancy(r.Context(), cookie.Value, vacancyID, cvID)
+	createStatus := responseHandler.responseUsecase.RespondToVacancy(r.Context(), vacancyID, cvID)
 	if createStatus != nil {
 		responseTemplates.SendErrorMessage(w, createStatus, http.StatusBadRequest)
 		return
@@ -75,8 +73,6 @@ func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r 
 }
 
 func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	vars := mux.Vars(r)
 
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
@@ -85,7 +81,7 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 		return
 	}
 
-	applicantsList, err := responseHandler.responseUsecase.GetApplicantsList(r.Context(), cookie.Value, vacancyID)
+	applicantsList, err := responseHandler.responseUsecase.GetApplicantsList(r.Context(), vacancyID)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
 		return

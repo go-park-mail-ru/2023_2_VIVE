@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/serverErrors"
 
+	"context"
 	"errors"
 	"net/http"
 )
@@ -20,12 +22,15 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 			return
 		}
 
-		authErr := sessionUsecase.CheckLogin(r.Context(), cookie.Value)
+		ctxWithCookie := context.WithValue(r.Context(), contextUtils.SESSION_ID_KEY, cookie.Value)
+		userID, authErr := sessionUsecase.CheckLogin(ctxWithCookie)
 		if authErr != nil {
 			responseTemplates.SendErrorMessage(w, authErr, http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		ctxWithUID := context.WithValue(ctxWithCookie, contextUtils.USER_ID_KEY, userID)
+
+		next.ServeHTTP(w, r.WithContext(ctxWithUID))
 	})
 }

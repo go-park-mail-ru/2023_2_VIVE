@@ -97,8 +97,6 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	// logger := r.Context().Value(middleware.LOGGER_KEY).(*logrus.Entry)
 	// logger.Info("GOT REQUEST")
 
@@ -108,7 +106,7 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 
 	// logging.Logger.Info("got request")
 
-	user, err := userHandler.userUsecase.GetInfo(r.Context(), cookie.Value)
+	user, err := userHandler.userUsecase.GetInfo(r.Context())
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
 		return
@@ -120,8 +118,6 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 }
 
 func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
 	defer r.Body.Close()
 
 	updateInfo := new(domain.UserUpdate)
@@ -132,7 +128,7 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	updStatus := userHandler.userUsecase.UpdateInfo(r.Context(), cookie.Value, updateInfo)
+	updStatus := userHandler.userUsecase.UpdateInfo(r.Context(), updateInfo)
 	if updStatus != nil {
 		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
 		return
@@ -149,9 +145,7 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 	}
 	defer uploadedData.Close()
 
-	cookie, _ := r.Cookie("session")
-
-	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), cookie.Value, uploadedData, header)
+	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), uploadedData, header)
 	if errors.Is(uplErr, usecase.BadAvatarSize) {
 		responseTemplates.SendErrorMessage(w, usecase.BadAvatarSize, http.StatusBadRequest)
 		return
@@ -167,9 +161,7 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 }
 
 func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	file, err := userHandler.userUsecase.GetAvatar(r.Context(), cookie.Value)
+	file, err := userHandler.userUsecase.GetAvatar(r.Context())
 	if file == nil && err == nil {
 		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		return

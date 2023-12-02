@@ -138,7 +138,7 @@ func Run() error {
 
 	router := mux.NewRouter()
 	router.Use(func(h http.Handler) http.Handler {
-		return middleware.CSRFProtectionMiddleware(authRepo, h)
+		return middleware.CSRFProtectionMiddleware(sessionUsecase, h)
 	})
 
 	deliveryHTTP.NewSessionHandler(router, sessionUsecase)
