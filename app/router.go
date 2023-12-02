@@ -73,14 +73,6 @@ func initSearchEngineClient(config searchConfig.SearchEngineConfig) (searchEngin
 
 }
 
-/*var pingCounter = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "ping_request_count",
-		Help: "No of request handled by Ping handler",
-	},
-	[]string{"path"},
-)*/
-
 func Run() error {
 	logFile, err := os.OpenFile(configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -96,12 +88,6 @@ func Run() error {
 	}
 	defer db.Close()
 
-	/*redisDB := getRedis()
-	if err != nil {
-		return err
-	}
-	defer redisDB.Close()*/
-
 	csatClient, err := initCsatClient(csatConfig.CsatServiceConfig)
 	if err != nil {
 		return err
@@ -112,7 +98,6 @@ func Run() error {
 		return err
 	}
 
-	//sessionRepo := redisRepo.NewRedisSessionRepository(redisDB)
 	authRepo := grpcRepo.NewGrpcAuthRepository(authClient)
 	userRepo := psql.NewPsqlUserRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
@@ -148,17 +133,11 @@ func Run() error {
 	deliveryHTTP.NewCsatHandler(router, csatUsecase, sessionUsecase)
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
 
-	/*pinger := func(w http.ResponseWriter, r *http.Request) {
-		pingCounter.WithLabelValues("GET").Inc()
-		w.WriteHeader(200)
-		w.Write([]byte("pong"))
-	}*/
-
 	prometheus.MustRegister(metrics.HitCounter, metrics.ErrorCounter)
 	router.Handle("/metrics", promhttp.Handler())
 
 	corsRouter := configs.CORS.Handler(router)
-	loggedRouter := middleware.AccessLogMiddleware( /* logging.Logger,  */ corsRouter)
+	loggedRouter := middleware.AccessLogMiddleware(corsRouter)
 	requestIDRouter := middleware.RequestID(loggedRouter)
 	recoverRouter := middleware.PanicRecoverMiddleware(logging.Logger, requestIDRouter)
 
