@@ -2,6 +2,7 @@ package psql
 
 import (
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/serverErrors"
 	pb "HnH/services/csat/csatPB"
 	"context"
 	"database/sql"
@@ -36,18 +37,21 @@ func (repo *psqlCsatRepository) RegisterRequestTime(ctx context.Context, userID 
 
 	err := repo.DB.QueryRow(`SELECT EXISTS (SELECT user_id FROM csat_data.user_info WHERE user_id = $1)`, userID).Scan(&exists)
 	if err != nil {
-		return err
+		contextLogger.WithField("err", err.Error()).Info("error while checking existence of last request time")
+		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	if exists {
 		err = repo.DB.QueryRow(`UPDATE csat_data.user_info SET "last_request_at" = now() WHERE user_id = $1`, userID).Err()
 		if err != nil {
-			return err
+			contextLogger.WithField("err", err.Error()).Info("error while updating last request time")
+			return serverErrors.INTERNAL_SERVER_ERROR
 		}
 	} else {
 		err = repo.DB.QueryRow(`INSERT INTO csat_data.user_info ("user_id") VALUES ($1)`, userID).Err()
 		if err != nil {
-			return err
+			contextLogger.WithField("err", err.Error()).Info("error while inserting new 'user_id' in csat_data.user_info")
+			return serverErrors.INTERNAL_SERVER_ERROR
 		}
 	}
 
@@ -62,9 +66,10 @@ func (repo *psqlCsatRepository) GetLastUpdate(ctx context.Context, userID int64)
 
 	err := repo.DB.QueryRow(`SELECT last_request_at FROM csat_data.user_info WHERE user_id = $1`, userID).Scan(&reqTime)
 	if errors.Is(err, sql.ErrNoRows) {
-		return time.Time{}, ErrEntityNotFound
+		return time.Time{}, serverErrors.ErrEntityNotFound
 	} else if err != nil {
-		return time.Time{}, err
+		contextLogger.WithField("err", err.Error()).Info("error while getting last request time")
+		return time.Time{}, serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	return reqTime, nil
@@ -76,8 +81,12 @@ func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]*pb.Questio
 	contextLogger.Info("getting csat questions from postgres")
 
 	rows, err := repo.DB.Query(`SELECT id, "name", "text" FROM csat_data.question`)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, serverErrors.ErrQuestionsNotFound
+	}
 	if err != nil {
-		return nil, err
+		contextLogger.WithField("err", err.Error()).Info("error while getting csat questions")
+		return nil, serverErrors.INTERNAL_SERVER_ERROR
 	}
 	defer rows.Close()
 
@@ -88,8 +97,8 @@ func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]*pb.Questio
 
 		err := rows.Scan(&question.QuestionId, &question.Name, &question.Question)
 		if err != nil {
-			fmt.Printf("error on scan")
-			return nil, err
+			contextLogger.WithField("err", err.Error()).Info("error while scanning questions from DB")
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
 		}
 		questionsToReturn = append(questionsToReturn, question)
 	}
@@ -98,7 +107,7 @@ func (repo *psqlCsatRepository) GetQuestions(ctx context.Context) ([]*pb.Questio
 	fmt.Printf("%d", len(questionsToReturn))
 
 	if len(questionsToReturn) == 0 {
-		return nil, ErrEntityNotFound
+		return nil, serverErrors.ErrQuestionsNotFound
 	}
 
 	return questionsToReturn, nil
@@ -119,7 +128,8 @@ func (repo *psqlCsatRepository) RegisterAnswer(ctx context.Context, answer *pb.A
 	err := repo.DB.QueryRow(`INSERT INTO csat_data.answer ("stars", "message", "question_id") VALUES ($1, $2, $3)`,
 		answer.Starts, mess, answer.QuestionId).Err()
 	if err != nil {
-		return err
+		contextLogger.WithField("err", err.Error()).Info("error while inserting new answer into DB")
+		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	return nil
@@ -130,8 +140,12 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 	contextLogger.Info("collecting csat statistics from postgres")
 
 	QuestRows, err := repo.DB.Query(`SELECT id, "text" FROM csat_data.question`)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, serverErrors.ErrQuestionsNotFound
+	}
 	if err != nil {
-		return nil, err
+		contextLogger.WithField("err", err.Error()).Info("error while getting csat questions")
+		return nil, serverErrors.INTERNAL_SERVER_ERROR
 	}
 	defer QuestRows.Close()
 
@@ -143,12 +157,17 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 
 		err := QuestRows.Scan(&quest_id, &questionStat.QuestionText)
 		if err != nil {
-			return nil, err
+			contextLogger.WithField("err", err.Error()).Info("error while scanning questions from DB")
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
 		}
 
 		AnsRows, err := repo.DB.Query(`SELECT stars, message FROM csat_data.answer WHERE question_id = $1`, quest_id)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, serverErrors.ErrAnswerNotFound
+		}
 		if err != nil {
-			return nil, err
+			contextLogger.WithField("err", err.Error()).Info("error while getting answers from DB")
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
 		}
 		defer AnsRows.Close()
 
@@ -161,7 +180,8 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 
 			err = AnsRows.Scan(&stars, &message)
 			if err != nil {
-				return nil, err
+				contextLogger.WithField("err", err.Error()).Info("error while scanning answers from DB")
+				return nil, serverErrors.INTERNAL_SERVER_ERROR
 			}
 
 			countOfStars[stars]++
@@ -197,7 +217,7 @@ func (repo *psqlCsatRepository) GetStatistics(ctx context.Context) (*pb.Statisti
 	}
 
 	if len(questionStats) == 0 {
-		return nil, ErrEntityNotFound
+		return nil, serverErrors.ErrEntityNotFound
 	}
 
 	result := &pb.Statistics{

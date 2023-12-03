@@ -1,10 +1,12 @@
 package redisRepo
 
 import (
+	"HnH/pkg/authUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	pb "HnH/services/auth/authPB"
 	"context"
+	"errors"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -38,9 +40,9 @@ func (p *redisAuthRepository) AddSession(ctx context.Context, sessionID string, 
 	result, err := redis.String(connection.Do("SET", sessionKey, userID, "EXAT", expiryUnixSeconds))
 	if err != nil {
 		contextLogger.WithField("err", err.Error()).Info("Error while adding session")
-		return err
+		return authUtils.ERROR_WHILE_WRITING
 	} else if result != "OK" {
-		return ERROR_WHILE_WRITING
+		return authUtils.ERROR_WHILE_WRITING
 	}
 
 	return nil
@@ -58,7 +60,7 @@ func (p *redisAuthRepository) DeleteSession(ctx context.Context, sessionID strin
 	_, err := redis.Int(connection.Do("DEL", sessionKey))
 	if err != nil {
 		contextLogger.WithField("err", err.Error()).Info("Error while deleting session")
-		return err
+		return authUtils.ERROR_WHILE_DELETING
 	}
 
 	return nil
@@ -94,9 +96,12 @@ func (p *redisAuthRepository) GetUserIdBySession(ctx context.Context, sessionID 
 	sessionKey := "sessions:" + sessionID
 
 	userID, err := redis.Int64(connection.Do("GET", sessionKey))
+	if errors.Is(err, redis.ErrNil) {
+		return &pb.UserID{}, serverErrors.NO_SESSION
+	}
 	if err != nil {
 		contextLogger.WithField("err", err.Error()).Info("Error while checking session")
-		return &pb.UserID{}, ENTITY_NOT_FOUND
+		return &pb.UserID{}, serverErrors.INTERNAL_SERVER_ERROR
 	}
 
 	return &pb.UserID{UserId: userID}, nil
