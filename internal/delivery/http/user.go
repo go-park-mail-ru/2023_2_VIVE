@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
@@ -79,7 +80,8 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	sessionID, err := userHandler.userUsecase.SignUp(r.Context(), newUser, expiryTime.Unix())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -108,7 +110,8 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 
 	user, err := userHandler.userUsecase.GetInfo(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, serverErrors.AUTH_REQUIRED, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -130,7 +133,8 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 
 	updStatus := userHandler.userUsecase.UpdateInfo(r.Context(), updateInfo)
 	if updStatus != nil {
-		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(updStatus)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -153,7 +157,8 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 		responseTemplates.SendErrorMessage(w, usecase.BadAvatarType, http.StatusBadRequest)
 		return
 	} else if uplErr != nil {
-		responseTemplates.SendErrorMessage(w, uplErr, http.StatusInternalServerError)
+		errToSend, code := appErrors.GetErrAndCodeToSend(uplErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -166,7 +171,8 @@ func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request
 		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		return
 	} else if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusInternalServerError)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"HnH/configs"
+	"HnH/internal/appErrors"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
@@ -64,7 +65,8 @@ func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Ha
 			ctxWithCookie := context.WithValue(r.Context(), contextUtils.SESSION_ID_KEY, cookie.Value)
 			userID, err := sessionUCase.CheckLogin(ctxWithCookie)
 			if err != nil {
-				responseTemplates.SendErrorMessage(w, err, http.StatusUnauthorized)
+				errToSend, code := appErrors.GetErrAndCodeToSend(err)
+				responseTemplates.SendErrorMessage(w, errToSend, code)
 				return
 			}
 

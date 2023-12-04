@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
@@ -15,7 +16,7 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session")
 		if errors.Is(err, http.ErrNoCookie) {
-			responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+			responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusBadRequest)
 			return
 		} else if err != nil {
 			responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
@@ -25,7 +26,8 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 		ctxWithCookie := context.WithValue(r.Context(), contextUtils.SESSION_ID_KEY, cookie.Value)
 		userID, authErr := sessionUsecase.CheckLogin(ctxWithCookie)
 		if authErr != nil {
-			responseTemplates.SendErrorMessage(w, authErr, http.StatusUnauthorized)
+			errToSend, code := appErrors.GetErrAndCodeToSend(authErr)
+			responseTemplates.SendErrorMessage(w, errToSend, code)
 			return
 		}
 

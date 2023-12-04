@@ -66,7 +66,7 @@ func (repo *psqlCsatRepository) GetLastUpdate(ctx context.Context, userID int64)
 
 	err := repo.DB.QueryRow(`SELECT last_request_at FROM csat_data.user_info WHERE user_id = $1`, userID).Scan(&reqTime)
 	if errors.Is(err, sql.ErrNoRows) {
-		return time.Time{}, serverErrors.ErrEntityNotFound
+		return time.Time{}, serverErrors.ErrNoLastUpdate
 	} else if err != nil {
 		contextLogger.WithField("err", err.Error()).Info("error while getting last request time")
 		return time.Time{}, serverErrors.INTERNAL_SERVER_ERROR

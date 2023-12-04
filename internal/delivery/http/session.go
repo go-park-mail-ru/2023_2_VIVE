@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
@@ -51,7 +52,8 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 
 	sessionID, loginErr := sessionHandler.sessionUsecase.Login(r.Context(), user, expiryTime.Unix())
 	if loginErr != nil {
-		responseTemplates.SendErrorMessage(w, loginErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(loginErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -71,7 +73,8 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context())
 	if deleteErr != nil {
-		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(deleteErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -91,7 +94,8 @@ func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Requ
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
 	_, sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context())
 	if sessionErr != nil {
-		responseTemplates.SendErrorMessage(w, sessionErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(sessionErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

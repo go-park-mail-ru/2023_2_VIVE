@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
@@ -65,7 +66,8 @@ func (responseHandler *ResponseHandler) CreateResponse(w http.ResponseWriter, r 
 
 	createStatus := responseHandler.responseUsecase.RespondToVacancy(r.Context(), vacancyID, cvID)
 	if createStatus != nil {
-		responseTemplates.SendErrorMessage(w, createStatus, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(createStatus)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -83,7 +85,8 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 
 	applicantsList, err := responseHandler.responseUsecase.GetApplicantsList(r.Context(), vacancyID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

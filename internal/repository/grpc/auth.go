@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type IAuthRepository interface {
@@ -39,7 +40,12 @@ func (repo *grpcAuthRepository) AddSession(ctx context.Context, sessionID string
 
 	_, err := repo.client.AddSession(ctx, &authData)
 	if err != nil {
-		return err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return errToReturn
 	}
 
 	return nil
@@ -53,7 +59,12 @@ func (repo *grpcAuthRepository) DeleteSession(ctx context.Context, sessionID str
 
 	_, err := repo.client.DeleteSession(ctx, &sessID)
 	if err != nil {
-		return err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return errToReturn
 	}
 
 	return nil
@@ -67,7 +78,12 @@ func (repo *grpcAuthRepository) ValidateSession(ctx context.Context, sessionID s
 
 	_, err := repo.client.ValidateSession(ctx, &sessID)
 	if err != nil {
-		return err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return errToReturn
 	}
 
 	return nil
@@ -81,7 +97,12 @@ func (repo *grpcAuthRepository) GetUserIdBySession(ctx context.Context, sessionI
 
 	userID, err := repo.client.GetUserIdBySession(ctx, &sessID)
 	if err != nil {
-		return 0, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return 0, errToReturn
 	}
 
 	return int(userID.UserId), nil

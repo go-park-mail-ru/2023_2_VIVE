@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type ISearchEngineRepository interface {
@@ -44,7 +45,12 @@ func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, qu
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	searchResponse, err := repo.client.SearchVacancies(ctx, &request)
 	if err != nil {
-		return nil, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
 	}
 
 	return searchResponse, nil
@@ -70,7 +76,12 @@ func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query 
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	searchResponse, err := repo.client.SearchCVs(ctx, &request)
 	if err != nil {
-		return nil, 0, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, 0, errToReturn
 	}
 
 	// foundCVIDs := repo.castVacanciesResponse(searchResponse)

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
@@ -99,7 +100,8 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	if getErr == psql.ErrEntityNotFound {
 		vacancies = []domain.ApiVacancy{}
 	} else if getErr != nil {
-		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -139,7 +141,8 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 	)
 
 	if getErr != nil {
-		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -160,7 +163,8 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 
 	vacWithCompName, err := vacancyHandler.vacancyUsecase.GetVacancyWithCompanyName(r.Context(), vacancyID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -182,7 +186,8 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 
 	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(r.Context(), apiVac)
 	if addStatus != nil {
-		responseTemplates.SendErrorMessage(w, addStatus, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(addStatus)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -211,7 +216,8 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 
 	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(r.Context(), vacancyID, updatedVac)
 	if updStatus != nil {
-		responseTemplates.SendErrorMessage(w, updStatus, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(updStatus)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -228,7 +234,8 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 
 	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(r.Context(), vacancyID)
 	if delStatus != nil {
-		responseTemplates.SendErrorMessage(w, delStatus, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(delStatus)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -238,7 +245,8 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r *http.Request) {
 	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -257,7 +265,8 @@ func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *
 
 	info, err := vacancyHandler.vacancyUsecase.GetEmployerInfo(r.Context(), empID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

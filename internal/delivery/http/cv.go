@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
@@ -97,7 +98,8 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 
 	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cvID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -145,7 +147,8 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if getErr != nil {
-		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -159,7 +162,8 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -183,7 +187,8 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 
 	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), apiCV)
 	if addErr != nil {
-		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(addErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -202,7 +207,8 @@ func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) 
 
 	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cvID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -227,9 +233,10 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cvID, cv)
-	if udpErr != nil {
-		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
+	updErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cvID, cv)
+	if updErr != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(updErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -246,7 +253,8 @@ func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Reques
 
 	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cvID)
 	if deleteErr != nil {
-		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(deleteErr)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -263,7 +271,8 @@ func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Requ
 
 	info, err := cvHandler.cvUsecase.GetApplicantInfo(r.Context(), appID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

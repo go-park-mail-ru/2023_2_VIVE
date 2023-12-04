@@ -1,6 +1,7 @@
 package http
 
 import (
+	"HnH/internal/appErrors"
 	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
@@ -36,7 +37,8 @@ func NewCsatHandler(router *mux.Router, csatUCase usecase.ICsatUsecase, sessionU
 func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	questionList, err := handler.csatUsecase.GetQuestions(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -53,7 +55,8 @@ func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Reques
 
 	err := handler.csatUsecase.RegisterAnswer(r.Context(), answer)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
@@ -63,7 +66,8 @@ func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Reques
 func (handler *CsatHandler) GetStatistics(w http.ResponseWriter, r *http.Request) {
 	statistics, err := handler.csatUsecase.GetStatistic(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 

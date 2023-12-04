@@ -21,7 +21,7 @@ var (
 
 	SERVER_IS_NOT_RUNNING = fmt.Errorf("The server encountered a problem while starting")
 
-	ErrNoLastUpdate      = fmt.Errorf("no last update of given user found")
+	ErrNoLastUpdate      = fmt.Errorf("no last update of the given user found")
 	ErrEntityNotFound    = fmt.Errorf("the entity you requested is not found")
 	ErrQuestionsNotFound = fmt.Errorf("no questions found")
 	ErrAnswerNotFound    = fmt.Errorf("no answers found for particular question")
