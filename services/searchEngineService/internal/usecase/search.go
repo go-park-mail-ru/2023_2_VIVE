@@ -122,45 +122,25 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 		Values: cityFilterValues,
 	})
 
-	// salaryFilterValues, err := u.searchRepo.FilterSalaryVacancies(ctx, searchQuery)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// filters = append(filters, &pb.Filter{
-	// 	Name:   string(domain.SalaryFilter),
-	// 	Type:   string(domain.DoubleRange),
-	// 	Values: salaryFilterValues,
-	// })
+	educationTypeFilterValues, err := u.searchRepo.FilterEducationTypeCVs(ctx, searchQuery)
+	if err != nil {
+		return nil, err
+	}
+	filters = append(filters, &pb.Filter{
+		Name:   string(domain.EducationTypeFilter),
+		Type:   string(domain.CheckBox),
+		Values: educationTypeFilterValues,
+	})
 
-	// experienceFilterValues, err := u.searchRepo.FilterExperienceVacancies(ctx, searchQuery)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// filters = append(filters, &pb.Filter{
-	// 	Name:   string(domain.ExperienceFilter),
-	// 	Type:   string(domain.Radio),
-	// 	Values: experienceFilterValues,
-	// })
-
-	// employmentFilterValues, err := u.searchRepo.FilterEmploymentVacancies(ctx, searchQuery)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// filters = append(filters, &pb.Filter{
-	// 	Name:   string(domain.EmploymentFilter),
-	// 	Type:   string(domain.Radio),
-	// 	Values: employmentFilterValues,
-	// })
-
-	// educationTypeFilterValues, err := u.searchRepo.FilterEducationTypeVacancies(ctx, searchQuery)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// filters = append(filters, &pb.Filter{
-	// 	Name:   string(domain.EducationTypeFilter),
-	// 	Type:   string(domain.Radio),
-	// 	Values: educationTypeFilterValues,
-	// })
+	genderFilterValues, err := u.searchRepo.FilterGenderCVs(ctx, searchQuery)
+	if err != nil {
+		return nil, err
+	}
+	filters = append(filters, &pb.Filter{
+		Name:   string(domain.GenderFilter),
+		Type:   string(domain.CheckBox),
+		Values: genderFilterValues,
+	})
 
 	return filters, nil
 }

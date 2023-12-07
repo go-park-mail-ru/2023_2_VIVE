@@ -3,6 +3,7 @@ package queryTemplates
 import "fmt"
 
 var (
+	// Vacancy filters
 	VacCitiesQueryTemplate = &CommonFilterQueryTemplate{
 		baseQuery:   `SELECT v."location", count(*) AS cnt FROM hnh_data.vacancy v`,
 		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
@@ -10,32 +11,25 @@ var (
 		orderBy:     `ORDER BY cnt`,
 	}
 
-	CvCitiesQueryTemplate = &CommonFilterQueryTemplate{
-		baseQuery:   `SELECT c."location", count(*) AS cnt FROM hnh_data.cv c`,
-		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
-		groupBy:     `GROUP BY c."location"`,
-		orderBy:     `ORDER BY cnt`,
-	}
-
-	ExperienceQueryTemplate = &CommonFilterQueryTemplate{
+	VacExperienceQueryTemplate = &CommonFilterQueryTemplate{
 		baseQuery:   `SELECT v.experience, count(*) AS cnt FROM hnh_data.vacancy v`,
 		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
 		groupBy:     `GROUP BY v.experience`,
 	}
 
-	EmploymentQueryTemplate = &CommonFilterQueryTemplate{
+	VacEmploymentQueryTemplate = &CommonFilterQueryTemplate{
 		baseQuery:   `SELECT v.employment, count(*) AS cnt FROM hnh_data.vacancy v`,
 		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
 		groupBy:     `GROUP BY v.employment`,
 	}
 
-	EducationTypeQueryTemplate = &CommonFilterQueryTemplate{
+	VacEducationTypeQueryTemplate = &CommonFilterQueryTemplate{
 		baseQuery:   `SELECT v.education_type, count(*) AS cnt FROM hnh_data.vacancy v`,
 		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
 		groupBy:     `GROUP BY v.education_type`,
 	}
 
-	SalaryQueryTemplate = &CommonFilterQueryTemplate{
+	VacSalaryQueryTemplate = &CommonFilterQueryTemplate{
 		baseQuery: `SELECT
 						COALESCE(MIN(v.salary_lower_bound), 0) AS min_salary ,
 						COALESCE(MAX(v.salary_upper_bound), 0) AS max_salary,
@@ -43,6 +37,34 @@ var (
 					FROM
 						hnh_data.vacancy v`,
 		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
+	}
+
+	// CV filters
+	CvCitiesQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT c."location", count(*) AS cnt FROM hnh_data.cv c`,
+		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
+		groupBy:     `GROUP BY c."location"`,
+		orderBy:     `ORDER BY cnt`,
+	}
+
+	CvEducationTypeQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT c.education_level, count(*) AS cnt FROM hnh_data.cv c`,
+		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
+		groupBy:     `GROUP BY c.education_level`,
+		orderBy:     `ORDER BY cnt`,
+	}
+
+	CvGenderQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT c.gender, count(*) AS cnt FROM hnh_data.cv c`,
+		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
+		groupBy:     `GROUP BY c.gender`,
+		orderBy:     `ORDER BY cnt`,
+	}
+
+	CvExperienceQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT c.experience, count(*) AS cnt FROM hnh_data.cv c`,
+		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
+		groupBy:     `GROUP BY c.experience`,
 	}
 )
 

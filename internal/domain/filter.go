@@ -8,6 +8,7 @@ const (
 	EmploymentFilter    FilterName = "employment"
 	ExperienceFilter    FilterName = "experience"
 	EducationTypeFilter FilterName = "education_type"
+	GenderFilter        FilterName = "gender"
 )
 
 type FilterType string
