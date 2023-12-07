@@ -16,4 +16,5 @@ const (
 	CheckBox       FilterType = "checkbox"
 	Radio          FilterType = "radio"
 	CheckBoxSearch FilterType = "checkbox_search"
+	DoubleRange    FilterType = "double_range"
 )

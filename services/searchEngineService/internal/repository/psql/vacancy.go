@@ -7,6 +7,7 @@ import (
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 type ISearchRepository interface {
 	SearchVacanciesIDs(ctx context.Context, searchQuery string, limit, offset int64) ([]int64, int64, error)
 	FilterCitiesVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
-	// FilterSalaryVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
+	FilterSalaryVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 	FilterExperienceVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 	FilterEmploymentVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 	FilterEducationTypeVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
@@ -45,6 +46,11 @@ func NewPsqlSearchRepository(db *sql.DB) ISearchRepository {
 	}
 }
 
+// commonFilterItems executes a query built from a template and returns filter values.
+func (repo *psqlSearchRepository) commonFilterItems(ctx context.Context, qt *queryTemplates.CommonFilterQueryTemplate, args ...interface{}) ([]*pb.FilterValue, error) {
+	return repo.executeCommonFilterQuery(ctx, qt.BuildQuery(len(args) == 1), args...)
+}
+
 // executeCommonFilterQuery is a helper function to execute a SQL query and scan results into filter values.
 func (repo *psqlSearchRepository) executeCommonFilterQuery(ctx context.Context, query string, args ...interface{}) ([]*pb.FilterValue, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
@@ -72,9 +78,54 @@ func (repo *psqlSearchRepository) executeCommonFilterQuery(ctx context.Context, 
 	return filterValues, nil
 }
 
-// commonFilterItems executes a query built from a template and returns filter values.
-func (repo *psqlSearchRepository) commonFilterItems(ctx context.Context, qt *queryTemplates.CommonFilterQueryTemplate, args ...interface{}) ([]*pb.FilterValue, error) {
-	return repo.executeCommonFilterQuery(ctx, qt.BuildQuery(len(args) == 1), args...)
+func (repo *psqlSearchRepository) salaryFilterItems(ctx context.Context, qt *queryTemplates.CommonFilterQueryTemplate, args ...interface{}) ([]*pb.FilterValue, error) {
+	return repo.executeSalaryFilterQuery(ctx, qt.BuildQuery(len(args) == 1), args...)
+}
+
+// func compareStartEndRanges(range_start, range_end int64) (int64, int64) {
+// 	if range_end < range_start {
+// 		return range_start, range_start
+// 	} else if 
+// }
+
+func (repo *psqlSearchRepository) executeSalaryFilterQuery(ctx context.Context, query string, args ...interface{}) ([]*pb.FilterValue, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"db_query": query,
+		"args":     args,
+	}).
+		Debug("executing db query with args")
+
+	rows, err := repo.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var filterValues []*pb.FilterValue
+	for rows.Next() {
+		var range_start, range_end, count int64
+		err := rows.Scan(&range_start, &range_end, &count)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"scan_error": err,
+			}).
+				Debug("got scan error")
+			return nil, err
+		}
+
+		if range_end < range_start {
+			range_end = range_start
+		}
+
+		filterValues = append(filterValues, &pb.FilterValue{
+			Value: fmt.Sprintf("%d:%d", range_start, range_end),
+			Count: count,
+		})
+
+	}
+
+	return filterValues, nil
 }
 
 func (repo *psqlSearchRepository) FilterCitiesVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error) {
@@ -84,6 +135,15 @@ func (repo *psqlSearchRepository) FilterCitiesVacancies(ctx context.Context, sea
 		return repo.commonFilterItems(ctx, queryTemplates.CitiesQueryTemplate, searchQuery)
 	}
 	return repo.commonFilterItems(ctx, queryTemplates.CitiesQueryTemplate)
+}
+
+func (repo *psqlSearchRepository) FilterSalaryVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting salary filters")
+	if strings.TrimSpace(searchQuery) != "" {
+		return repo.salaryFilterItems(ctx, queryTemplates.SalaryQueryTemplate, searchQuery)
+	}
+	return repo.salaryFilterItems(ctx, queryTemplates.SalaryQueryTemplate)
 }
 
 func (repo *psqlSearchRepository) FilterExperienceVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error) {
@@ -115,6 +175,11 @@ func (repo *psqlSearchRepository) FilterEducationTypeVacancies(ctx context.Conte
 
 func (repo *psqlSearchRepository) executeSearchQuery(ctx context.Context, query string, args ...interface{}) ([]int64, int64, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"args": args,
+	}).
+		Debug("executing query with args")
 
 	rows, err := repo.DB.Query(query, args...)
 	if err == sql.ErrNoRows {
@@ -149,7 +214,6 @@ func (repo *psqlSearchRepository) executeSearchQuery(ctx context.Context, query 
 func (repo *psqlSearchRepository) searchItems(
 	ctx context.Context,
 	qt *queryTemplates.SearchQueryTemplates,
-	// searchQuery string,
 	args ...interface{},
 ) ([]int64, int64, error) {
 	// Assuming limit, offset and searchQuery is in args => true

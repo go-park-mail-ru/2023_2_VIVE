@@ -52,15 +52,15 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 		Values: cityFilterValues,
 	})
 
-	// salaryFilterValues, err := u.searchRepo.FilterSalaryAllVacancies(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// filters = append(filters, &pb.Filter{
-	// 	Name:   string(domain.SalaryFilter),
-	// 	Type:   string(domain.Radio),
-	// 	Values: salaryFilterValues,
-	// })
+	salaryFilterValues, err := u.searchRepo.FilterSalaryVacancies(ctx, searchQuery)
+	if err != nil {
+		return nil, err
+	}
+	filters = append(filters, &pb.Filter{
+		Name:   string(domain.SalaryFilter),
+		Type:   string(domain.DoubleRange),
+		Values: salaryFilterValues,
+	})
 
 	experienceFilterValues, err := u.searchRepo.FilterExperienceVacancies(ctx, searchQuery)
 	if err != nil {
