@@ -1,7 +1,10 @@
 package queryTemplates
 
 import (
+	"HnH/services/searchEngineService/pkg/searchOptions"
+	"HnH/services/searchEngineService/searchEnginePB"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -19,11 +22,21 @@ type SearchQueryTemplates struct {
 	whereClause string
 }
 
-func (sqt SearchQueryTemplates) BuildTemplate(searchCondition bool) string {
-	if searchCondition {
-		// sqt.whereClause = fmt.Sprintf("WHERE %s", searchTerm)
-		sqt.whereClause = "WHERE plainto_tsquery($3) @@ tbl.fts"
+func (sqt SearchQueryTemplates) BuildTemplate(limit, offset int64, options *searchEnginePB.SearchOptions) (string, []interface{}) {
+	// searchTerm := ""
+	// if searchCondition {
+	// 	// sqt.whereClause = fmt.Sprintf("WHERE %s", searchTerm)
+	// 	searchTerm = "plainto_tsquery($3) @@ tbl.fts"
+	// }
+
+	var initArgs []interface{}
+	initArgs = append(initArgs, limit, offset)
+	whereOptions, args := searchOptions.GetWhereTerms(options, 3)
+	if len(whereOptions) > 0 {
+		sqt.whereClause = fmt.Sprintf("WHERE %s", strings.Join(whereOptions, " AND "))
 	}
+	fmt.Printf("where clause: %s\n", sqt.whereClause)
+	initArgs = append(initArgs, args...)
 
 	return fmt.Sprintf(
 		`WITH filtered_items AS (
@@ -50,5 +63,5 @@ func (sqt SearchQueryTemplates) BuildTemplate(searchCondition bool) string {
 	OFFSET $2`,
 		sqt.table_name,
 		sqt.whereClause,
-	)
+	), initArgs
 }

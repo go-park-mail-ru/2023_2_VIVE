@@ -7,6 +7,7 @@ import (
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/utils"
+	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type ICVUsecase interface {
 	GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error)
 	UpdateCVOfUserById(ctx context.Context, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, cvID int) error
-	SearchCVs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaCV, error)
+	SearchCVs(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaCV, error)
 }
 
 type CVUsecase struct {
@@ -365,10 +366,9 @@ func (cvUsecase *CVUsecase) DeleteCVOfUserById(ctx context.Context, cvID int) er
 
 func (cvUsecase *CVUsecase) SearchCVs(
 	ctx context.Context,
-	query string,
-	pageNumber, resultsPerPage int64,
+	options *searchEnginePB.SearchOptions,
 ) (domain.ApiMetaCV, error) {
-	cvSearchResponse, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
+	cvSearchResponse, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, options)
 	if err != nil {
 		return domain.ApiMetaCV{
 			Filters: nil,

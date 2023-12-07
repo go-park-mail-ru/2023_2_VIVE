@@ -71,3 +71,12 @@ func GetColumnNames(columnNames []string, except ...string) []string {
 	}
 	return res
 }
+
+func GetPlaceholdersSliceFrom(indexFrom, placeHoldersNum int) []string {
+	res := make([]string, placeHoldersNum)
+	
+	for i := range res {
+		res[i] = fmt.Sprintf("$%d", indexFrom + i)
+	}
+	return res
+}

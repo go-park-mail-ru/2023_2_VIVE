@@ -7,6 +7,7 @@ import (
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
+	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ type IVacancyUsecase interface {
 	AddVacancy(ctx context.Context, vacancy *domain.ApiVacancy) (int, error)
 	UpdateVacancy(ctx context.Context, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, vacancyID int) error
-	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaVacancy, error)
+	SearchVacancies(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaVacancy, error)
 }
 
 type VacancyUsecase struct {
@@ -244,10 +245,9 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 
 func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	ctx context.Context,
-	query string,
-	pageNumber, resultsPerPage int64,
+	options *searchEnginePB.SearchOptions,
 ) (domain.ApiMetaVacancy, error) {
-	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
+	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, options)
 	if err != nil {
 		return domain.ApiMetaVacancy{
 			Filters:   nil,

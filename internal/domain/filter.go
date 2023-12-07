@@ -1,21 +1,21 @@
 package domain
 
-type FilterName string
+// type FilterName string
 
-const (
-	CityFilter          FilterName = "city"
-	SalaryFilter        FilterName = "salary"
-	EmploymentFilter    FilterName = "employment"
-	ExperienceFilter    FilterName = "experience"
-	EducationTypeFilter FilterName = "education_type"
-	GenderFilter        FilterName = "gender"
-)
+// const (
+// 	CityFilter          FilterName = "city"
+// 	SalaryFilter        FilterName = "salary"
+// 	EmploymentFilter    FilterName = "employment"
+// 	ExperienceFilter    FilterName = "experience"
+// 	EducationTypeFilter FilterName = "education_type"
+// 	GenderFilter        FilterName = "gender"
+// )
 
-type FilterType string
+// type FilterType string
 
-const (
-	CheckBox       FilterType = "checkbox"
-	Radio          FilterType = "radio"
-	CheckBoxSearch FilterType = "checkbox_search"
-	DoubleRange    FilterType = "double_range"
-)
+// const (
+// 	CheckBox       FilterType = "checkbox"
+// 	Radio          FilterType = "radio"
+// 	CheckBoxSearch FilterType = "checkbox_search"
+// 	DoubleRange    FilterType = "double_range"
+// )

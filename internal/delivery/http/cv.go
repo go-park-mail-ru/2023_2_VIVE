@@ -8,6 +8,7 @@ import (
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
+	"HnH/services/searchEngineService/searchEnginePB"
 
 	"encoding/json"
 	"fmt"
@@ -113,7 +114,7 @@ func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.Api
 		Filters: metaCVs.Filters,
 		CVs: domain.ApiCVCount{
 			Count: metaCVs.CVs.Count,
-			CVs: cvHandler.sanitizeCVs(metaCVs.CVs.CVs...),
+			CVs:   cvHandler.sanitizeCVs(metaCVs.CVs.CVs...),
 		},
 		// Count: metaCVs.Count,
 		// CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
@@ -128,28 +129,35 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
-	searchQuery := query.Get(SEARCH_QUERY_KEY)
+	// searchQuery := query.Get(SEARCH_QUERY_KEY)
 
-	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
+	// pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
+	// pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
+	// if convErr != nil {
+	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+	// 	return
+	// }
+
+	// resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
+	// resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
+	// if convErr != nil {
+	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
+	// 	return
+	// }
+
+	options := searchEnginePB.SearchOptions{}
+	for optionName, values := range query {
+		options.Options[optionName] = &searchEnginePB.SearchOptionValues{
+			Values: values,
+		}
+		// option := searchEnginePB.SearchOption{
+		// 	Name:   optionName,
+		// 	Values: values,
+		// }
+		// options = append(options, &option)
 	}
 
-	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
-	}
-
-	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(
-		r.Context(),
-		searchQuery,
-		pageNum,
-		resultsPerPage,
-	)
+	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(r.Context(), &options)
 
 	if getErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
