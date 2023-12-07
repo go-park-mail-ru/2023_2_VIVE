@@ -3,25 +3,36 @@ package queryTemplates
 import "fmt"
 
 var (
-	CitiesQueryTemplate = &CommonFilterQueryTemplate{
-		baseQuery: `SELECT v."location", count(*) AS cnt FROM hnh_data.vacancy v`,
-		groupBy:   `GROUP BY v."location"`,
-		orderBy:   `ORDER BY cnt`,
+	VacCitiesQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT v."location", count(*) AS cnt FROM hnh_data.vacancy v`,
+		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
+		groupBy:     `GROUP BY v."location"`,
+		orderBy:     `ORDER BY cnt`,
+	}
+
+	CvCitiesQueryTemplate = &CommonFilterQueryTemplate{
+		baseQuery:   `SELECT c."location", count(*) AS cnt FROM hnh_data.cv c`,
+		whereClause: `WHERE plainto_tsquery($1) @@ c.fts`,
+		groupBy:     `GROUP BY c."location"`,
+		orderBy:     `ORDER BY cnt`,
 	}
 
 	ExperienceQueryTemplate = &CommonFilterQueryTemplate{
-		baseQuery: `SELECT v.experience, count(*) AS cnt FROM hnh_data.vacancy v`,
-		groupBy:   `GROUP BY v.experience`,
+		baseQuery:   `SELECT v.experience, count(*) AS cnt FROM hnh_data.vacancy v`,
+		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
+		groupBy:     `GROUP BY v.experience`,
 	}
 
 	EmploymentQueryTemplate = &CommonFilterQueryTemplate{
-		baseQuery: `SELECT v.employment, count(*) AS cnt FROM hnh_data.vacancy v`,
-		groupBy:   `GROUP BY v.employment`,
+		baseQuery:   `SELECT v.employment, count(*) AS cnt FROM hnh_data.vacancy v`,
+		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
+		groupBy:     `GROUP BY v.employment`,
 	}
 
 	EducationTypeQueryTemplate = &CommonFilterQueryTemplate{
-		baseQuery: `SELECT v.education_type, count(*) AS cnt FROM hnh_data.vacancy v`,
-		groupBy:   `GROUP BY v.education_type`,
+		baseQuery:   `SELECT v.education_type, count(*) AS cnt FROM hnh_data.vacancy v`,
+		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
+		groupBy:     `GROUP BY v.education_type`,
 	}
 
 	SalaryQueryTemplate = &CommonFilterQueryTemplate{
@@ -31,6 +42,7 @@ var (
 						COUNT(*)
 					FROM
 						hnh_data.vacancy v`,
+		whereClause: `WHERE plainto_tsquery($1) @@ v.fts`,
 	}
 )
 
@@ -41,9 +53,10 @@ type CommonFilterQueryTemplate struct {
 	orderBy     string
 }
 
-func (cfqt *CommonFilterQueryTemplate) BuildQuery(searchCondition bool) string {
-	if searchCondition {
-		cfqt.whereClause = "WHERE plainto_tsquery($1) @@ v.fts"
+func (cfqt CommonFilterQueryTemplate) BuildQuery(searchCondition bool) string {
+	cfqt.baseQuery = fmt.Sprintf(cfqt.baseQuery)
+	if !searchCondition {
+		cfqt.whereClause = ""
 	}
 	return fmt.Sprintf("%s %s %s %s", cfqt.baseQuery, cfqt.whereClause, cfqt.groupBy, cfqt.orderBy)
 }

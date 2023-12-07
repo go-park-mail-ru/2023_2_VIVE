@@ -19,7 +19,7 @@ type SearchQueryTemplates struct {
 	whereClause string
 }
 
-func (sqt *SearchQueryTemplates) BuildTemplate(searchCondition bool) string {
+func (sqt SearchQueryTemplates) BuildTemplate(searchCondition bool) string {
 	if searchCondition {
 		// sqt.whereClause = fmt.Sprintf("WHERE %s", searchTerm)
 		sqt.whereClause = "WHERE plainto_tsquery($3) @@ tbl.fts"

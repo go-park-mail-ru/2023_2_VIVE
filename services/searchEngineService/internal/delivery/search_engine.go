@@ -64,11 +64,14 @@ func (s *SearchEngineServer) SearchVacancies(ctx context.Context, request *pb.Se
 func (s *SearchEngineServer) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
 	ctx = s.ctxLoggerWithMethod(ctx, "SearchCVs")
 
-	cvsIDs, err := s.searchUscase.SearchCVs(ctx, request)
+	cvsResponse, err := s.searchUscase.SearchCVs(ctx, request)
 	if err != nil {
 		return nil, err
 	}
-	return cvsIDs, nil
+	cvsResponse.Filters = s.sanitizeFilters(cvsResponse.Filters...)
+
+
+	return cvsResponse, nil
 }
 
 func NewServer() (*SearchEngineServer, error) {

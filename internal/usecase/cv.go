@@ -368,20 +368,20 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	query string,
 	pageNumber, resultsPerPage int64,
 ) (domain.ApiMetaCV, error) {
-	cvIDs, count, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
+	cvSearchResponse, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
 	if err != nil {
 		return domain.ApiMetaCV{
-			Count: 0,
-			CVs:   nil,
-		}, nil
+			Filters: nil,
+			CVs:     domain.ApiCVCount{},
+		}, err
 	}
 
 	// dbCvs, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
-	dbCvs, dbExps, dbInsts, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
+	dbCvs, dbExps, dbInsts, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvSearchResponse.Ids))
 	if cvErr == psql.ErrEntityNotFound {
 		return domain.ApiMetaCV{
-			Count: 0,
-			CVs:   nil,
+			Filters: nil,
+			CVs:     domain.ApiCVCount{},
 		}, nil
 	}
 	if cvErr != nil {
@@ -400,8 +400,11 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	}
 
 	result := domain.ApiMetaCV{
-		Count: count,
-		CVs:   cvsToReturn,
+		Filters: cvSearchResponse.Filters,
+		CVs: domain.ApiCVCount{
+			Count: cvSearchResponse.Count,
+			CVs: cvsToReturn,
+		},
 	}
 
 	return result, nil

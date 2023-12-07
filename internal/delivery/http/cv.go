@@ -110,8 +110,13 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 
 func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.ApiMetaCV {
 	result := domain.ApiMetaCV{
-		Count: metaCVs.Count,
-		CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
+		Filters: metaCVs.Filters,
+		CVs: domain.ApiCVCount{
+			Count: metaCVs.CVs.Count,
+			CVs: cvHandler.sanitizeCVs(metaCVs.CVs.CVs...),
+		},
+		// Count: metaCVs.Count,
+		// CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
 	}
 	return result
 }

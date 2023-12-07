@@ -12,7 +12,7 @@ import (
 
 type ISearchEngineRepository interface {
 	SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error)
-	SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error)
+	SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error)
 }
 
 type grpcSearchEngineRepository struct {
@@ -56,7 +56,7 @@ func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, qu
 	return searchResponse, nil
 }
 
-func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error) {
+func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	request := pb.SearchRequest{
 		Query:          query,
@@ -81,11 +81,11 @@ func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query 
 
 		errToReturn := GetErrByMessage(errMessage)
 
-		return nil, 0, errToReturn
+		return nil, errToReturn
 	}
 
 	// foundCVIDs := repo.castVacanciesResponse(searchResponse)
-	foundCVIDs, count := searchResponse.Ids, searchResponse.Count
+	// foundCVIDs,? count := searchResponse.Ids, searchResponse.Count
 
-	return foundCVIDs, count, nil
+	return searchResponse, nil
 }

@@ -23,13 +23,13 @@ type ISearchRepository interface {
 
 	// GetAllCVsIDs(ctx context.Context, limit, offset int64) ([]int64, int64, error)
 	SearchCVsIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
+	FilterCitiesCVs(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 
 	// TODO: FilterCitiesAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterSalaryAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterExperienceAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterEmploymentAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterEducationTypeAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
-	// TODO: FilterCitiesCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterSalaryCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterExperienceCVs(ctx context.Context) ([]*pb.FilterValue, error)
 	// TODO: FilterEmploymentCVs(ctx context.Context) ([]*pb.FilterValue, error)
@@ -85,7 +85,7 @@ func (repo *psqlSearchRepository) salaryFilterItems(ctx context.Context, qt *que
 // func compareStartEndRanges(range_start, range_end int64) (int64, int64) {
 // 	if range_end < range_start {
 // 		return range_start, range_start
-// 	} else if 
+// 	} else if
 // }
 
 func (repo *psqlSearchRepository) executeSalaryFilterQuery(ctx context.Context, query string, args ...interface{}) ([]*pb.FilterValue, error) {
@@ -132,9 +132,9 @@ func (repo *psqlSearchRepository) FilterCitiesVacancies(ctx context.Context, sea
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	contextLogger.Info("getting city filters")
 	if strings.TrimSpace(searchQuery) != "" {
-		return repo.commonFilterItems(ctx, queryTemplates.CitiesQueryTemplate, searchQuery)
+		return repo.commonFilterItems(ctx, queryTemplates.VacCitiesQueryTemplate, searchQuery)
 	}
-	return repo.commonFilterItems(ctx, queryTemplates.CitiesQueryTemplate)
+	return repo.commonFilterItems(ctx, queryTemplates.VacCitiesQueryTemplate)
 }
 
 func (repo *psqlSearchRepository) FilterSalaryVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error) {
@@ -177,6 +177,7 @@ func (repo *psqlSearchRepository) executeSearchQuery(ctx context.Context, query 
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
+		"db_query": query,
 		"args": args,
 	}).
 		Debug("executing query with args")
@@ -260,4 +261,20 @@ func (repo *psqlSearchRepository) SearchCVsIDs(
 		return repo.searchItems(ctx, queryTemplates.CVsSearchQueryTemplate, limit, offset)
 	}
 	return repo.searchItems(ctx, queryTemplates.CVsSearchQueryTemplate, limit, offset, searchQuery)
+}
+
+func (repo *psqlSearchRepository) FilterCitiesCVs(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.Info("getting city filters")
+
+	query := queryTemplates.CvCitiesQueryTemplate.BuildQuery(strings.TrimSpace(searchQuery) != "")
+	fmt.Printf("filter query: %s\n", query)
+	fmt.Printf("search query: %s\n", searchQuery)
+
+	if strings.TrimSpace(searchQuery) != "" {
+		return repo.executeCommonFilterQuery(ctx, query, searchQuery)
+		// return repo.commonFilterItems(ctx, queryTemplates.VacCitiesQueryTemplate, searchQuery)
+	}
+	return repo.executeCommonFilterQuery(ctx, query)
+	// return repo.commonFilterItems(ctx, queryTemplates.VacCitiesQueryTemplate)
 }

@@ -252,7 +252,7 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 		return domain.ApiMetaVacancy{
 			Filters:   nil,
 			Vacancies: domain.ApiVacancyCount{},
-		}, nil
+		}, err
 	}
 	vacancyIDs, count := vacanciesSearchResponse.Ids, vacanciesSearchResponse.Count
 
