@@ -9,7 +9,7 @@ type SearchEngineConfig struct {
 
 var SearchEngineServiceConfig = SearchEngineConfig{
 	ServiceName: "SearchEngine",
-	Host:        "212.233.90.231",
+	Host:        "localhost",
 	Port:        8063,
 	LogFile:     "search_engine_service.log",
 }

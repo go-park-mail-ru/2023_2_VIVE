@@ -9,7 +9,7 @@ type AuthConfig struct {
 
 var AuthServiceConfig = AuthConfig{
 	ServiceName: "auth service",
-	Host:        "212.233.90.231",
+	Host:        "localhost",
 	Port:        8062,
 	LogFile:     "auth_service.log",
 }
@@ -23,7 +23,7 @@ type redisConfig struct {
 
 var AuthRedisConfig = redisConfig{
 	protocol:       "redis",
-	networkAddress: "212.233.90.231",
+	networkAddress: "localhost",
 	port:           "8008",
 	password:       "vive_password_redis",
 }
