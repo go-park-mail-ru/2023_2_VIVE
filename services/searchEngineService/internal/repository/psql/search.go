@@ -21,7 +21,7 @@ type ISearchRepository interface {
 	FilterEmploymentVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 	FilterEducationTypeVacancies(ctx context.Context, searchQuery string) ([]*pb.FilterValue, error)
 
-	GetAllCVsIDs(ctx context.Context, limit, offset int64) ([]int64, int64, error)
+	// GetAllCVsIDs(ctx context.Context, limit, offset int64) ([]int64, int64, error)
 	SearchCVsIDs(ctx context.Context, query string, limit, offset int64) ([]int64, int64, error)
 
 	// TODO: FilterCitiesAllCVs(ctx context.Context) ([]*pb.FilterValue, error)
@@ -239,4 +239,25 @@ func (repo *psqlSearchRepository) SearchVacanciesIDs(
 		return repo.searchItems(ctx, queryTemplates.VacanciesSearchQueryTemplate, limit, offset)
 	}
 	return repo.searchItems(ctx, queryTemplates.VacanciesSearchQueryTemplate, limit, offset, searchQuery)
+}
+
+func (repo *psqlSearchRepository) SearchCVsIDs(
+	ctx context.Context,
+	searchQuery string,
+	limit, offset int64,
+) ([]int64, int64, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("searching cvs")
+	contextLogger.WithFields(logrus.Fields{
+		"query":  searchQuery,
+		"limit":  limit,
+		"offset": offset,
+	}).
+		Debug("search params")
+
+	if strings.TrimSpace(searchQuery) == "" {
+		return repo.searchItems(ctx, queryTemplates.CVsSearchQueryTemplate, limit, offset)
+	}
+	return repo.searchItems(ctx, queryTemplates.CVsSearchQueryTemplate, limit, offset, searchQuery)
 }
