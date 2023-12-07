@@ -35,7 +35,6 @@ func (sqt SearchQueryTemplates) BuildTemplate(limit, offset int64, options *sear
 	if len(whereOptions) > 0 {
 		sqt.whereClause = fmt.Sprintf("WHERE %s", strings.Join(whereOptions, " AND "))
 	}
-	fmt.Printf("where clause: %s\n", sqt.whereClause)
 	initArgs = append(initArgs, args...)
 
 	return fmt.Sprintf(

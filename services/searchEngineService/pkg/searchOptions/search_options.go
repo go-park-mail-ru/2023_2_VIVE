@@ -75,8 +75,6 @@ func GetWhereTerms(options *searchEnginePB.SearchOptions, placeHolderIndex int) 
 
 	// placeHolderIndex := 1
 	for optionName, optionValues := range options.Options {
-		fmt.Printf("optionName: %s\n", optionName)
-		fmt.Printf("optionValues: %v\n", optionValues.Values)
 		switch optionName {
 		case string(SearchQuery):
 			if strings.TrimSpace(optionValues.Values[0]) != "" {
@@ -87,23 +85,22 @@ func GetWhereTerms(options *searchEnginePB.SearchOptions, placeHolderIndex int) 
 
 		case string(CityFilter):
 			if len(optionValues.Values) > 0 {
-				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(optionValues.Values))
-				placeHolderIndex += len(optionValues.Values)
+				values := strings.Split(optionValues.Values[0], ",")
+				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(values))
+				placeHolderIndex += len(values)
 				queryElemets = append(queryElemets, fmt.Sprintf(`tbl."location" IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(optionValues.Values)...)
+				args = append(args, castUtils.StringToAnySlice(values)...)
 			}
 
 		case string(SalaryFilter):
 			if len(optionValues.Values) > 0 {
 				rangeBounds := strings.Split(optionValues.Values[0], ",")
-				fmt.Printf("rangeBounds: %#v\n", rangeBounds)
 				if len(rangeBounds) != 2 {
 					continue
 				}
 				rangeBounds = append(rangeBounds, rangeBounds...)
 				placeholders := queryUtils.GetPlaceholdersSliceFrom(placeHolderIndex, 4)
 				// placeholders = append(placeholders, placeholders...)
-				fmt.Printf("placeholders: %#v\n", placeholders)
 				placeHolderIndex += 4
 				queryElemets = append(queryElemets, fmt.Sprintf(
 					`(tbl.salary_lower_bound BETWEEN %s AND %s OR tbl.salary_upper_bound BETWEEN %s AND %s)`,
@@ -112,36 +109,31 @@ func GetWhereTerms(options *searchEnginePB.SearchOptions, placeHolderIndex int) 
 				args = append(args, castUtils.StringToAnySlice(rangeBounds)...)
 			}
 
-		// case string(EducationTypeFilter):
-		// 	if len(optionValues.Values) > 0 {
-		// 		placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(optionValues.Values))
-		// 		placeHolderIndex += len(optionValues.Values)
-		// 		queryElemets = append(queryElemets, fmt.Sprintf(`tbl.education_type IN (%s)`, placeholders))
-		// 		args = append(args, castUtils.StringToAnySlice(optionValues.Values)...)
-		// 	}
-
 		case string(EmploymentFilter):
 			if len(optionValues.Values) > 0 {
-				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(optionValues.Values))
-				placeHolderIndex += len(optionValues.Values)
+				values := strings.Split(optionValues.Values[0], ",")
+				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(values))
+				placeHolderIndex += len(values)
 				queryElemets = append(queryElemets, fmt.Sprintf(`tbl.employment IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(optionValues.Values)...)
+				args = append(args, castUtils.StringToAnySlice(values)...)
 			}
 
 		case string(ExperienceFilter):
 			if len(optionValues.Values) > 0 {
-				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(optionValues.Values))
-				placeHolderIndex += len(optionValues.Values)
+				values := strings.Split(optionValues.Values[0], ",")
+				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(values))
+				placeHolderIndex += len(values)
 				queryElemets = append(queryElemets, fmt.Sprintf(`tbl.experience IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(optionValues.Values)...)
+				args = append(args, castUtils.StringToAnySlice(values)...)
 			}
 
 		case string(EducationTypeFilter):
 			if len(optionValues.Values) > 0 {
-				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(optionValues.Values))
-				placeHolderIndex += len(optionValues.Values)
+				values := strings.Split(optionValues.Values[0], ",")
+				placeholders := queryUtils.QueryPlaceHolders(placeHolderIndex, len(values))
+				placeHolderIndex += len(values)
 				queryElemets = append(queryElemets, fmt.Sprintf(`tbl.education_type IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(optionValues.Values)...)
+				args = append(args, castUtils.StringToAnySlice(values)...)
 			}
 		}
 
