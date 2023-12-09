@@ -75,7 +75,7 @@ func Run() {
 		fmt.Printf("error while starting server: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("\tstarting search engine server at %d port\n", config.SearchEngineServiceConfig.Port)
-	logger.Logger.Infof("starting search engine server at %d port", config.SearchEngineServiceConfig.Port)
+	fmt.Printf("\tstarting %s server at %d port\n", config.SearchEngineServiceConfig.ServiceName, config.SearchEngineServiceConfig.Port)
+	logger.Logger.Infof("starting %s server at %d port", config.SearchEngineServiceConfig.ServiceName, config.SearchEngineServiceConfig.Port)
 	grpcServer.Serve(listner)
 }

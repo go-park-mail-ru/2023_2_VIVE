@@ -1,0 +1,23 @@
+/*
+protoc --go_out=. --go_opt=paths=source_relative \
+--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+api/proto/notification.proto
+*/
+
+syntax = "proto3";
+
+package notifications;
+
+option go_package = "HnH/pkg/services/notifications/notificationsPB";
+
+import "google/protobuf/empty.proto";
+
+message NotificationMessage {
+    int64 user_id = 1;
+    string message = 2;
+    string data = 3;
+}
+
+service NotificationService {
+    rpc NotifyUser(NotificationMessage) returns (google.protobuf.Empty) {}
+}
