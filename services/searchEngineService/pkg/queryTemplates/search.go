@@ -16,19 +16,24 @@ import (
 var (
 	VacanciesSearchQueryTemplate = &SearchQueryTemplates{
 		table_name: "hnh_data.vacancy",
-		// limitClause:  "LIMIT $1",
-		// offsetClause: "OFFSET $2",
+		allowedOptions: []searchOptions.Option{
+			SearchOption,
+			CityOption,
+			SalaryOption,
+			EmploymentOption,
+			ExperienceOption,
+			EducationTypeOption,
+		},
 	}
 
 	CVsSearchQueryTemplate = &SearchQueryTemplates{
 		table_name: "hnh_data.cv",
-		// limitClause:  "LIMIT $1",
-		// offsetClause: "OFFSET $2",
 	}
 )
 
 type SearchQueryTemplates struct {
 	table_name      string
+	allowedOptions  []searchOptions.Option
 	whereClause     string
 	paginatorClause string
 }
@@ -65,70 +70,17 @@ func (sqt *SearchQueryTemplates) setWhereCaluse(
 ) ([]interface{}, error) {
 	whereTerms := []string{}
 
-	// TODO: make universal methods for each filter type
-	for optionName, optionValues := range options.Options {
-		switch optionName {
-		case string(searchOptions.SearchQuery):
-			if strings.TrimSpace(optionValues.Values[0]) != "" {
-				whereTerms = append(whereTerms, fmt.Sprintf("plainto_tsquery($%d) @@ tbl.fts", *placeHolderStartIndex))
-				*placeHolderStartIndex++
-				args = append(args, optionValues.Values[0])
-			}
-
-		case string(searchOptions.CityFilter):
-			if len(optionValues.Values) > 0 {
-				values := strings.Split(optionValues.Values[0], ",")
-				placeholders := queryUtils.QueryPlaceHolders(*placeHolderStartIndex, len(values))
-				*placeHolderStartIndex += len(values)
-				whereTerms = append(whereTerms, fmt.Sprintf(`tbl."location" IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(values)...)
-			}
-
-		case string(searchOptions.SalaryFilter):
-			if len(optionValues.Values) > 0 {
-				rangeBounds := strings.Split(optionValues.Values[0], ",")
-				if len(rangeBounds) != 2 {
-					continue
-				}
-				rangeBounds = append(rangeBounds, rangeBounds...)
-				placeholders := queryUtils.GetPlaceholdersSliceFrom(*placeHolderStartIndex, 4)
-				// placeholders = append(placeholders, placeholders...)
-				*placeHolderStartIndex += 4
-				whereTerms = append(whereTerms, fmt.Sprintf(
-					`(tbl.salary_lower_bound BETWEEN %s AND %s OR tbl.salary_upper_bound BETWEEN %s AND %s)`,
-					castUtils.StringToAnySlice(placeholders)...,
-				))
-				args = append(args, castUtils.StringToAnySlice(rangeBounds)...)
-			}
-
-		case string(searchOptions.EmploymentFilter):
-			if len(optionValues.Values) > 0 {
-				values := strings.Split(optionValues.Values[0], ",")
-				placeholders := queryUtils.QueryPlaceHolders(*placeHolderStartIndex, len(values))
-				*placeHolderStartIndex += len(values)
-				whereTerms = append(whereTerms, fmt.Sprintf(`tbl.employment IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(values)...)
-			}
-
-		case string(searchOptions.ExperienceFilter):
-			if len(optionValues.Values) > 0 {
-				values := strings.Split(optionValues.Values[0], ",")
-				placeholders := queryUtils.QueryPlaceHolders(*placeHolderStartIndex, len(values))
-				*placeHolderStartIndex += len(values)
-				whereTerms = append(whereTerms, fmt.Sprintf(`tbl.experience IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(values)...)
-			}
-
-		case string(searchOptions.EducationTypeFilter):
-			if len(optionValues.Values) > 0 {
-				values := strings.Split(optionValues.Values[0], ",")
-				placeholders := queryUtils.QueryPlaceHolders(*placeHolderStartIndex, len(values))
-				*placeHolderStartIndex += len(values)
-				whereTerms = append(whereTerms, fmt.Sprintf(`tbl.education_type IN (%s)`, placeholders))
-				args = append(args, castUtils.StringToAnySlice(values)...)
-			}
+	for _, option := range sqt.allowedOptions {
+		optionValues, exists := options.Options[string(option.Name)]
+		if !exists {
+			continue
 		}
 
+		var whereTerm string
+		whereTerm, args = option.Handle(optionValues, placeHolderStartIndex, args)
+		if whereTerm != "" {
+			whereTerms = append(whereTerms, whereTerm)
+		}
 	}
 
 	if len(whereTerms) > 0 {

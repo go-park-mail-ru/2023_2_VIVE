@@ -31,7 +31,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.CityFilter),
+		Name:   string(searchOptions.City),
 		Type:   string(searchOptions.CheckBoxSearch),
 		Values: cityFilterValues,
 	})
@@ -41,7 +41,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.SalaryFilter),
+		Name:   string(searchOptions.Salary),
 		Type:   string(searchOptions.DoubleRange),
 		Values: salaryFilterValues,
 	})
@@ -51,7 +51,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.ExperienceFilter),
+		Name:   string(searchOptions.Experience),
 		Type:   string(searchOptions.Radio),
 		Values: experienceFilterValues,
 	})
@@ -61,7 +61,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.EmploymentFilter),
+		Name:   string(searchOptions.Employment),
 		Type:   string(searchOptions.Radio),
 		Values: employmentFilterValues,
 	})
@@ -71,7 +71,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.EducationTypeFilter),
+		Name:   string(searchOptions.EducationType),
 		Type:   string(searchOptions.Radio),
 		Values: educationTypeFilterValues,
 	})
@@ -90,20 +90,7 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 	if err != nil {
 		return &pb.SearchResponse{}, nil
 	}
-	// pageNumber, err := searchOptions.GetPageNum(options)
-	// if err != nil {
-	// 	return &pb.SearchResponse{}, nil
-	// }
-	// resultsPerPage, err := searchOptions.GetResultsPerPage(options)
-	// if err != nil {
-	// 	return &pb.SearchResponse{}, nil
-	// }
-
-	// limit := resultsPerPage
-	// offset := (pageNumber - 1) * resultsPerPage
-	// contextLogger := contextUtils.GetContextLogger(ctx)
-
-	// TODO: remove searchQuery, limit, offset from function args
+	
 	vacsIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, options)
 	if err == psql.ErrEntityNotFound {
 		return &pb.SearchResponse{}, nil
@@ -133,7 +120,7 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.CityFilter),
+		Name:   string(searchOptions.City),
 		Type:   string(searchOptions.CheckBoxSearch),
 		Values: cityFilterValues,
 	})
@@ -143,7 +130,7 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.EducationTypeFilter),
+		Name:   string(searchOptions.EducationType),
 		Type:   string(searchOptions.CheckBox),
 		Values: educationTypeFilterValues,
 	})
@@ -153,7 +140,7 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 		return nil, err
 	}
 	filters = append(filters, &pb.Filter{
-		Name:   string(searchOptions.GenderFilter),
+		Name:   string(searchOptions.Gender),
 		Type:   string(searchOptions.CheckBox),
 		Values: genderFilterValues,
 	})

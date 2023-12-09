@@ -8,24 +8,25 @@ import (
 type OptionName string
 
 const (
-	SearchQuery         OptionName = "q"
-	PageNum             OptionName = "page_num"
-	ResultsPerPage      OptionName = "results_per_page"
-	CityFilter          OptionName = "city"
-	SalaryFilter        OptionName = "salary"
-	EmploymentFilter    OptionName = "employment"
-	ExperienceFilter    OptionName = "experience"
-	EducationTypeFilter OptionName = "education_type"
-	GenderFilter        OptionName = "gender"
+	SearchQuery    OptionName = "q"
+	PageNum        OptionName = "page_num"
+	ResultsPerPage OptionName = "results_per_page"
+	City           OptionName = "city"
+	Salary         OptionName = "salary"
+	Employment     OptionName = "employment"
+	Experience     OptionName = "experience"
+	EducationType  OptionName = "education_type"
+	Gender         OptionName = "gender"
 )
 
-type FilterType string
+type OptionType string
 
 const (
-	CheckBox       FilterType = "checkbox"
-	Radio          FilterType = "radio"
-	CheckBoxSearch FilterType = "checkbox_search"
-	DoubleRange    FilterType = "double_range"
+	Search         OptionType = "search"
+	CheckBox       OptionType = "checkbox"
+	Radio          OptionType = "radio"
+	CheckBoxSearch OptionType = "checkbox_search"
+	DoubleRange    OptionType = "double_range"
 )
 
 func GetSearchQuery(options *searchEnginePB.SearchOptions) (string, error) {
@@ -75,4 +76,31 @@ func GetResultsPerPage(options *searchEnginePB.SearchOptions) (int64, error) {
 		return pageNum, nil
 	}
 	return 0, ErrNoOption
+}
+
+type OptionHandler func(
+	option *Option,
+	optionValues *searchEnginePB.SearchOptionValues,
+	placeHolderStartIndex *int,
+	args []interface{},
+) (string, []interface{})
+
+type Option struct {
+	Name                    OptionName
+	Type                    OptionType
+	DBColumnName            string
+	AdditionalDBColumnNames []string
+	Handler                 OptionHandler
+}
+
+func (op *Option) Handle(
+	optionValues *searchEnginePB.SearchOptionValues,
+	placeHolderStartIndex *int,
+	args []interface{},
+) (string, []interface{}) {
+	if op.Handler != nil {
+		return op.Handler(op, optionValues, placeHolderStartIndex, args)
+	}
+
+	return "", args
 }
