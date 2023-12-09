@@ -86,24 +86,25 @@ func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchR
 
 	options := request.GetOptions()
 
-	searchQuery, err := searchOptions.PopSearchQuery(options)
+	searchQuery, err := searchOptions.GetSearchQuery(options)
 	if err != nil {
 		return &pb.SearchResponse{}, nil
 	}
-	pageNumber, err := searchOptions.PopPageNum(options)
-	if err != nil {
-		return &pb.SearchResponse{}, nil
-	}
-	resultsPerPage, err := searchOptions.PopResultsPerPage(options)
-	if err != nil {
-		return &pb.SearchResponse{}, nil
-	}
+	// pageNumber, err := searchOptions.GetPageNum(options)
+	// if err != nil {
+	// 	return &pb.SearchResponse{}, nil
+	// }
+	// resultsPerPage, err := searchOptions.GetResultsPerPage(options)
+	// if err != nil {
+	// 	return &pb.SearchResponse{}, nil
+	// }
 
-	limit := resultsPerPage
-	offset := (pageNumber - 1) * resultsPerPage
+	// limit := resultsPerPage
+	// offset := (pageNumber - 1) * resultsPerPage
 	// contextLogger := contextUtils.GetContextLogger(ctx)
 
-	vacsIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, searchQuery, limit, offset, options)
+	// TODO: remove searchQuery, limit, offset from function args
+	vacsIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, options)
 	if err == psql.ErrEntityNotFound {
 		return &pb.SearchResponse{}, nil
 	}
@@ -167,24 +168,24 @@ func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest
 
 	options := request.GetOptions()
 
-	searchQuery, err := searchOptions.PopSearchQuery(options)
+	searchQuery, err := searchOptions.GetSearchQuery(options)
 	if err != nil {
 		return &pb.SearchResponse{}, nil
 	}
-	pageNumber, err := searchOptions.PopPageNum(options)
-	if err != nil {
-		return &pb.SearchResponse{}, nil
-	}
-	resultsPerPage, err := searchOptions.PopResultsPerPage(options)
-	if err != nil {
-		return &pb.SearchResponse{}, nil
-	}
+	// pageNumber, err := searchOptions.GetPageNum(options)
+	// if err != nil {
+	// 	return &pb.SearchResponse{}, nil
+	// }
+	// resultsPerPage, err := searchOptions.GetResultsPerPage(options)
+	// if err != nil {
+	// 	return &pb.SearchResponse{}, nil
+	// }
 
-	limit := resultsPerPage
-	offset := (pageNumber - 1) * resultsPerPage
+	// limit := resultsPerPage
+	// offset := (pageNumber - 1) * resultsPerPage
 	// contextLogger := contextUtils.GetContextLogger(ctx)
 
-	cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, searchQuery, limit, offset, options)
+	cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, options)
 	if err == psql.ErrEntityNotFound {
 		return &pb.SearchResponse{}, nil
 	}

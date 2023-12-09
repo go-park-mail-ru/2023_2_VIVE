@@ -72,6 +72,10 @@ func GetColumnNames(columnNames []string, except ...string) []string {
 	return res
 }
 
+// returns slice of psql place holders according to given parametres. For example:
+//
+// 	GetPlaceholdersSliceFrom(1, 2) -> []string{"$1", "$2"}
+// 	GetPlaceholdersSliceFrom(3, 4) -> []string{"$3", "$4", "$5", "$6"}
 func GetPlaceholdersSliceFrom(indexFrom, placeHoldersNum int) []string {
 	res := make([]string, placeHoldersNum)
 	
