@@ -16,27 +16,31 @@ import (
 var (
 	VacanciesSearchQueryTemplate = &SearchQueryTemplates{
 		table_name: "hnh_data.vacancy",
-		allowedOptions: []searchOptions.Option{
+		allowedOptions: []Option{
 			SearchOption,
 			CityOption,
 			SalaryOption,
 			EmploymentOption,
 			ExperienceOption,
-			EducationTypeOption,
+			VacEducationTypeOption,
 		},
 	}
 
 	CVsSearchQueryTemplate = &SearchQueryTemplates{
 		table_name: "hnh_data.cv",
-		allowedOptions: []searchOptions.Option{
+		allowedOptions: []Option{
 			SearchOption,
+			CityOption,
+			CvEducationTypeOption,
+			// ExperienceOption, TODO: denormilize cv table
+			GenderOption,
 		},
 	}
 )
 
 type SearchQueryTemplates struct {
 	table_name      string
-	allowedOptions  []searchOptions.Option
+	allowedOptions  []Option
 	whereClause     string
 	paginatorClause string
 }

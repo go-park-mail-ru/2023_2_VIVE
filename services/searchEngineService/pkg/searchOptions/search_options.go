@@ -77,30 +77,3 @@ func GetResultsPerPage(options *searchEnginePB.SearchOptions) (int64, error) {
 	}
 	return 0, ErrNoOption
 }
-
-type OptionHandler func(
-	option *Option,
-	optionValues *searchEnginePB.SearchOptionValues,
-	placeHolderStartIndex *int,
-	args []interface{},
-) (string, []interface{})
-
-type Option struct {
-	Name                    OptionName
-	Type                    OptionType
-	DBColumnName            string
-	AdditionalDBColumnNames []string
-	Handler                 OptionHandler
-}
-
-func (op *Option) Handle(
-	optionValues *searchEnginePB.SearchOptionValues,
-	placeHolderStartIndex *int,
-	args []interface{},
-) (string, []interface{}) {
-	if op.Handler != nil {
-		return op.Handler(op, optionValues, placeHolderStartIndex, args)
-	}
-
-	return "", args
-}
