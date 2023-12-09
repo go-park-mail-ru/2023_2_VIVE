@@ -80,17 +80,13 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 }
 
 func (u *SearchUsecase) SearchVacancies(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
-	// searchQuery := request.GetQuery()
-	// pageNumber := request.GetPageNumber()
-	// resultsPerPage := request.GetResultsPerPage()
-
 	options := request.GetOptions()
 
 	searchQuery, err := searchOptions.GetSearchQuery(options)
 	if err != nil {
 		return &pb.SearchResponse{}, nil
 	}
-	
+
 	vacsIDs, count, err := u.searchRepo.SearchVacanciesIDs(ctx, options)
 	if err == psql.ErrEntityNotFound {
 		return &pb.SearchResponse{}, nil
@@ -149,28 +145,12 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 }
 
 func (u *SearchUsecase) SearchCVs(ctx context.Context, request *pb.SearchRequest) (*pb.SearchResponse, error) {
-	// searchQuery := request.GetQuery()
-	// pageNumber := request.GetPageNumber()
-	// resultsPerPage := request.GetResultsPerPage()
-
 	options := request.GetOptions()
 
 	searchQuery, err := searchOptions.GetSearchQuery(options)
 	if err != nil {
 		return &pb.SearchResponse{}, nil
 	}
-	// pageNumber, err := searchOptions.GetPageNum(options)
-	// if err != nil {
-	// 	return &pb.SearchResponse{}, nil
-	// }
-	// resultsPerPage, err := searchOptions.GetResultsPerPage(options)
-	// if err != nil {
-	// 	return &pb.SearchResponse{}, nil
-	// }
-
-	// limit := resultsPerPage
-	// offset := (pageNumber - 1) * resultsPerPage
-	// contextLogger := contextUtils.GetContextLogger(ctx)
 
 	cvsIDs, count, err := u.searchRepo.SearchCVsIDs(ctx, options)
 	if err == psql.ErrEntityNotFound {

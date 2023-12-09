@@ -129,33 +129,21 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
-	// searchQuery := query.Get(SEARCH_QUERY_KEY)
 
-	// pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	// pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	// if convErr != nil {
-	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-	// 	return
-	// }
-
-	// resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	// resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	// if convErr != nil {
-	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-	// 	return
-	// }
-
-	options := searchEnginePB.SearchOptions{}
+	// options := searchEnginePB.SearchOptions{}
+	queryOptions := make(map[string]*searchEnginePB.SearchOptionValues)
 	for optionName, values := range query {
-		options.Options[optionName] = &searchEnginePB.SearchOptionValues{
+		contextLogger.WithFields(logrus.Fields{
+			"option_name":   optionName,
+			"option_values": values,
+		}).
+			Debug("parsing options")
+		optionsValues := searchEnginePB.SearchOptionValues{
 			Values: values,
 		}
-		// option := searchEnginePB.SearchOption{
-		// 	Name:   optionName,
-		// 	Values: values,
-		// }
-		// options = append(options, &option)
+		queryOptions[optionName] = &optionsValues
 	}
+	options := searchEnginePB.SearchOptions{Options: queryOptions}
 
 	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(r.Context(), &options)
 

@@ -119,8 +119,6 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 	}).
 		Debug("got search request with query")
 
-	// searchEnginePB.SearchRequest
-	// queryOptions := searchEnginePB.SearchOptions{}
 	queryOptions := make(map[string]*searchEnginePB.SearchOptionValues)
 	for optionName, values := range query {
 		contextLogger.WithFields(logrus.Fields{
@@ -132,29 +130,8 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 			Values: values,
 		}
 		queryOptions[optionName] = &optionsValues
-		// option := searchEnginePB.SearchOption{
-		// 	Name:   optionName,
-		// 	Values: values,
-		// }
-		// options = append(options, &option)
 	}
 	options := searchEnginePB.SearchOptions{Options: queryOptions}
-
-	// searchQuery := query.Get(SEARCH_QUERY_KEY)
-
-	// pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	// pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	// if convErr != nil {
-	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-	// 	return
-	// }
-
-	// resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	// resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	// if convErr != nil {
-	// 	responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-	// 	return
-	// }
 
 	metaVacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(r.Context(), &options)
 

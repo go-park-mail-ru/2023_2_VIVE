@@ -28,6 +28,9 @@ var (
 
 	CVsSearchQueryTemplate = &SearchQueryTemplates{
 		table_name: "hnh_data.cv",
+		allowedOptions: []searchOptions.Option{
+			SearchOption,
+		},
 	}
 )
 
