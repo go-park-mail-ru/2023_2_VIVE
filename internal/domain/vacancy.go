@@ -27,6 +27,7 @@ type DbVacancy struct {
 	Experience       ExperienceTime `json:"experience"`
 	EducationType    EducationLevel `json:"education_type,omitempty"`
 	Location         *string        `json:"location,omitempty"`
+	OrganizationName *string        `json:"organization_name,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
@@ -42,6 +43,7 @@ func (vac *DbVacancy) ToAPI() *ApiVacancy {
 		Experience:       vac.Experience,
 		EducationType:    vac.EducationType,
 		Employment:       vac.Employment,
+		OrganizationName: vac.OrganizationName,
 		Location:         vac.Location,
 		CreatedAt:        vac.CreatedAt,
 		UpdatedAt:        vac.UpdatedAt,
@@ -78,6 +80,7 @@ type ApiVacancy struct {
 	Experience       ExperienceTime `json:"experience"`
 	Employment       EmploymentType `json:"employment,omitempty"`
 	EducationType    EducationLevel `json:"education_type,omitempty"`
+	OrganizationName *string        `json:"organization_name,omitempty"`
 	Location         *string        `json:"location,omitempty"`
 	Description      string         `json:"description,omitempty"`
 	Skills           []string       `json:"skills,omitempty"`
@@ -95,6 +98,7 @@ func (vac *ApiVacancy) ToDb() *DbVacancy {
 		EducationType:    vac.EducationType,
 		Experience:       vac.Experience,
 		Employment:       vac.Employment,
+		OrganizationName: vac.OrganizationName,
 		Location:         vac.Location,
 		CreatedAt:        vac.CreatedAt,
 		UpdatedAt:        vac.UpdatedAt,

@@ -192,7 +192,8 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 		v.education_type,
 		v."location",
 		v.created_at,
-		v.updated_at
+		v.updated_at,
+		v.organization_name
 	FROM
 		hnh_data.vacancy v
 	WHERE
@@ -226,6 +227,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 			&vacancy.Location,
 			&vacancy.CreatedAt,
 			&vacancy.UpdatedAt,
+			&vacancy.OrganizationName,
 		)
 		if err != nil {
 			return nil, err
@@ -543,10 +545,11 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, empID int, va
 			employment,
 			experience,
 			education_type,
-			"location"
+			"location",
+			organization_name
 		)
 		SELECT
-			e.id, $1, $2, $3, $4, $5, $6, $7, $8
+			e.id, $1, $2, $3, $4, $5, $6, $7, $8, e.organization_name
 	FROM
 		hnh_data.employer e
 	WHERE
