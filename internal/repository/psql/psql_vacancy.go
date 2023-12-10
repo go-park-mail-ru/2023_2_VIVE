@@ -258,6 +258,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 		experience,
 		education_type,
 		"location",
+		organization_name,
 		created_at,
 		updated_at
 	FROM
@@ -279,6 +280,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 			&vacancyToReturn.Experience,
 			&vacancyToReturn.EducationType,
 			&vacancyToReturn.Location,
+			&vacancyToReturn.OrganizationName,
 			&vacancyToReturn.CreatedAt,
 			&vacancyToReturn.UpdatedAt,
 		)
