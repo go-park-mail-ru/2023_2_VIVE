@@ -4,7 +4,7 @@ import "fmt"
 
 var (
 	ErrOpenConn          = fmt.Errorf("could not open websocket connection")
-	ErrHandshakeMsg      = fmt.Errorf("invalid handshake message")
+	ErrInvalidUserID     = fmt.Errorf("invalid user_id")
 	ErrConnAlreadyExists = fmt.Errorf("connection already exists")
 	ErrNoConn            = fmt.Errorf("no connection")
 )

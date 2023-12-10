@@ -7,6 +7,7 @@ import (
 	"HnH/services/notifications/internal/delivery/websocket"
 	repository "HnH/services/notifications/internal/repository/inMemory"
 	"HnH/services/notifications/internal/usecase"
+	"HnH/services/notifications/pkg/WSMiddleware"
 	"HnH/services/notifications/pkg/logger"
 	"fmt"
 	"net"
@@ -78,7 +79,14 @@ func Run() {
 	)
 
 	wsHandler := websocket.NewNotificationWebSocketHandler(useCase)
-	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
+
+	wsHandlerWithMiddleware := http.HandlerFunc(wsHandler.HandleWebSocket)
+
+	wsHandlerWithlogger := WSMiddleware.AccessLogMiddleware(wsHandlerWithMiddleware)
+	finalHandler := WSMiddleware.RequestID(wsHandlerWithlogger)
+
+	http.Handle("/ws", finalHandler)
+
 	fmt.Printf(
 		"\tstarting %s websocket server at %d port\n",
 		config.NotificationGRPCServiceConfig.ServiceName,
@@ -89,5 +97,6 @@ func Run() {
 		config.NotificationGRPCServiceConfig.ServiceName,
 		config.NotificationWSServiceConfig.Port,
 	)
+
 	http.ListenAndServe(fmt.Sprintf("%s:%d", config.NotificationWSServiceConfig.Host, config.NotificationWSServiceConfig.Port), nil)
 }

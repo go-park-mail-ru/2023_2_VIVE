@@ -13,6 +13,8 @@ import (
 	authConfig "HnH/services/auth/config"
 	csatConfig "HnH/services/csat/config"
 	"HnH/services/csat/csatPB"
+	notificationsPB "HnH/services/notifications/api/proto"
+	notificationsConfig "HnH/services/notifications/config"
 	searchConfig "HnH/services/searchEngineService/config"
 	"HnH/services/searchEngineService/searchEnginePB"
 	"os"
@@ -57,6 +59,21 @@ func initAuthClient(config authConfig.AuthConfig) (authPB.AuthClient, error) {
 	return client, nil
 }
 
+func initNotificationsClient(config notificationsConfig.NotificationsGRPCConfig) (notificationsPB.NotificationServiceClient, error) {
+	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+
+	opts := []grpc.DialOption{}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	conn, err := grpc.Dial(connAddr, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := notificationsPB.NewNotificationServiceClient(conn)
+	return client, nil
+}
+
 func initSearchEngineClient(config searchConfig.SearchEngineConfig) (searchEnginePB.SearchEngineClient, error) {
 	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
@@ -98,6 +115,11 @@ func Run() error {
 		return err
 	}
 
+	notificationsClient, err := initNotificationsClient(notificationsConfig.NotificationGRPCServiceConfig)
+	if err != nil {
+		return err
+	}
+
 	authRepo := grpcRepo.NewGrpcAuthRepository(authClient)
 	userRepo := psql.NewPsqlUserRepository(db)
 	vacancyRepo := psql.NewPsqlVacancyRepository(db)
@@ -107,6 +129,7 @@ func Run() error {
 	institutionRepo := psql.NewPsqlEducationInstitutionRepository(db)
 	csatRepo := grpcRepo.NewGrpcCsatRepository(csatClient)
 	skillRepo := psql.NewPsqlSkillRepository(db)
+	notificationsRepo := grpcRepo.NewGrpcNotificationRepository(notificationsClient)
 
 	searchEngineClient, err := initSearchEngineClient(searchConfig.SearchEngineServiceConfig)
 	if err != nil {
@@ -118,7 +141,7 @@ func Run() error {
 	userUsecase := usecase.NewUserUsecase(userRepo, authRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, authRepo, userRepo, searchEngineClientRepo, skillRepo)
 	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo, skillRepo)
-	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo)
+	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo, notificationsRepo)
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
 
 	router := mux.NewRouter()

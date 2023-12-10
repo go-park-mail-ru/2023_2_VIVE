@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"HnH/pkg/contextUtils"
 	"HnH/services/notifications/pkg/serviceErrors"
 	"context"
 
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 )
 
 type ConnectionStorage map[int64]*websocket.Conn
@@ -12,7 +14,7 @@ type ConnectionStorage map[int64]*websocket.Conn
 type INotificationRepository interface {
 	SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error
 	GetConn(ctx context.Context, userID int64) (*websocket.Conn, error)
-	DeleteConn(ctx context.Context, userID int64) 
+	DeleteConn(ctx context.Context, userID int64)
 }
 
 type InMemoryNotificationRepository struct {
@@ -26,7 +28,11 @@ func NewInMemoryNotificationRepository() INotificationRepository {
 }
 
 func (repo *InMemoryNotificationRepository) SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error {
-	// TODO: saves connection to memory
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("saving new incoming connection")
 	_, exists := repo.storage[userID]
 	if exists {
 		return serviceErrors.ErrConnAlreadyExists
@@ -44,7 +50,7 @@ func (repo *InMemoryNotificationRepository) GetConn(ctx context.Context, userID 
 	return conn, nil
 }
 
-func (repo *InMemoryNotificationRepository) DeleteConn(ctx context.Context, userID int64)  {
+func (repo *InMemoryNotificationRepository) DeleteConn(ctx context.Context, userID int64) {
 	conn, exists := repo.storage[userID]
 	if !exists {
 		return

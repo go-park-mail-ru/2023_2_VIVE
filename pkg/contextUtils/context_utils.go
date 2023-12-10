@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 )
 
 type ContextKey string
@@ -37,4 +38,10 @@ func UpdateCtxLoggerWithMethod(ctx context.Context, methodName string) context.C
 		"method": methodName,
 	})
 	return context.WithValue(ctx, LOGGER_KEY, newContextLogger)
+}
+
+func PutRequestIDToMetaDataCtx(ctx context.Context) context.Context {
+	md := metadata.Pairs(string(REQUEST_ID_KEY), GetRequestIDFromCtx(ctx))
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	return ctx
 }

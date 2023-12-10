@@ -1,12 +1,19 @@
 package websocket
 
 import (
-	"HnH/services/notifications/internal/model"
+	"HnH/pkg/contextUtils"
 	"HnH/services/notifications/internal/usecase"
 	"HnH/services/notifications/pkg/serviceErrors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	USER_ID_KEY = "user_id"
 )
 
 var upgrader = websocket.Upgrader{
@@ -28,33 +35,38 @@ func NewNotificationWebSocketHandler(useCase usecase.INotificationUseCase) *Noti
 }
 
 func (h *NotificationWebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+		}).
+			Error("unable to connect")
 		http.Error(w, serviceErrors.ErrOpenConn.Error(), http.StatusBadRequest)
 		return
 	}
 
-	handshakeMsg := model.HandshakeMessage{}
-	err = conn.ReadJSON(handshakeMsg)
-	if err != nil {
-		http.Error(w, serviceErrors.ErrHandshakeMsg.Error(), http.StatusBadRequest)
+	contextLogger.WithFields(logrus.Fields{
+		"addr": conn.RemoteAddr(),
+	}).
+		Info("got new websocket connection")
+
+	userIDStr := r.URL.Query().Get(USER_ID_KEY)
+	if strings.TrimSpace(userIDStr) == "" {
+		http.Error(w, serviceErrors.ErrInvalidUserID.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = h.useCase.SaveConn(r.Context(), handshakeMsg.UserID, conn)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, serviceErrors.ErrInvalidUserID.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.useCase.SaveConn(r.Context(), userID, conn)
 	if err != nil {
 		conn.Close()
 		return
 	}
-	// defer conn.Close()
-
-	// for {
-	// 	_, message, err := conn.ReadMessage()
-	// 	if err != nil {
-	// 		fmt.Printf("error: %v\n", err)
-	// 		break
-	// 	}
-	// 	fmt.Printf("message: %s\n", message)
-	// }
-	// TODO: handle incoming connection
 }

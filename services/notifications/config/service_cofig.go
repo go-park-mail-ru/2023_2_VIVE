@@ -15,11 +15,12 @@ var NotificationGRPCServiceConfig = NotificationsGRPCConfig{
 }
 
 type NotificationsWSConfig struct {
-	Host string
-	Port int
+	Host    string
+	Port    int
+	LogFile string
 }
 
 var NotificationWSServiceConfig = NotificationsWSConfig{
-	Host: "localhost",
-	Port: 8065,
+	Host:    "localhost",
+	Port:    8065,
 }

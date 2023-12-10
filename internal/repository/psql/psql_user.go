@@ -21,6 +21,7 @@ type IUserRepository interface {
 	GetUserIdByEmail(ctx context.Context, email string) (int, error)
 	GetRoleById(ctx context.Context, userID int) (domain.Role, error)
 	GetUserInfo(ctx context.Context, userID int) (*domain.DbUser, *int, *int, error)
+	GetUserIDByVacID(ctx context.Context, vacancyID int) (int64, error)
 	UpdateUserInfo(ctx context.Context, userID int, user *domain.UserUpdate) error
 	GetUserEmpId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
@@ -324,6 +325,38 @@ func (p *psqlUserRepository) GetUserInfo(ctx context.Context, userID int) (*doma
 	}
 
 	return user, appId, empID, nil
+}
+
+func (p *psqlUserRepository) GetUserIDByVacID(ctx context.Context, vacancyID int) (int64, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+	}).
+		Info("getting user's id by vacancy id from postgres")
+
+	query := `SELECT
+				up.id
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.employer e ON
+				e.user_id = up.id
+			JOIN hnh_data.vacancy v ON
+				v.employer_id = e.id
+			WHERE
+				v.id = $1`
+
+	var userID int64
+
+	// var appId, empID *int
+	err := p.userStorage.QueryRow(query, vacancyID).
+		Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrEntityNotFound
+	} else if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }
 
 func (p *psqlUserRepository) GetUserIdByEmail(ctx context.Context, email string) (int, error) {
