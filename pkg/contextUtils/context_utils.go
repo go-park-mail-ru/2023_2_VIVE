@@ -30,3 +30,11 @@ func GetSessionIDFromCtx(ctx context.Context) string {
 func GetUserIDFromCtx(ctx context.Context) int {
 	return ctx.Value(USER_ID_KEY).(int)
 }
+
+func UpdateCtxLoggerWithMethod(ctx context.Context, methodName string) context.Context {
+	contextLogger := GetContextLogger(ctx)
+	newContextLogger := contextLogger.WithFields(logrus.Fields{
+		"method": methodName,
+	})
+	return context.WithValue(ctx, LOGGER_KEY, newContextLogger)
+}

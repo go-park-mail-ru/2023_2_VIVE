@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"HnH/pkg/contextUtils"
 	pb "HnH/services/notifications/api/proto"
 	"HnH/services/notifications/internal/usecase"
 	"context"
@@ -13,23 +14,24 @@ import (
 
 type NotificationServer struct {
 	pb.UnimplementedNotificationServiceServer
-	useCase *usecase.INotificationUseCase
+	useCase usecase.INotificationUseCase
 }
 
-func NewNotificationServer(useCase *usecase.INotificationUseCase) *NotificationServer {
+func NewNotificationServer(useCase usecase.INotificationUseCase) *NotificationServer {
 	return &NotificationServer{
 		useCase: useCase,
 	}
 }
 
 func (s *NotificationServer) NotifyUser(ctx context.Context, message *pb.NotificationMessage) (*empty.Empty, error) {
+	ctx = contextUtils.UpdateCtxLoggerWithMethod(ctx, "NotifyUser")
+	// s.useCase.
 	// TODO: send message to users
-	return nil, nil
+	return &empty.Empty{}, s.useCase.SendNotification(ctx, message)
 }
 
 func StartGRPCServer(
-	// ctx context.Context,
-	useCase *usecase.INotificationUseCase,
+	useCase usecase.INotificationUseCase,
 	lis net.Listener,
 	opts ...grpc.ServerOption,
 ) {

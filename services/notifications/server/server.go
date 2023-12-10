@@ -49,7 +49,7 @@ func initInterceptors() []grpc.ServerOption {
 
 func Run() {
 	repo := repository.NewInMemoryNotificationRepository()
-	useCase := usecase.NewNotificationUseCase(&repo)
+	useCase := usecase.NewNotificationUseCase(repo)
 
 	loggerErr := initLogger()
 	if loggerErr != nil {
@@ -64,7 +64,7 @@ func Run() {
 	}
 
 	opts := initInterceptors()
-	go deliveryGrpc.StartGRPCServer(&useCase, listner, opts...)
+	go deliveryGrpc.StartGRPCServer(useCase, listner, opts...)
 
 	fmt.Printf(
 		"\tstarting %s grpc server at %d port\n",
@@ -77,7 +77,7 @@ func Run() {
 		config.NotificationGRPCServiceConfig.Port,
 	)
 
-	wsHandler := websocket.NewNotificationWebSocketHandler(&useCase)
+	wsHandler := websocket.NewNotificationWebSocketHandler(useCase)
 	http.HandleFunc("/ws", wsHandler.HandleWebSocket)
 	fmt.Printf(
 		"\tstarting %s websocket server at %d port\n",
