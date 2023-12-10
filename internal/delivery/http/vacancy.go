@@ -2,11 +2,11 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 	"HnH/services/searchEngineService/searchEnginePB"

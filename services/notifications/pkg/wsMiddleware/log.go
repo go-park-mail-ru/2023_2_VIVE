@@ -1,4 +1,4 @@
-package WSMiddleware
+package wsMiddleware
 
 import (
 	"HnH/pkg/contextUtils"
@@ -75,7 +75,7 @@ func AccessLogMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(wrappedWriter, r.WithContext(ctx))
 
 		toLog := contextLogger.WithFields(logrus.Fields{
-			"status":         wrappedWriter.status,
+			// "status":         wrappedWriter.status,
 			"execution_time": time.Since(start).String(),
 		})
 

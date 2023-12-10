@@ -1,20 +1,25 @@
 package server
 
 import (
+	"HnH/pkg/middleware"
 	interceptors "HnH/pkg/serviceInterceptors"
+	"HnH/services/auth/authPB"
+	authConfig "HnH/services/auth/config"
 	"HnH/services/notifications/config"
 	deliveryGrpc "HnH/services/notifications/internal/delivery/grpc"
 	"HnH/services/notifications/internal/delivery/websocket"
-	repository "HnH/services/notifications/internal/repository/inMemory"
+	repositoryGRPC "HnH/services/notifications/internal/repository/grpc"
+	repositoryIM "HnH/services/notifications/internal/repository/inMemory"
 	"HnH/services/notifications/internal/usecase"
-	"HnH/services/notifications/pkg/WSMiddleware"
 	"HnH/services/notifications/pkg/logger"
+	"HnH/services/notifications/pkg/wsMiddleware"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func initLogger() error {
@@ -48,9 +53,33 @@ func initInterceptors() []grpc.ServerOption {
 	return opts
 }
 
+func initAuthClient(config authConfig.AuthConfig) (authPB.AuthClient, error) {
+	connAddr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+
+	opts := []grpc.DialOption{}
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	conn, err := grpc.Dial(connAddr, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := authPB.NewAuthClient(conn)
+	return client, nil
+}
+
 func Run() {
-	repo := repository.NewInMemoryNotificationRepository()
-	useCase := usecase.NewNotificationUseCase(repo)
+	authClient, err := initAuthClient(authConfig.AuthServiceConfig)
+	if err != nil {
+		fmt.Printf("Error while initializing auth client\n")
+		os.Exit(1)
+	}
+
+	notificationRepo := repositoryIM.NewInMemoryNotificationRepository()
+	authRepo := repositoryGRPC.NewGrpcAuthRepository(authClient)
+
+	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
+	authUseCase := usecase.NewAuthUsecase(authRepo)
 
 	loggerErr := initLogger()
 	if loggerErr != nil {
@@ -65,7 +94,7 @@ func Run() {
 	}
 
 	opts := initInterceptors()
-	go deliveryGrpc.StartGRPCServer(useCase, listner, opts...)
+	go deliveryGrpc.StartGRPCServer(notificationUseCase, listner, opts...)
 
 	fmt.Printf(
 		"\tstarting %s grpc server at %d port\n",
@@ -78,14 +107,16 @@ func Run() {
 		config.NotificationGRPCServiceConfig.Port,
 	)
 
-	wsHandler := websocket.NewNotificationWebSocketHandler(useCase)
+	wsHandler := websocket.NewNotificationWebSocketHandler(notificationUseCase)
 
 	wsHandlerWithMiddleware := http.HandlerFunc(wsHandler.HandleWebSocket)
 
-	wsHandlerWithlogger := WSMiddleware.AccessLogMiddleware(wsHandlerWithMiddleware)
-	finalHandler := WSMiddleware.RequestID(wsHandlerWithlogger)
+	wsHandlerWithUserID := wsMiddleware.AuthMiddleware(authUseCase, wsHandlerWithMiddleware)
+	wsHandlerWithlogger := wsMiddleware.AccessLogMiddleware(wsHandlerWithUserID)
+	wsHandlerWithRequestID := middleware.RequestID(wsHandlerWithlogger)
+	firstHandler := middleware.PanicRecoverMiddleware(logger.Logger, wsHandlerWithRequestID)
 
-	http.Handle("/ws", finalHandler)
+	http.Handle("/ws", firstHandler)
 
 	fmt.Printf(
 		"\tstarting %s websocket server at %d port\n",
