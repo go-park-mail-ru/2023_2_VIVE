@@ -80,6 +80,11 @@ func (h *NotificationWebSocketHandler) HandleWebSocket(w http.ResponseWriter, r 
 		conn.Close()
 	}
 
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("new ws connection with user_id")
+
 	err = h.useCase.SaveConn(r.Context(), userID, conn)
 	if err != nil {
 		conn.Close()
