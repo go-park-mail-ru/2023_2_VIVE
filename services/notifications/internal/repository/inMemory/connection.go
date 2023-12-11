@@ -11,23 +11,23 @@ import (
 
 type ConnectionStorage map[int64]*websocket.Conn
 
-type INotificationRepository interface {
+type IConnectionRepository interface {
 	SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error
 	GetConn(ctx context.Context, userID int64) (*websocket.Conn, error)
 	DeleteConn(ctx context.Context, userID int64)
 }
 
-type InMemoryNotificationRepository struct {
+type InMemoryConnectionRepository struct {
 	storage ConnectionStorage
 }
 
-func NewInMemoryNotificationRepository() INotificationRepository {
-	return &InMemoryNotificationRepository{
+func NewInMemoryConnectionRepository() IConnectionRepository {
+	return &InMemoryConnectionRepository{
 		storage: make(ConnectionStorage),
 	}
 }
 
-func (repo *InMemoryNotificationRepository) SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error {
+func (repo *InMemoryConnectionRepository) SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	contextLogger.WithFields(logrus.Fields{
 		"user_id": userID,
@@ -41,7 +41,7 @@ func (repo *InMemoryNotificationRepository) SaveConn(ctx context.Context, userID
 	return nil
 }
 
-func (repo *InMemoryNotificationRepository) GetConn(ctx context.Context, userID int64) (*websocket.Conn, error) {
+func (repo *InMemoryConnectionRepository) GetConn(ctx context.Context, userID int64) (*websocket.Conn, error) {
 	conn, exists := repo.storage[userID]
 	if !exists {
 		return nil, serviceErrors.ErrNoConn
@@ -50,7 +50,7 @@ func (repo *InMemoryNotificationRepository) GetConn(ctx context.Context, userID 
 	return conn, nil
 }
 
-func (repo *InMemoryNotificationRepository) DeleteConn(ctx context.Context, userID int64) {
+func (repo *InMemoryConnectionRepository) DeleteConn(ctx context.Context, userID int64) {
 	conn, exists := repo.storage[userID]
 	if !exists {
 		return

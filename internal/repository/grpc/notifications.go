@@ -11,6 +11,8 @@ import (
 
 type INotificationRepository interface {
 	SendMessage(ctx context.Context, message *notificationsPB.NotificationMessage) error
+	GetUserNotifications(ctx context.Context, userID int64) (*notificationsPB.UserNotifications, error)
+	DeleteUserNotifications(ctx context.Context, userID int64) error
 }
 
 type grpcNotificationRepository struct {
@@ -32,6 +34,48 @@ func (repo *grpcNotificationRepository) SendMessage(ctx context.Context, message
 
 	ctx = contextUtils.PutRequestIDToMetaDataCtx(ctx)
 	_, err := repo.client.NotifyUser(ctx, message)
+	if err != nil {
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return errToReturn
+	}
+
+	return nil
+}
+
+func (repo *grpcNotificationRepository) GetUserNotifications(ctx context.Context, userID int64) (*notificationsPB.UserNotifications, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("getting user's notifications")
+
+	ctx = contextUtils.PutRequestIDToMetaDataCtx(ctx)
+	notifications, err := repo.client.GetUserNotifications(ctx, &notificationsPB.UserID{UserId: userID})
+	if err != nil {
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
+	}
+
+	return notifications, nil
+}
+
+func (repo *grpcNotificationRepository) DeleteUserNotifications(ctx context.Context, userID int64) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("getting user's notifications")
+
+	ctx = contextUtils.PutRequestIDToMetaDataCtx(ctx)
+	_, err := repo.client.DeleteUserNotifications(ctx, &notificationsPB.UserID{UserId: userID})
 	if err != nil {
 		grpcStatus := status.Convert(err)
 		errMessage := grpcStatus.Message()

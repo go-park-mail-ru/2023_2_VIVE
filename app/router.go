@@ -143,6 +143,7 @@ func Run() error {
 	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo, skillRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo, notificationsRepo)
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
+	notificationUsecase := usecase.NewNotificationUsecase(notificationsRepo)
 
 	router := mux.NewRouter()
 	//router.Use(func(h http.Handler) http.Handler {
@@ -155,6 +156,7 @@ func Run() error {
 	deliveryHTTP.NewCVHandler(router, cvUsecase, sessionUsecase)
 	deliveryHTTP.NewCsatHandler(router, csatUsecase, sessionUsecase)
 	deliveryHTTP.NewResponseHandler(router, responseUsecase, sessionUsecase)
+	deliveryHTTP.NewNotificationHandler(router, notificationUsecase, sessionUsecase)
 
 	prometheus.MustRegister(metrics.HitCounter, metrics.ErrorCounter)
 	router.Handle("/metrics", promhttp.Handler())

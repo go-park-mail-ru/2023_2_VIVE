@@ -25,9 +25,18 @@ func NewNotificationServer(useCase usecase.INotificationUseCase) *NotificationSe
 
 func (s *NotificationServer) NotifyUser(ctx context.Context, message *pb.NotificationMessage) (*empty.Empty, error) {
 	ctx = contextUtils.UpdateCtxLoggerWithMethod(ctx, "NotifyUser")
-	// s.useCase.
-	// TODO: send message to users
 	return &empty.Empty{}, s.useCase.SendNotification(ctx, message)
+}
+
+func (s *NotificationServer) GetUserNotifications(ctx context.Context, userID *pb.UserID) (*pb.UserNotifications, error) {
+	ctx = contextUtils.UpdateCtxLoggerWithMethod(ctx, "GetUserNotifications")
+	notifications, err := s.useCase.GetUsersNotifications(ctx, userID.UserId)
+	return &pb.UserNotifications{Notifications: notifications}, err
+}
+
+func (s *NotificationServer) DeleteUserNotifications(ctx context.Context, userID *pb.UserID) (*empty.Empty, error) {
+	ctx = contextUtils.UpdateCtxLoggerWithMethod(ctx, "DeleteUserNotifications")
+	return &empty.Empty{}, s.useCase.DeleteUsersNotifications(ctx, userID.UserId)
 }
 
 func StartGRPCServer(

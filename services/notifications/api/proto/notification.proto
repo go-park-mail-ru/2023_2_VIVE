@@ -18,6 +18,16 @@ message NotificationMessage {
     string data = 3;
 }
 
+message UserNotifications {
+    repeated NotificationMessage notifications = 1;
+}
+
+message UserID {
+    int64 user_id = 1;
+}
+
 service NotificationService {
     rpc NotifyUser(NotificationMessage) returns (google.protobuf.Empty) {}
+    rpc GetUserNotifications(UserID) returns (UserNotifications) {}
+    rpc DeleteUserNotifications(UserID) returns (google.protobuf.Empty) {}
 }

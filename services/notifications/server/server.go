@@ -1,6 +1,7 @@
 package server
 
 import (
+	"HnH/app"
 	"HnH/pkg/middleware"
 	interceptors "HnH/pkg/serviceInterceptors"
 	"HnH/services/auth/authPB"
@@ -10,6 +11,7 @@ import (
 	"HnH/services/notifications/internal/delivery/websocket"
 	repositoryGRPC "HnH/services/notifications/internal/repository/grpc"
 	repositoryIM "HnH/services/notifications/internal/repository/inMemory"
+	repositoryPSQL "HnH/services/notifications/internal/repository/psql"
 	"HnH/services/notifications/internal/usecase"
 	"HnH/services/notifications/pkg/logger"
 	"HnH/services/notifications/pkg/wsMiddleware"
@@ -45,9 +47,9 @@ func initListen() (net.Listener, error) {
 func initInterceptors() []grpc.ServerOption {
 	var opts []grpc.ServerOption
 	opts = append(opts, grpc.ChainUnaryInterceptor(
-		interceptors.RecoverInterceptor,
-		interceptors.RequestIDInterceptor,
-		interceptors.AccesLogInterceptor,
+		interceptors.RequestIDInterceptor(logger.Logger),
+		interceptors.AccesLogInterceptor(logger.Logger, config.NotificationGRPCServiceConfig.ServiceName),
+		interceptors.RecoverInterceptor(),
 	))
 
 	return opts
@@ -75,10 +77,17 @@ func Run() {
 		os.Exit(1)
 	}
 
-	notificationRepo := repositoryIM.NewInMemoryNotificationRepository()
+	db, err := app.GetPostgres()
+	if err != nil {
+		fmt.Printf("Error while initializing psql db\n")
+		os.Exit(1)
+	}
+	notificationRepo := repositoryPSQL.NewPsqlNotificationRepository(db)
+
+	connRepo := repositoryIM.NewInMemoryConnectionRepository()
 	authRepo := repositoryGRPC.NewGrpcAuthRepository(authClient)
 
-	notificationUseCase := usecase.NewNotificationUseCase(notificationRepo)
+	notificationUseCase := usecase.NewNotificationUseCase(connRepo, notificationRepo)
 	authUseCase := usecase.NewAuthUsecase(authRepo)
 
 	loggerErr := initLogger()
