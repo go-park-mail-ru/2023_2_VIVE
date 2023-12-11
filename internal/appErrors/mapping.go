@@ -41,6 +41,7 @@ var errToCode = map[error]int{
 	authUtils.ERROR_WHILE_DELETING:  http.StatusNotModified,
 
 	usecase.ErrInapropriateRole: http.StatusForbidden,
+	usecase.ErrForbidden:        http.StatusForbidden,
 	usecase.ErrReadAvatar:       http.StatusInternalServerError,
 	usecase.BadAvatarSize:       http.StatusBadRequest,
 	usecase.BadAvatarType:       http.StatusBadRequest,

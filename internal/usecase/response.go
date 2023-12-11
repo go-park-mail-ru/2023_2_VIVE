@@ -7,11 +7,13 @@ import (
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
+	"errors"
 )
 
 type IResponseUsecase interface {
 	RespondToVacancy(ctx context.Context, vacancyID, cvID int) error
 	GetApplicantsList(ctx context.Context, vacancyID int) ([]domain.ApiApplicant, error)
+	GetUserResponses(ctx context.Context, userID int) ([]domain.ApiResponse, error)
 }
 
 type ResponseUsecase struct {
@@ -106,4 +108,25 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.DbCV) []domain.
 	}
 
 	return infoToReturn
+}
+
+func (responseUsecase *ResponseUsecase) GetUserResponses(ctx context.Context, userID int) ([]domain.ApiResponse, error) {
+	currUserID := contextUtils.GetUserIDFromCtx(ctx)
+
+	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, currUserID)
+	if err != nil {
+		return nil, err
+	} else if userRole != domain.Applicant {
+		return nil, ErrInapropriateRole
+	}
+
+	if userID != currUserID {
+		return nil, ErrForbidden
+	}
+
+	responses, err := responseUsecase.responseRepo.GetUserResponses(ctx, userID)
+	if err != nil && !errors.Is(err, psql.ErrEntityNotFound) {
+		return nil, err
+	}
+	return responses, nil
 }
