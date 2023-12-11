@@ -52,7 +52,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 	}
 	filters = append(filters, &pb.Filter{
 		Name:   string(searchOptions.Experience),
-		Type:   string(searchOptions.Radio),
+		Type:   string(searchOptions.CheckBox),
 		Values: experienceFilterValues,
 	})
 
@@ -62,7 +62,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 	}
 	filters = append(filters, &pb.Filter{
 		Name:   string(searchOptions.Employment),
-		Type:   string(searchOptions.Radio),
+		Type:   string(searchOptions.CheckBox),
 		Values: employmentFilterValues,
 	})
 
@@ -72,7 +72,7 @@ func (u *SearchUsecase) collectVacFilters(ctx context.Context, searchQuery strin
 	}
 	filters = append(filters, &pb.Filter{
 		Name:   string(searchOptions.EducationType),
-		Type:   string(searchOptions.Radio),
+		Type:   string(searchOptions.CheckBox),
 		Values: educationTypeFilterValues,
 	})
 
