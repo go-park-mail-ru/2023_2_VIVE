@@ -16,6 +16,7 @@ message NotificationMessage {
     int64 user_id = 1;
     string message = 2;
     string data = 3;
+    string created_at = 4;
 }
 
 message UserNotifications {
@@ -27,6 +28,7 @@ message UserID {
 }
 
 service NotificationService {
+    // rpc AddNotification(NotificationMessage) returns ()
     rpc NotifyUser(NotificationMessage) returns (google.protobuf.Empty) {}
     rpc GetUserNotifications(UserID) returns (UserNotifications) {}
     rpc DeleteUserNotifications(UserID) returns (google.protobuf.Empty) {}

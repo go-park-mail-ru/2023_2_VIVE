@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotificationServiceClient interface {
+	// rpc AddNotification(NotificationMessage) returns ()
 	NotifyUser(ctx context.Context, in *NotificationMessage, opts ...grpc.CallOption) (*empty.Empty, error)
 	GetUserNotifications(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*UserNotifications, error)
 	DeleteUserNotifications(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*empty.Empty, error)
@@ -67,6 +68,7 @@ func (c *notificationServiceClient) DeleteUserNotifications(ctx context.Context,
 // All implementations must embed UnimplementedNotificationServiceServer
 // for forward compatibility
 type NotificationServiceServer interface {
+	// rpc AddNotification(NotificationMessage) returns ()
 	NotifyUser(context.Context, *NotificationMessage) (*empty.Empty, error)
 	GetUserNotifications(context.Context, *UserID) (*UserNotifications, error)
 	DeleteUserNotifications(context.Context, *UserID) (*empty.Empty, error)

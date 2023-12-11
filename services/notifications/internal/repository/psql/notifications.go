@@ -36,19 +36,20 @@ func (repo *PsqlNotificationRepository) AddNotification(ctx context.Context, mes
 	query := `INSERT
 			INTO
 				hnh_data.notification (user_id, message)
-			VALUES ($1, $2)`
+			VALUES ($1, $2)
+			RETURNING created_at`
 
-	result, err := repo.db.Exec(query, message.GetUserId(), message.GetMessage())
+	err := repo.db.QueryRow(query, message.GetUserId(), message.GetMessage()).Scan(&message.CreatedAt)
 	if err == sql.ErrNoRows {
 		return psql.ErrNotInserted
 	}
 	if err != nil {
 		return err
 	}
-	_, err = result.RowsAffected()
-	if err != nil {
-		return err
-	}
+	// _, err = result.RowsAffected()
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -61,7 +62,8 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 		Info("getting user's notifications")
 
 	query := `SELECT
-			n.message 
+			n.message,
+			n.created_at
 		FROM
 			hnh_data.notification n
 		WHERE
