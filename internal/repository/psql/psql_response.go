@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,13 +34,32 @@ func (p *psqlResponseRepository) RespondToVacancy(ctx context.Context, vacancyID
 	contextLogger.Info("adding new responce to vacancy from cv to postgres")
 	result, err := p.responseStorage.Exec(`INSERT INTO hnh_data.response ("vacancy_id", "cv_id") VALUES ($1, $2)`, vacancyID, cvID)
 	if err == sql.ErrNoRows {
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+		}).
+			Error("could not insert data")
 		return ErrNotInserted
 	}
 	if err != nil {
+
+		if pgErr, ok := err.(pgx.PgError); ok {
+			switch pgErr.Code {
+			case "23505":
+				contextLogger.WithFields(logrus.Fields{
+					"err": pgErr,
+				}).
+					Error("could not duplicate data")
+				return ErrRecordAlredyExists
+			}
+		}
 		return err
 	}
 	_, err = result.RowsAffected()
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+		}).
+			Error("could not insert data")
 		return err
 	}
 

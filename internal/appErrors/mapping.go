@@ -46,11 +46,12 @@ var errToCode = map[error]int{
 	usecase.BadAvatarSize:       http.StatusBadRequest,
 	usecase.BadAvatarType:       http.StatusBadRequest,
 
-	psql.ErrEntityNotFound: http.StatusNotFound,
-	psql.ErrNotInserted:    http.StatusNotModified,
-	psql.ErrNoRowsUpdated:  http.StatusNotModified,
-	psql.ErrNoRowsDeleted:  http.StatusNotModified,
-	psql.IncorrectUserID:   http.StatusBadRequest,
+	psql.ErrEntityNotFound:     http.StatusNotFound,
+	psql.ErrNotInserted:        http.StatusNotModified,
+	psql.ErrNoRowsUpdated:      http.StatusNotModified,
+	psql.ErrNoRowsDeleted:      http.StatusNotModified,
+	psql.IncorrectUserID:       http.StatusBadRequest,
+	psql.ErrRecordAlredyExists: http.StatusConflict,
 }
 
 func GetErrAndCodeToSend(err error) (error, int) {
