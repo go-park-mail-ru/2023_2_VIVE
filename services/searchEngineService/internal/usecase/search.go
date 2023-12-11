@@ -137,7 +137,7 @@ func (u *SearchUsecase) collectCvFilters(ctx context.Context, searchQuery string
 	}
 	filters = append(filters, &pb.Filter{
 		Name:   string(searchOptions.Gender),
-		Type:   string(searchOptions.CheckBox),
+		Type:   string(searchOptions.Radio),
 		Values: genderFilterValues,
 	})
 
