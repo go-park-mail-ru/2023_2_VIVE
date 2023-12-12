@@ -1,5 +1,5 @@
 *.log
-deploy/.env
+*.env
 configs/secret_key.go
 *.rdb
 *.out
@@ -8,3 +8,4 @@ configs/secret_key.go
 *.png
 *.gif
 *.webp
+/bin
