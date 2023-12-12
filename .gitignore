@@ -3,7 +3,6 @@ deploy/.env
 configs/secret_key.go
 *.rdb
 *.out
-*tern.conf
 *.jpeg
 *.jpg
 *.png

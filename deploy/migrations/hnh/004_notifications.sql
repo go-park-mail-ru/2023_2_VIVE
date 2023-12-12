@@ -4,3 +4,7 @@ CREATE TABLE hnh_data.notification (
     created_at timestamptz DEFAULT now(),
     PRIMARY KEY (user_id, message)
 );
+
+---- create above / drop below ----
+DROP TABLE IF EXISTS hnh_data.notification CASCADE;
+
