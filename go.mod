@@ -12,6 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/jackc/pgx v3.6.2+incompatible
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/microcosm-cc/bluemonday v1.0.26
 	github.com/prometheus/client_golang v1.17.0
 	github.com/rs/cors v1.10.1

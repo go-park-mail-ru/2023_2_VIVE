@@ -10,6 +10,7 @@ import (
 	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
+	"github.com/jung-kurt/gofpdf"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,6 +23,7 @@ type ICVUsecase interface {
 	UpdateCVOfUserById(ctx context.Context, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, cvID int) error
 	SearchCVs(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaCV, error)
+	GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error)
 }
 
 type CVUsecase struct {
@@ -403,9 +405,29 @@ func (cvUsecase *CVUsecase) SearchCVs(
 		Filters: cvSearchResponse.Filters,
 		CVs: domain.ApiCVCount{
 			Count: cvSearchResponse.Count,
-			CVs: cvsToReturn,
+			CVs:   cvsToReturn,
 		},
 	}
 
 	return result, nil
+}
+
+func (cvUsecase *CVUsecase) createBlankPDF() *gofpdf.Fpdf {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "", 12)
+
+	return pdf
+}
+
+func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error) {
+	_, err := cvUsecase.GetCVOfUserById(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	pdf := cvUsecase.createBlankPDF()
+	pdf.Cell(40, 10, "Hello, world")
+
+	return pdf, nil
 }

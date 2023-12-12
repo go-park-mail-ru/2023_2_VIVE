@@ -57,6 +57,10 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 	router.Handle("/current_user/cvs/{cvID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteCVOfUser))).
 		Methods("DELETE")
+
+	router.Handle("/current_user/cvs/{cvID}/pdf",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCVsPDF))).
+		Methods("GET")
 }
 
 func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.ApiCV) []domain.ApiCV {
@@ -280,4 +284,33 @@ func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Requ
 	info.CVs = cvHandler.sanitizeCVs(info.CVs...)
 
 	responseTemplates.MarshalAndSend(w, info)
+}
+
+func (cvHandler *CVHandler) GetCVsPDF(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cvID, convErr := strconv.Atoi(vars["cvID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	pdf, err := cvHandler.cvUsecase.GenerateCVsPDF(r.Context(), cvID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
+		return
+	}
+
+	responseTemplates.SendPDF(w, pdf, "file") // TODO: rename file
+
+	// cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cvID)
+	// if err != nil {
+	// 	errToSend, code := appErrors.GetErrAndCodeToSend(err)
+	// 	responseTemplates.SendErrorMessage(w, errToSend, code)
+	// 	return
+	// }
+
+	// sanitizedCV := cvHandler.sanitizeCVs(*cv)
+
+	// responseTemplates.MarshalAndSend(w, sanitizedCV[0])
 }
