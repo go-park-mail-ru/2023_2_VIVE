@@ -62,9 +62,15 @@ var edu = EducationLevelList{
 	mu: &sync.RWMutex{},
 }
 
+type EmployerIDs struct {
+	user_id     int
+	employer_id int
+}
+
 type VacancyFaker struct {
-	idToEmployer *sync.Map
-	idToVacancy  *sync.Map
+	idToEmployer   *sync.Map
+	idToVacancy    *sync.Map
+	emailToIDsInDB *sync.Map
 
 	userRepo    psql.IUserRepository
 	vacancyRepo psql.IVacancyRepository
@@ -81,13 +87,14 @@ func NewVacancyFaker(conn *sql.DB, log *logrus.Entry) *VacancyFaker {
 	pSkillRepo := psql.NewPsqlSkillRepository(conn)
 
 	newFaker := &VacancyFaker{
-		idToEmployer: &sync.Map{},
-		idToVacancy:  &sync.Map{},
-		userRepo:     pUserRepo,
-		vacancyRepo:  pVacancyRepo,
-		skillRepo:    pSkillRepo,
-		DB:           conn,
-		logger:       log,
+		idToEmployer:   &sync.Map{},
+		idToVacancy:    &sync.Map{},
+		emailToIDsInDB: &sync.Map{},
+		userRepo:       pUserRepo,
+		vacancyRepo:    pVacancyRepo,
+		skillRepo:      pSkillRepo,
+		DB:             conn,
+		logger:         log,
 	}
 
 	return newFaker
@@ -124,7 +131,7 @@ func (vFaker *VacancyFaker) PushEmployers() error {
 	}
 
 	vFaker.idToEmployer.Range(pusher)
-
+	fmt.Println("Employers have been pushed to DB")
 	return nil
 }
 
@@ -132,7 +139,7 @@ func (vFaker *VacancyFaker) PushVacancies() error {
 	ctx := context.Background()
 	ctxLogger := context.WithValue(ctx, contextUtils.LOGGER_KEY, vFaker.logger)
 
-	emailToEmpID, err := vFaker.getNewEmployersIDs()
+	err := vFaker.getNewEmployersIDs()
 	if err != nil {
 		return err
 	}
@@ -159,20 +166,20 @@ func (vFaker *VacancyFaker) PushVacancies() error {
 
 		empEmail := castedEmployer.Email
 
-		empID, ok := emailToEmpID.Load(empEmail)
+		emp, ok := vFaker.emailToIDsInDB.Load(empEmail)
 		if !ok {
 			fmt.Printf("employer id by email not found\n\n\n")
 			return false
 		}
 
-		castedEmpID, ok := empID.(int)
+		castedEmp, ok := emp.(EmployerIDs)
 		if !ok {
-			fmt.Printf("CAST ERROR:\n%v\n\n\n", empID)
+			fmt.Printf("CAST ERROR:\n%v\n\n\n", emp)
 			return false
 		}
 
 		vacToAdd := &domain.DbVacancy{
-			EmployerID:       castedEmpID,
+			EmployerID:       castedEmp.employer_id,
 			VacancyName:      vacancy.VacancyName,
 			Description:      vacancy.Description,
 			SalaryLowerBound: vacancy.SalaryLowerBound,
@@ -183,7 +190,7 @@ func (vFaker *VacancyFaker) PushVacancies() error {
 			Location:         vacancy.Location,
 		}
 
-		vacancyID, addStatus := vFaker.vacancyRepo.AddVacancy(ctxLogger, castedEmpID, vacToAdd)
+		vacancyID, addStatus := vFaker.vacancyRepo.AddVacancy(ctxLogger, castedEmp.employer_id, vacToAdd)
 		if addStatus != nil {
 			fmt.Printf("vacancy addition error: %v\n\n\n", addStatus)
 			return true
@@ -199,11 +206,11 @@ func (vFaker *VacancyFaker) PushVacancies() error {
 	}
 
 	vFaker.idToVacancy.Range(pusher)
-
+	fmt.Println("Vacncies have been pushed to DB")
 	return nil
 }
 
-func (vFaker *VacancyFaker) getNewEmployersIDs() (*sync.Map, error) {
+func (vFaker *VacancyFaker) getNewEmployersIDs() error {
 	emails := []string{}
 	mu := &sync.Mutex{}
 
@@ -224,38 +231,41 @@ func (vFaker *VacancyFaker) getNewEmployersIDs() (*sync.Map, error) {
 
 	vFaker.idToEmployer.Range(emailCollector)
 
-	rows, err := vFaker.DB.Query(`SELECT u.email, emp.id
+	rows, err := vFaker.DB.Query(`SELECT u.email, u.id, emp.id
 								FROM hnh_data.employer emp 
 								JOIN hnh_data.user_profile u ON emp.user_id = u.id
 								WHERE u.email = ANY($1)`, pq.Array(emails))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
-	emailToEmpID := &sync.Map{}
-
 	for rows.Next() {
-		var empID int
 		var empEmail string
+		var emp EmployerIDs
 
-		err = rows.Scan(&empEmail, &empID)
+		err = rows.Scan(&empEmail, &emp.user_id, &emp.employer_id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		empEmail = strings.TrimSpace(empEmail)
-		emailToEmpID.Store(empEmail, empID)
+		vFaker.emailToIDsInDB.Store(empEmail, emp)
 	}
 
-	return emailToEmpID, nil
+	return nil
 }
 
-func (vFaker *VacancyFaker) GetData(vacsPerCategory int, categories ...string) error {
-	jsonRes, err := GETWithQuery("https://api.hh.ru/vacancies/", 0, 100, "golang")
+func (vFaker *VacancyFaker) GetAvatars() error {
+	return nil
+}
+
+func (vFaker *VacancyFaker) storeData(numberOfVacs int, category string, wg *sync.WaitGroup) {
+	jsonRes, err := GETWithQuery("https://api.hh.ru/vacancies/", 0, numberOfVacs, category)
 	if err != nil {
-		return err
+		wg.Done()
+		return
 	}
 
 	for _, value := range jsonRes["items"].([]interface{}) {
@@ -436,6 +446,26 @@ func (vFaker *VacancyFaker) GetData(vacsPerCategory int, categories ...string) e
 		vFaker.idToEmployer.Store(employerID, employerToAdd)
 	}
 
+	wg.Done()
+}
+
+func (vFaker *VacancyFaker) GetData(vacsPerCategory int, categories ...string) error {
+	wg := &sync.WaitGroup{}
+
+	for n, category := range categories {
+		if (n+1)%5 == 0 {
+			time.Sleep(5 * time.Second)
+		} else {
+			time.Sleep(2 * time.Second)
+		}
+		fmt.Println(n+1, ":", "taking", category, "vacancies")
+
+		wg.Add(1)
+		go vFaker.storeData(vacsPerCategory, category, wg)
+	}
+
+	wg.Wait()
+	fmt.Println("Data has been collected")
 	return nil
 }
 
@@ -631,7 +661,7 @@ func main() {
 
 	vacFaker := NewVacancyFaker(db, logEntry)
 
-	err = vacFaker.GetData(1, "писька")
+	err = vacFaker.GetData(100, "golang", "c++", "java", "data science") //, "kotlin", "ux/ui", "php", "javascript")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -649,243 +679,34 @@ func main() {
 		return
 	}
 
-	vacFaker.idToVacancy.Range(func(key, value any) bool { fmt.Println(key, value); return true })
-	fmt.Printf("\n\n\n")
-	vacFaker.idToEmployer.Range(func(key, value any) bool { fmt.Println(key, value); return true })
+	//println(configs.CURRENT_DIR)
 
-	/*jsonRes, err := GETWithQuery("https://api.hh.ru/vacancies/", 0, 1, "golang")
+	/*vacFaker.idToVacancy.Range(func(key, value any) bool { fmt.Println(key, value); return true })
+	fmt.Printf("\n\n\n")
+	vacFaker.idToEmployer.Range(func(key, value any) bool { fmt.Println(key, value); return true })*/
+
+	/*params, err := url.Parse(employerToAdd.LogoURL)
+	segments := strings.Split(params.Path, "/")
+	fileName := segments[len(segments)-1]
+
+	resp, err := http.Get(employerToAdd.LogoURL)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	idToVac := make(map[string]FakeVacancy, 1000)
-	idToEmployer := make(map[string]FakeEmployer)
+	file, err := os.Create(fileName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	for _, value := range jsonRes["items"].([]interface{}) {
-		item, ok := value.(map[string]interface{})
-		if !ok {
-			fmt.Println("Cast error")
-			return
-		}
+	defer resp.Body.Close()
+	defer file.Close()
 
-		var vacToAdd FakeVacancy
-
-		vacID, err := getStringField(item, "id")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		name, err := getStringField(item, "name")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.VacancyName = name
-
-		salary, ok := item["salary"].(map[string]interface{})
-		if salary == nil {
-			vacToAdd.SalaryLowerBound = nil
-			vacToAdd.SalaryUpperBound = nil
-		} else {
-			if !ok {
-				fmt.Println("Cast error: salary")
-				return
-			}
-
-			salaryFrom := salary["from"]
-			salaryTo := salary["to"]
-
-			if salaryFrom == nil {
-				vacToAdd.SalaryLowerBound = nil
-			} else {
-				salaryFromFloat, ok := salaryFrom.(float64)
-				if !ok {
-					fmt.Println("Cast error: salary from")
-					return
-				}
-
-				salaryInt := int(salaryFromFloat)
-
-				vacToAdd.SalaryLowerBound = &salaryInt
-			}
-
-			if salaryTo == nil {
-				vacToAdd.SalaryUpperBound = nil
-			} else {
-				salaryToFloat, ok := salaryTo.(float64)
-				if !ok {
-					fmt.Println("Cast error: salary to")
-					return
-				}
-
-				salaryInt := int(salaryToFloat)
-
-				vacToAdd.SalaryUpperBound = &salaryInt
-			}
-		}
-
-		address, ok := item["address"].(map[string]interface{})
-		if address == nil {
-			area, areaOk := item["area"].(map[string]interface{})
-			if area == nil {
-				vacToAdd.Location = nil
-			} else {
-				if !areaOk {
-					fmt.Println("Cast error: area")
-					return
-				}
-
-				areaName, areaNameOk := area["name"].(string)
-				if !areaNameOk {
-					fmt.Println("Cast error: area name")
-					return
-				}
-
-				vacToAdd.Location = &areaName
-			}
-		} else {
-			if !ok {
-				fmt.Println("Cast error: address")
-				return
-			}
-
-			city, ok := address["city"].(string)
-			if !ok {
-				fmt.Println("Cast error: city")
-				return
-			}
-			vacToAdd.Location = &city
-		}
-
-		experienceID, err := getNestedField(item, "experience", "id")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.Experience = getDomainExp(experienceID)
-
-		employmentID, err := getNestedField(item, "employment", "id")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.Employment = getDomainEmp(employmentID)
-
-		var employerToAdd FakeEmployer
-
-		employer, ok := item["employer"].(map[string]interface{})
-		if !ok {
-			fmt.Println("Cast error: employer")
-			return
-		}
-
-		employerID, err := getStringField(employer, "id")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.EmployerID = employerID
-
-		employerName, err := getStringField(employer, "name")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		employerToAdd.EmployerName = employerName
-
-		logoUrl, err := getNestedField(employer, "logo_urls", "240")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		employerToAdd.LogoURL = logoUrl
-
-		employerUrl, err := getStringField(employer, "url")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		employerJsonRes, err := GET(employerUrl)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		employerDesc, err := getStringField(employerJsonRes, "description")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		employerToAdd.Description = employerDesc
-
-		vacToAdd.EducationType = getRandomEducationLevel()
-
-		vacancyUrl, err := getStringField(item, "url")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		vacancyJsonRes, err := GET(vacancyUrl)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		vacancyDesc, err := getStringField(vacancyJsonRes, "description")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.Description = vacancyDesc
-
-		skills, err := getSkills(vacancyJsonRes)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		vacToAdd.Skills = skills
-
-		idToVac[vacID] = vacToAdd
-		idToEmployer[employerID] = employerToAdd
-
-		fmt.Println(idToVac)
-		fmt.Println(idToEmployer)
-
-		params, err := url.Parse(employerToAdd.LogoURL)
-		segments := strings.Split(params.Path, "/")
-		fileName := segments[len(segments)-1]
-
-		resp, err := http.Get(employerToAdd.LogoURL)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		file, err := os.Create(fileName)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		defer resp.Body.Close()
-		defer file.Close()
-
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		name, surname, err := getRussianName()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Println(name, surname)
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}*/
 }
