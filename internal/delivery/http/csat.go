@@ -2,7 +2,7 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/internal/delivery/http/middleware"
+	"HnH/pkg/middleware"
 	"HnH/internal/usecase"
 	"HnH/pkg/responseTemplates"
 	"HnH/services/csat/csatPB"
