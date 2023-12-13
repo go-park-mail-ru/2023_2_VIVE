@@ -2,35 +2,35 @@ package pdf
 
 var (
 	Header1Config = FontConfig{
-		Family: "Arial",
+		Family: string(RobotoFont),
 		Style:  "B",
 		Size:   25,
-		Height: 30,
+		HeightCoef: 1.5,
 	}
 	Header2Config = FontConfig{
-		Family: "Arial",
+		Family: string(RobotoFont),
 		Style:  "B",
 		Size:   18,
-		Height: 20,
+		HeightCoef: 1.5,
 	}
 	Header3Config = FontConfig{
-		Family: "Arial",
+		Family: string(RobotoFont),
 		Style:  "",
 		Size:   12,
-		Height: 15,
+		HeightCoef: 1.5,
 	}
 	RegularTextConfig = FontConfig{
-		Family: "Arial",
+		Family: string(RobotoFont),
 		Style:  "",
 		Size:   9,
-		Height: 11,
+		HeightCoef: 1.5,
 	}
 
 	CVConfig = PDFConfig{
-		Orientation:     "P",
-		Unit:            "mm",
-		PageFormat:      "A4",
-		FontDir:         "",
+		Orientation: "P",
+		Unit:        "mm",
+		PageFormat:  "A4",
+		// FontDir:         "",
 		LeftMargin:      20,
 		TopMargin:       20,
 		RightMargin:     20,

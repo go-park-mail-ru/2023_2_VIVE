@@ -6,6 +6,7 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/pdf"
 	"HnH/pkg/utils"
 	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
@@ -427,31 +428,34 @@ func (cvUsecase *CVUsecase) createBlankPDF() *gofpdf.Fpdf {
 	return pdf
 }
 
-type TestStruct struct {
-	Title   string `pdf:"title"`
-	General string `pdf:"content,General"`
-	Specific string `pdf:"content,Specific"`
-}
+// type TestStruct struct {
+// 	Title1   string `pdf:"title"`
+// 	Title2   string `pdf:"title"`
+// 	General  string `pdf:"content,Общий раздел"`
+// 	Specific string `pdf:"content,Частный раздел"`
+// }
 
 func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error) {
-	_, err := cvUsecase.GetCVOfUserById(ctx, cvID)
+	cv, err := cvUsecase.GetCVOfUserById(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: support russian fonts
-	str := TestStruct{
-		Title: "Большой заголовок",
-		General: "Общая информация, которая собирает все основное",
-		Specific: "Какая-то конкретная информация про что-то конкретное без обобщения",
-	}
+	// str := TestStruct{
+	// 	Title1:   "Большой",
+	// 	Title2:   "Заголовок",
+	// 	General:  "Общая информация, которая собирает все основное",
+	// 	Specific: "Какая-то конкретная информация про что-то конкретное без обобщения",
+	// }
 	// str := TestStruct{
 	// 	Title: "saljfsa fsafoasf asifjnasf asipfb",
 	// 	General: "asdfjnaskfnas flkhjas flsanflksahfb ;asdk fsa",
 	// 	Specific: "asjdfnaks;n flkasf lasnf saldjf asdlfj asdfasd bfa",
 	// }
 
-	pdf, err := pdf.MarshalPDF(&pdf.CVConfig, &str)
+	// fmt.Printf("sv: ")
+
+	pdfFile, err := pdf.MarshalPDF(&pdf.CVConfig, cv)
 	if err != nil {
 		return nil, err
 	}
@@ -459,5 +463,5 @@ func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofp
 	// pdf := cvUsecase.createBlankPDF()
 	// pdf.CellFormat(40, 10, "Привет мир", "1", 1, "L", false, 0, "")
 
-	return pdf, nil
+	return pdfFile, nil
 }

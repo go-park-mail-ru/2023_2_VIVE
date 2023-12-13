@@ -82,13 +82,13 @@ func (cv *DbCV) ToAPI() *ApiCV {
 type ApiCV struct {
 	ID                    int                       `json:"id"`
 	ApplicantID           int                       `json:"applicant_id"`
-	FirstName             string                    `json:"first_name"`            // имя
-	LastName              string                    `json:"last_name"`             // фамилия
-	MiddleName            *string                   `json:"middle_name,omitempty"` // отчество
+	FirstName             string                    `json:"first_name" pdf:"title"`            // имя
+	LastName              string                    `json:"last_name" pdf:"title"`             // фамилия
+	MiddleName            *string                   `json:"middle_name,omitempty" pdf:"title"` // отчество
 	ProfessionName        string                    `json:"profession_name"`
-	Gender                Gender                    `json:"gender"`
-	Location              *string                   `json:"city,omitempty"`
-	Birthday              *string                   `json:"birthday,omitempty"`
+	Gender                Gender                    `json:"gender" pdf:"content,Основная информация"`
+	Location              *string                   `json:"city,omitempty" pdf:"content,Основная информация"`
+	Birthday              *string                   `json:"birthday,omitempty" pdf:"content,Основная информация"`
 	EducationLevel        EducationLevel            `json:"education_level"`
 	Status                Status                    `json:"status,omitempty"`
 	EducationInstitutions []ApiEducationInstitution `json:"institutions"`
