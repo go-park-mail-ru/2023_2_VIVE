@@ -414,10 +414,23 @@ func (cvUsecase *CVUsecase) SearchCVs(
 
 func (cvUsecase *CVUsecase) createBlankPDF() *gofpdf.Fpdf {
 	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	// left, top, right, bottom := pdf.GetMargins()
+	// fmt.Printf("margins: %f, %f, %f, %f\n", left, top, right, bottom)
+	pdf.SetMargins(0, 0, 0)
+	// left, top, right, bottom = pdf.GetMargins()
+	// fmt.Printf("margins: %f, %f, %f, %f\n", left, top, right, bottom)
+
 	pdf.AddPage()
 	pdf.SetFont("Arial", "", 12)
 
 	return pdf
+}
+
+type TestStruct struct {
+	Title   string `pdf:"title"`
+	General string `pdf:"content,General"`
+	Specific string `pdf:"content,Specific"`
 }
 
 func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error) {
@@ -426,8 +439,25 @@ func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofp
 		return nil, err
 	}
 
-	pdf := cvUsecase.createBlankPDF()
-	pdf.Cell(40, 10, "Hello, world")
+	// TODO: support russian fonts
+	str := TestStruct{
+		Title: "Большой заголовок",
+		General: "Общая информация, которая собирает все основное",
+		Specific: "Какая-то конкретная информация про что-то конкретное без обобщения",
+	}
+	// str := TestStruct{
+	// 	Title: "saljfsa fsafoasf asifjnasf asipfb",
+	// 	General: "asdfjnaskfnas flkhjas flsanflksahfb ;asdk fsa",
+	// 	Specific: "asjdfnaks;n flkasf lasnf saldjf asdlfj asdfasd bfa",
+	// }
+
+	pdf, err := pdf.MarshalPDF(&pdf.CVConfig, &str)
+	if err != nil {
+		return nil, err
+	}
+
+	// pdf := cvUsecase.createBlankPDF()
+	// pdf.CellFormat(40, 10, "Привет мир", "1", 1, "L", false, 0, "")
 
 	return pdf, nil
 }
