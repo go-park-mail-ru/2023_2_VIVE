@@ -2,9 +2,9 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
 
@@ -30,6 +30,10 @@ func NewResponseHandler(router *mux.Router, responseUCase usecase.IResponseUseca
 	router.Handle("/vacancies/{vacancyID}/applicants",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetApplicants))).
 		Methods("GET")
+
+	router.Handle("/users/{userID}/responses",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserResponses))).
+		Methods("GET")
 }
 
 func (responseHandler *ResponseHandler) sanitizeApplicants(applicants ...domain.ApiApplicant) []domain.ApiApplicant {
@@ -44,6 +48,19 @@ func (responseHandler *ResponseHandler) sanitizeApplicants(applicants ...domain.
 		}
 
 		result = append(result, app)
+	}
+
+	return result
+}
+
+func (responseHandler *ResponseHandler) sanitizeResponses(responses ...domain.ApiResponse) []domain.ApiResponse {
+	result := make([]domain.ApiResponse, 0, len(responses))
+
+	for _, resp := range responses {
+		resp.OrganizationName = sanitizer.XSS.Sanitize(resp.OrganizationName)
+		resp.VacancyName = sanitizer.XSS.Sanitize(resp.VacancyName)
+
+		result = append(result, resp)
 	}
 
 	return result
@@ -93,4 +110,23 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 	sanitizedApplicants := responseHandler.sanitizeApplicants(applicantsList...)
 
 	responseTemplates.MarshalAndSend(w, sanitizedApplicants)
+}
+
+func (responseHandler *ResponseHandler) GetUserResponses(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	userID, convErr := strconv.Atoi(vars["userID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	responses, err := responseHandler.responseUsecase.GetUserResponses(r.Context(), userID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
+	}
+
+	sanitizedResponses := responseHandler.sanitizeResponses(responses...)
+	responseTemplates.MarshalAndSend(w, sanitizedResponses)
 }

@@ -2,12 +2,13 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
+	"HnH/services/searchEngineService/searchEnginePB"
 
 	"encoding/json"
 	"fmt"
@@ -110,8 +111,13 @@ func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
 
 func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.ApiMetaCV {
 	result := domain.ApiMetaCV{
-		Count: metaCVs.Count,
-		CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
+		Filters: metaCVs.Filters,
+		CVs: domain.ApiCVCount{
+			Count: metaCVs.CVs.Count,
+			CVs:   cvHandler.sanitizeCVs(metaCVs.CVs.CVs...),
+		},
+		// Count: metaCVs.Count,
+		// CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
 	}
 	return result
 }
@@ -123,28 +129,23 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
-	searchQuery := query.Get(SEARCH_QUERY_KEY)
 
-	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
+	// options := searchEnginePB.SearchOptions{}
+	queryOptions := make(map[string]*searchEnginePB.SearchOptionValues)
+	for optionName, values := range query {
+		contextLogger.WithFields(logrus.Fields{
+			"option_name":   optionName,
+			"option_values": values,
+		}).
+			Debug("parsing options")
+		optionsValues := searchEnginePB.SearchOptionValues{
+			Values: values,
+		}
+		queryOptions[optionName] = &optionsValues
 	}
+	options := searchEnginePB.SearchOptions{Options: queryOptions}
 
-	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
-	}
-
-	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(
-		r.Context(),
-		searchQuery,
-		pageNum,
-		resultsPerPage,
-	)
+	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(r.Context(), &options)
 
 	if getErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)

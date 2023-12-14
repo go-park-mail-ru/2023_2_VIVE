@@ -33,7 +33,7 @@ var CORS = cors.New(cors.Options{
 
 var HnHRedisConfig = redisConfig{
 	protocol:       "redis",
-	networkAddress: "212.233.90.231",
+	networkAddress: "localhost",
 	port:           "8008",
 	password:       "vive_password_redis",
 }
@@ -42,7 +42,7 @@ var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
 	password: "vive_password",
 	dbname:   "hnh",
-	host:     "212.233.90.231",
+	host:     "localhost",
 	port:     "8054",
 	sslmode:  "disable",
 }

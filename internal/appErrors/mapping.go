@@ -41,15 +41,17 @@ var errToCode = map[error]int{
 	authUtils.ERROR_WHILE_DELETING:  http.StatusNotModified,
 
 	usecase.ErrInapropriateRole: http.StatusForbidden,
+	usecase.ErrForbidden:        http.StatusForbidden,
 	usecase.ErrReadAvatar:       http.StatusInternalServerError,
 	usecase.BadAvatarSize:       http.StatusBadRequest,
 	usecase.BadAvatarType:       http.StatusBadRequest,
 
-	psql.ErrEntityNotFound: http.StatusNotFound,
-	psql.ErrNotInserted:    http.StatusNotModified,
-	psql.ErrNoRowsUpdated:  http.StatusNotModified,
-	psql.ErrNoRowsDeleted:  http.StatusNotModified,
-	psql.IncorrectUserID:   http.StatusBadRequest,
+	psql.ErrEntityNotFound:     http.StatusNotFound,
+	psql.ErrNotInserted:        http.StatusNotModified,
+	psql.ErrNoRowsUpdated:      http.StatusNotModified,
+	psql.ErrNoRowsDeleted:      http.StatusNotModified,
+	psql.IncorrectUserID:       http.StatusBadRequest,
+	psql.ErrRecordAlredyExists: http.StatusConflict,
 }
 
 func GetErrAndCodeToSend(err error) (error, int) {

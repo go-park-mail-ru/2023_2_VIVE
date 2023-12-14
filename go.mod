@@ -6,9 +6,11 @@ toolchain go1.21.0
 
 require (
 	github.com/AfterShip/email-verifier v1.3.3
+	github.com/golang/protobuf v1.5.3
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.5.1
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/microcosm-cc/bluemonday v1.0.26
 	github.com/prometheus/client_golang v1.17.0
@@ -24,8 +26,11 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
+<<<<<<< HEAD
 	github.com/go-faker/faker/v4 v4.2.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+=======
+>>>>>>> 201d4bc02c77cebce1815ff85c1668a54c130e37
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

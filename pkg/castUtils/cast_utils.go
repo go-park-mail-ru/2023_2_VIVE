@@ -15,3 +15,11 @@ func Int64SliceToIntSlice(slice []int64) []int {
 	}
 	return res
 }
+
+func StringToAnySlice(slice []string) []interface{} {
+	res := make([]interface{}, len(slice))
+	for i, item := range slice {
+		res[i] = item
+	}
+	return res
+}

@@ -7,6 +7,7 @@ import (
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/utils"
+	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type ICVUsecase interface {
 	GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error)
 	UpdateCVOfUserById(ctx context.Context, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, cvID int) error
-	SearchCVs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaCV, error)
+	SearchCVs(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaCV, error)
 }
 
 type CVUsecase struct {
@@ -365,23 +366,22 @@ func (cvUsecase *CVUsecase) DeleteCVOfUserById(ctx context.Context, cvID int) er
 
 func (cvUsecase *CVUsecase) SearchCVs(
 	ctx context.Context,
-	query string,
-	pageNumber, resultsPerPage int64,
+	options *searchEnginePB.SearchOptions,
 ) (domain.ApiMetaCV, error) {
-	cvIDs, count, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, query, pageNumber, resultsPerPage)
+	cvSearchResponse, err := cvUsecase.searchEngineRepo.SearchCVsIDs(ctx, options)
 	if err != nil {
 		return domain.ApiMetaCV{
-			Count: 0,
-			CVs:   nil,
-		}, nil
+			Filters: nil,
+			CVs:     domain.ApiCVCount{},
+		}, err
 	}
 
 	// dbCvs, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
-	dbCvs, dbExps, dbInsts, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvIDs))
+	dbCvs, dbExps, dbInsts, cvErr := cvUsecase.cvRepo.GetCVsByIds(ctx, castUtils.Int64SliceToIntSlice(cvSearchResponse.Ids))
 	if cvErr == psql.ErrEntityNotFound {
 		return domain.ApiMetaCV{
-			Count: 0,
-			CVs:   nil,
+			Filters: nil,
+			CVs:     domain.ApiCVCount{},
 		}, nil
 	}
 	if cvErr != nil {
@@ -400,8 +400,11 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	}
 
 	result := domain.ApiMetaCV{
-		Count: count,
-		CVs:   cvsToReturn,
+		Filters: cvSearchResponse.Filters,
+		CVs: domain.ApiCVCount{
+			Count: cvSearchResponse.Count,
+			CVs: cvsToReturn,
+		},
 	}
 
 	return result, nil

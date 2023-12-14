@@ -2,13 +2,14 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/internal/delivery/http/middleware"
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
+	"HnH/services/searchEngineService/searchEnginePB"
 
 	"encoding/json"
 	"fmt"
@@ -19,11 +20,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	SEARCH_QUERY_KEY           = "q"
-	PAGE_NUM_QUERY_KEY         = "page_num"
-	RESULTS_PER_PAGE_QUERY_KEY = "results_per_page"
-)
+// const (
+// 	SEARCH_QUERY_KEY           = "q"
+// 	PAGE_NUM_QUERY_KEY         = "page_num"
+// 	RESULTS_PER_PAGE_QUERY_KEY = "results_per_page"
+// )
 
 type VacancyHandler struct {
 	vacancyUsecase usecase.IVacancyUsecase
@@ -117,28 +118,22 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
-	searchQuery := query.Get(SEARCH_QUERY_KEY)
 
-	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
+	queryOptions := make(map[string]*searchEnginePB.SearchOptionValues)
+	for optionName, values := range query {
+		contextLogger.WithFields(logrus.Fields{
+			"option_name":   optionName,
+			"option_values": values,
+		}).
+			Debug("parsing options")
+		optionsValues := searchEnginePB.SearchOptionValues{
+			Values: values,
+		}
+		queryOptions[optionName] = &optionsValues
 	}
+	options := searchEnginePB.SearchOptions{Options: queryOptions}
 
-	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
-	}
-
-	metaVacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(
-		r.Context(),
-		searchQuery,
-		pageNum,
-		resultsPerPage,
-	)
+	metaVacancies, getErr := vacancyHandler.vacancyUsecase.SearchVacancies(r.Context(), &options)
 
 	if getErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
@@ -161,16 +156,16 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 		return
 	}
 
-	vacWithCompName, err := vacancyHandler.vacancyUsecase.GetVacancyWithCompanyName(r.Context(), vacancyID)
+	vacancy, err := vacancyHandler.vacancyUsecase.GetVacancy(r.Context(), vacancyID)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
 		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
 
-	vacWithCompName.Vacancy = vacancyHandler.sanitizeVacancies(vacWithCompName.Vacancy)[0]
+	*vacancy = vacancyHandler.sanitizeVacancies(*vacancy)[0]
 
-	responseTemplates.MarshalAndSend(w, vacWithCompName)
+	responseTemplates.MarshalAndSend(w, vacancy)
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {

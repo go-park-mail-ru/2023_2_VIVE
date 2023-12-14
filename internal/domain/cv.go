@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"HnH/services/searchEngineService/searchEnginePB"
 	"time"
 )
 
@@ -117,7 +118,12 @@ func (cv *ApiCV) ToDb() *DbCV {
 	}
 }
 
-type ApiMetaCV struct {
+type ApiCVCount struct {
 	Count int64   `json:"count"`
 	CVs   []ApiCV `json:"list"`
+}
+
+type ApiMetaCV struct {
+	Filters []*searchEnginePB.Filter `json:"filters,omitempty"`
+	CVs     ApiCVCount               `json:"cvs"`
 }

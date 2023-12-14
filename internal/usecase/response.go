@@ -5,51 +5,93 @@ import (
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/notificationMessages"
 	"HnH/pkg/serverErrors"
+	notificationsPB "HnH/services/notifications/api/proto"
 	"context"
+	"errors"
+
+	"github.com/sirupsen/logrus"
 )
 
 type IResponseUsecase interface {
 	RespondToVacancy(ctx context.Context, vacancyID, cvID int) error
 	GetApplicantsList(ctx context.Context, vacancyID int) ([]domain.ApiApplicant, error)
+	GetUserResponses(ctx context.Context, userID int) ([]domain.ApiResponse, error)
 }
 
 type ResponseUsecase struct {
-	responseRepo psql.IResponseRepository
-	sessionRepo  grpc.IAuthRepository
-	userRepo     psql.IUserRepository
-	vacancyRepo  psql.IVacancyRepository
-	cvRepo       psql.ICVRepository
+	responseRepo      psql.IResponseRepository
+	sessionRepo       grpc.IAuthRepository
+	userRepo          psql.IUserRepository
+	vacancyRepo       psql.IVacancyRepository
+	cvRepo            psql.ICVRepository
+	notificationsRepo grpc.INotificationRepository
 }
 
 func NewResponseUsecase(respondRepository psql.IResponseRepository,
 	sessionRepository grpc.IAuthRepository,
 	userRepository psql.IUserRepository,
 	vacancyRepository psql.IVacancyRepository,
-	cvRepository psql.ICVRepository) IResponseUsecase {
+	cvRepository psql.ICVRepository,
+	notificationRepo grpc.INotificationRepository,
+) IResponseUsecase {
 	return &ResponseUsecase{
-		responseRepo: respondRepository,
-		sessionRepo:  sessionRepository,
-		userRepo:     userRepository,
-		vacancyRepo:  vacancyRepository,
-		cvRepo:       cvRepository,
+		responseRepo:      respondRepository,
+		sessionRepo:       sessionRepository,
+		userRepo:          userRepository,
+		vacancyRepo:       vacancyRepository,
+		cvRepo:            cvRepository,
+		notificationsRepo: notificationRepo,
 	}
 }
 
 func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, vacancyID, cvID int) error {
-	userID := contextUtils.GetUserIDFromCtx(ctx)
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+		"cv_id":      cvID,
+	}).
+		Info("responding to vacancy")
 
-	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, userID)
+	currUserID := contextUtils.GetUserIDFromCtx(ctx)
+
+	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, currUserID)
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+		}).
+			Error("error while getting role by id")
 		return err
 	} else if userRole != domain.Applicant {
+		contextLogger.Error(ErrInapropriateRole.Error())
 		return ErrInapropriateRole
 	}
 
 	respErr := responseUsecase.responseRepo.RespondToVacancy(ctx, vacancyID, cvID)
 	if respErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err": respErr,
+		}).
+			Error("error while responding to vacancy")
 		return respErr
 	}
+
+	empUserID, err := responseUsecase.userRepo.GetUserIDByVacID(ctx, vacancyID)
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err": err,
+		}).
+			Error("error while getting user_id by vacancy_id")
+		return err
+	}
+
+	message := notificationsPB.NotificationMessage{
+		UserId:  empUserID,
+		Message: notificationMessages.NewVacancyResponse,
+	}
+
+	responseUsecase.notificationsRepo.SendMessage(ctx, &message)
 	return nil
 }
 
@@ -106,4 +148,25 @@ func (responseUsecase *ResponseUsecase) makeSummary(CVs []domain.DbCV) []domain.
 	}
 
 	return infoToReturn
+}
+
+func (responseUsecase *ResponseUsecase) GetUserResponses(ctx context.Context, userID int) ([]domain.ApiResponse, error) {
+	currUserID := contextUtils.GetUserIDFromCtx(ctx)
+
+	userRole, err := responseUsecase.userRepo.GetRoleById(ctx, currUserID)
+	if err != nil {
+		return nil, err
+	} else if userRole != domain.Applicant {
+		return nil, ErrInapropriateRole
+	}
+
+	if userID != currUserID {
+		return nil, ErrForbidden
+	}
+
+	responses, err := responseUsecase.responseRepo.GetUserResponses(ctx, userID)
+	if err != nil && !errors.Is(err, psql.ErrEntityNotFound) {
+		return nil, err
+	}
+	return responses, nil
 }
