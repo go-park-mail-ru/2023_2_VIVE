@@ -80,23 +80,23 @@ func (cv *DbCV) ToAPI() *ApiCV {
 }
 
 type ApiCV struct {
-	ID                    int                       `json:"id"`
-	ApplicantID           int                       `json:"applicant_id"`
-	FirstName             string                    `json:"first_name" pdf:"title"`            // имя
-	LastName              string                    `json:"last_name" pdf:"title"`             // фамилия
-	MiddleName            *string                   `json:"middle_name,omitempty" pdf:"title"` // отчество
-	ProfessionName        string                    `json:"profession_name"`
-	Gender                Gender                    `json:"gender" pdf:"content,Основная информация"`
-	Location              *string                   `json:"city,omitempty" pdf:"content,Основная информация"`
-	Birthday              *string                   `json:"birthday,omitempty" pdf:"content,Основная информация"`
-	EducationLevel        EducationLevel            `json:"education_level"`
-	Status                Status                    `json:"status,omitempty"`
-	EducationInstitutions []ApiEducationInstitution `json:"institutions"`
-	Experience            []ApiExperience           `json:"companies"`
-	Description           *string                   `json:"description,omitempty"`
-	Skills                []string                  `json:"skills"`
-	CreatedAt             time.Time                 `json:"created_at,omitempty"`
-	UpdatedAt             time.Time                 `json:"updated_at,omitempty"`
+	ID                    int                        `json:"id"`
+	ApplicantID           int                        `json:"applicant_id"`
+	FirstName             string                     `json:"first_name" pdf:"header"`            // имя
+	LastName              string                     `json:"last_name" pdf:"header"`             // фамилия
+	MiddleName            *string                    `json:"middle_name,omitempty" pdf:"header"` // отчество
+	Gender                Gender                     `json:"gender" pdf:"content,Основная информация,Пол"`
+	Location              *string                    `json:"city,omitempty" pdf:"content,Основная информация,Расположение"`
+	Birthday              *string                    `json:"birthday,omitempty" pdf:"content,Основная информация,День рождения"`
+	ProfessionName        string                     `json:"profession_name" pdf:"content,Желаемая должность"`
+	EducationLevel        EducationLevel             `json:"education_level"`
+	Status                Status                     `json:"status,omitempty"`
+	EducationInstitutions []*ApiEducationInstitution `json:"institutions" pdf:"content,Образование"`
+	Experience            []*ApiExperience           `json:"companies" pdf:"content,Опыт работы"`
+	Skills                []string                   `json:"skills" pdf:"content,Ключевые навыки"`
+	Description           *string                    `json:"description,omitempty" pdf:"content,О себе"`
+	CreatedAt             time.Time                  `json:"created_at,omitempty"`
+	UpdatedAt             time.Time                  `json:"updated_at,omitempty"`
 }
 
 func (cv *ApiCV) ToDb() *DbCV {

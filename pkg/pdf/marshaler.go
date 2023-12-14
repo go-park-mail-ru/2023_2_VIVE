@@ -2,7 +2,6 @@ package pdf
 
 import (
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/jung-kurt/gofpdf"
@@ -11,8 +10,9 @@ import (
 type FontFamilyName string
 
 const (
-	TitleSep                         = " "
+	HeaderSep                        = " "
 	SectionContentSep                = "\n"
+	SkipTag                          = "-"
 	fontDir                          = "./assets/"
 	RobotoFont        FontFamilyName = "Roboto"
 	PDFTagName                       = "pdf"
@@ -22,14 +22,15 @@ const (
 type PDFFieldType string
 
 const (
-	TitleType   PDFFieldType = "title"
+	HeaderType  PDFFieldType = "header"
 	ContentType PDFFieldType = "content"
+	SectionType PDFFieldType = "section"
 )
 
 type PDFTagContent struct {
 	Type       string
 	HeaderName string
-	// Level      int
+	Prefix     string
 }
 
 func parsePDFTagContent(tagContent string) *PDFTagContent {
@@ -43,14 +44,9 @@ func parsePDFTagContent(tagContent string) *PDFTagContent {
 		typeField := val.Type().Field(i)
 
 		switch typeField.Type.Kind() {
-		case reflect.Int:
-			elemInt, _ := strconv.Atoi(elems[i])
-			valueField.SetInt(int64(elemInt))
 		case reflect.String:
 			valueField.SetString(elems[i])
 		}
-		// typeField := val.Type().Field(i)
-
 	}
 
 	return res
@@ -77,32 +73,68 @@ type PDFConfig struct {
 	TopMargin       float64
 	RightMargin     float64
 	BottomMargin    float64
-	Header1Font     FontConfig
-	Header2Font     FontConfig
-	Header3Font     FontConfig
+	HeaderFonts     []FontConfig
 	RegularTextFont FontConfig
 }
 
-// type PDFSection struct {
-// 	header  string
-// 	content string
-// }
-
-type PDFSection map[string][]string
-
-// TODO: define order of sections in pdf file
 type PDFFileStruct struct {
-	titleParts []string
-	sections   PDFSection
+	headerParts []string
+	content     string
+	sections    []*PDFFileStruct
 }
 
 func (f *PDFFileStruct) Build(pdf *gofpdf.Fpdf, config *PDFConfig) {
-	title := strings.Join(f.titleParts, TitleSep)
-	addTitle(pdf, config, title)
+	f.build(pdf, config, 0)
+}
 
-	for header, content := range f.sections {
-		addSection(pdf, config, header, strings.Join(content, SectionContentSep))
+func (f *PDFFileStruct) build(pdf *gofpdf.Fpdf, config *PDFConfig, level int) {
+	if level >= len(config.HeaderFonts) {
+		return
 	}
+
+	f.addTitle(pdf, config, level)
+	f.addContent(pdf, config)
+
+	for _, section := range f.sections {
+		section.build(pdf, config, level+1)
+		// addSection(pdf, config, header, strings.Join(section, SectionContentSep))
+	}
+}
+
+func (f *PDFFileStruct) addTitle(pdf *gofpdf.Fpdf, config *PDFConfig /* title string, */, level int) {
+	title := strings.Join(f.headerParts, HeaderSep)
+	headerFont := config.HeaderFonts[level]
+	pdf.SetFont(headerFont.Family, headerFont.Style, headerFont.Size)
+	contentWidth := getContentAreaSize(pdf).Wd
+
+	lines := pdf.SplitText(title, contentWidth)
+	insertTextLines(pdf, &headerFont, lines, false)
+}
+
+func (f *PDFFileStruct) addContent(pdf *gofpdf.Fpdf, config *PDFConfig) {
+	if content := strings.TrimSpace(f.content); content == "" {
+		return
+	}
+	pdf.SetFont(config.RegularTextFont.Family, config.RegularTextFont.Style, config.RegularTextFont.Size)
+
+	lines := pdf.SplitText(strings.TrimSpace(f.content), getContentAreaSize(pdf).Wd)
+	insertTextLines(pdf, &config.RegularTextFont, lines, true)
+}
+
+func (f *PDFFileStruct) appendSection(innerSection *PDFFileStruct) {
+	if innerSection == nil || (strings.TrimSpace(innerSection.content) == "" && len(innerSection.sections) == 0) {
+		return
+	}
+	innerSectionHeader := strings.Join(innerSection.headerParts, HeaderSep)
+	for _, section := range f.sections {
+		sectionHeader := strings.Join(section.headerParts, HeaderSep)
+		if sectionHeader == innerSectionHeader {
+			section.content += SectionContentSep + innerSection.content
+			section.sections = append(section.sections, innerSection.sections...)
+			return
+		}
+	}
+	f.sections = append(f.sections, innerSection)
 }
 
 func getContentAreaSize(pdf *gofpdf.Fpdf) gofpdf.SizeType {
@@ -143,31 +175,15 @@ func insertTextLines(pdf *gofpdf.Fpdf, currFontConfig *FontConfig, lines []strin
 	}
 }
 
-func addTitle(pdf *gofpdf.Fpdf, config *PDFConfig, title string) {
-	pdf.SetFont(config.Header1Font.Family, config.Header1Font.Style, config.Header1Font.Size)
-	contentWidth := getContentAreaSize(pdf).Wd
-
-	lines := pdf.SplitText(title, contentWidth)
-	insertTextLines(pdf, &config.Header1Font, lines, false)
-}
-
-func addSection(pdf *gofpdf.Fpdf, config *PDFConfig, headerName, content string) {
-	pdf.SetFont(config.Header2Font.Family, config.Header2Font.Style, config.Header2Font.Size)
-
-	headerLines := pdf.SplitText(headerName, getContentAreaSize(pdf).Wd)
-	insertTextLines(pdf, &config.Header2Font, headerLines, false)
-
-	pdf.SetFont(config.RegularTextFont.Family, config.RegularTextFont.Style, config.RegularTextFont.Size)
-	contentLines := pdf.SplitText(content, getContentAreaSize(pdf).Wd)
-	insertTextLines(pdf, &config.RegularTextFont, contentLines, true)
-}
-
-func parseData( /* pdf *gofpdf.Fpdf,  */ config *PDFConfig, data any) *PDFFileStruct {
-	res := PDFFileStruct{
-		titleParts: []string{},
-		sections: PDFSection{},
+// TODO: add errors
+func parseData(val reflect.Value) *PDFFileStruct {
+	// val := reflect.ValueOf(data)
+	if val.Kind() != reflect.Pointer {
+		return nil
 	}
-	val := reflect.ValueOf(data).Elem()
+
+	res := PDFFileStruct{}
+	val = val.Elem()
 
 	for i := 0; i < val.NumField(); i++ {
 		valueField := val.Field(i)
@@ -187,29 +203,57 @@ func parseData( /* pdf *gofpdf.Fpdf,  */ config *PDFConfig, data any) *PDFFileSt
 		tagContent := parsePDFTagContent(pdfTag)
 
 		switch tagContent.Type {
-		case string(TitleType):
+		case string(HeaderType):
 			if strings.TrimSpace(valueField.String()) == "" {
 				continue
 			}
-			res.titleParts = append(res.titleParts, strings.TrimSpace(valueField.String()))
-			// addTitle(pdf, config, valueField.String())
+			res.headerParts = append(res.headerParts, strings.TrimSpace(valueField.String()))
 
 		case string(ContentType):
-			header := strings.TrimSpace(tagContent.HeaderName)
-			content := strings.TrimSpace(valueField.String())
-			if _, ok := res.sections[header]; !ok {
-				res.sections[header] = []string{}
+			innerSection := PDFFileStruct{}
+
+			headerTag := strings.TrimSpace(tagContent.HeaderName)
+			if headerTag != SkipTag {
+				innerSection.headerParts = append(innerSection.headerParts, strings.TrimSpace(tagContent.HeaderName))
 			}
-			res.sections[header] = append(res.sections[header], content)
+
+			switch valueField.Kind() {
+			case reflect.String:
+				innerSection.content = strings.TrimSpace(valueField.String())
+
+			case reflect.Slice:
+				for j := 0; j < valueField.Len(); j++ {
+					switch valueField.Index(j).Kind() {
+					case reflect.String:
+						innerSection.content += strings.TrimSpace(valueField.Index(j).String()) + " "
+
+					case reflect.Pointer:
+						innerInnerSection := parseData(valueField.Index(j))
+
+						innerSection.appendSection(innerInnerSection)
+					}
+				}
+			}
+
+			if prefix := strings.TrimSpace(tagContent.Prefix); prefix != "" {
+			}
+
+			res.appendSection(&innerSection)
+
 		}
 	}
 	return &res
 }
 
+func ParseData(data any) *PDFFileStruct {
+	val := reflect.ValueOf(data)
+	return parseData(val)
+}
+
 func MarshalPDF(config *PDFConfig, data any) (*gofpdf.Fpdf, error) {
 	pdf := initPDF(config)
 
-	pdfFileStruct := parseData( /* pdf,  */ config, data)
+	pdfFileStruct := ParseData(data)
 	pdfFileStruct.Build(pdf, config)
 
 	return pdf, nil

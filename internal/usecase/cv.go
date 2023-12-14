@@ -77,15 +77,15 @@ func (cvUsecase *CVUsecase) validateRole(ctx context.Context, userID int, requir
 func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExperience, edInsts []domain.DbEducationInstitution) *domain.ApiCV {
 	apiCV := cv.ToAPI()
 
-	apiInsts := make([]domain.ApiEducationInstitution, len(edInsts))
+	apiInsts := make([]*domain.ApiEducationInstitution, len(edInsts))
 	for i := range edInsts {
-		apiInsts[i] = *edInsts[i].ToAPI()
+		apiInsts[i] = edInsts[i].ToAPI()
 	}
 	apiCV.EducationInstitutions = apiInsts
 
-	apiExps := make([]domain.ApiExperience, len(exps))
+	apiExps := make([]*domain.ApiExperience, len(exps))
 	for i := range exps {
-		apiExps[i] = *exps[i].ToAPI()
+		apiExps[i] = exps[i].ToAPI()
 	}
 	apiCV.Experience = apiExps
 
