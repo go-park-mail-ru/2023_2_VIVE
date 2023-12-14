@@ -1,6 +1,7 @@
 package pdf
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -16,7 +17,7 @@ const (
 	fontDir                          = "./assets/"
 	RobotoFont        FontFamilyName = "Roboto"
 	PDFTagName                       = "pdf"
-	Header1Height                    = 10
+	// Header1Height                    = 10
 )
 
 type PDFFieldType string
@@ -24,13 +25,14 @@ type PDFFieldType string
 const (
 	HeaderType  PDFFieldType = "header"
 	ContentType PDFFieldType = "content"
-	SectionType PDFFieldType = "section"
+	// SectionType PDFFieldType = "section"
 )
 
 type PDFTagContent struct {
 	Type       string
 	HeaderName string
 	Prefix     string
+	MapperType string
 }
 
 func parsePDFTagContent(tagContent string) *PDFTagContent {
@@ -50,31 +52,6 @@ func parsePDFTagContent(tagContent string) *PDFTagContent {
 	}
 
 	return res
-}
-
-type FontConfig struct {
-	Family string
-
-	// "B"- bold; "I" - italic; "U" - underscore; "S" - strike-out
-	Style      string
-	Size       float64
-	HeightCoef float64
-}
-
-type PDFConfig struct {
-	// "P" or "Portrait"; "L" or "Landscape"
-	Orientation string
-	//"pt" for point, "mm" for millimeter, "cm" for centimeter, or "in" for inch
-	Unit string
-	// "A3", "A4", "A5", "Letter", "Legal", or "Tabloid". An empty string will be replaced with "A4"
-	PageFormat string
-	// FontDir         string
-	LeftMargin      float64
-	TopMargin       float64
-	RightMargin     float64
-	BottomMargin    float64
-	HeaderFonts     []FontConfig
-	RegularTextFont FontConfig
 }
 
 type PDFFileStruct struct {
@@ -138,15 +115,17 @@ func (f *PDFFileStruct) appendSection(innerSection *PDFFileStruct) {
 }
 
 func getContentAreaSize(pdf *gofpdf.Fpdf) gofpdf.SizeType {
-
-	res := gofpdf.SizeType{}
+	// res := gofpdf.SizeType{}
 	pageWidth, pageHeight := pdf.GetPageSize()
 	marginL, marginT, marginR, marginB := pdf.GetMargins()
 
-	res.Wd = pageWidth - marginL - marginR
-	res.Ht = pageHeight - marginB - marginT
+	// res.Wd = pageWidth - marginL - marginR
+	// res.Ht = pageHeight - marginB - marginT
 
-	return res
+	return gofpdf.SizeType{
+		Wd: pageWidth - marginL - marginR,
+		Ht: pageHeight - marginB - marginT,
+	}
 }
 
 func initFonts(pdf *gofpdf.Fpdf) {
@@ -175,8 +154,7 @@ func insertTextLines(pdf *gofpdf.Fpdf, currFontConfig *FontConfig, lines []strin
 	}
 }
 
-// TODO: add errors
-func parseData(val reflect.Value) *PDFFileStruct {
+func parseData(val reflect.Value, mappers map[string]Mapper) *PDFFileStruct {
 	// val := reflect.ValueOf(data)
 	if val.Kind() != reflect.Pointer {
 		return nil
@@ -219,7 +197,7 @@ func parseData(val reflect.Value) *PDFFileStruct {
 
 			switch valueField.Kind() {
 			case reflect.String:
-				innerSection.content = strings.TrimSpace(valueField.String())
+				innerSection.content = Map(mappers, strings.TrimSpace(valueField.String()), strings.TrimSpace(tagContent.MapperType))
 
 			case reflect.Slice:
 				for j := 0; j < valueField.Len(); j++ {
@@ -228,14 +206,15 @@ func parseData(val reflect.Value) *PDFFileStruct {
 						innerSection.content += strings.TrimSpace(valueField.Index(j).String()) + " "
 
 					case reflect.Pointer:
-						innerInnerSection := parseData(valueField.Index(j))
+						innerInnerSection := parseData(valueField.Index(j), mappers)
 
 						innerSection.appendSection(innerInnerSection)
 					}
 				}
 			}
 
-			if prefix := strings.TrimSpace(tagContent.Prefix); prefix != "" {
+			if prefix := strings.TrimSpace(tagContent.Prefix); prefix != "" && innerSection.content != "" {
+				innerSection.content = fmt.Sprintf("%s: %s", prefix, innerSection.content)
 			}
 
 			res.appendSection(&innerSection)
@@ -245,15 +224,15 @@ func parseData(val reflect.Value) *PDFFileStruct {
 	return &res
 }
 
-func ParseData(data any) *PDFFileStruct {
+func ParseData(data any, mappers map[string]Mapper) *PDFFileStruct {
 	val := reflect.ValueOf(data)
-	return parseData(val)
+	return parseData(val, mappers)
 }
 
 func MarshalPDF(config *PDFConfig, data any) (*gofpdf.Fpdf, error) {
 	pdf := initPDF(config)
 
-	pdfFileStruct := ParseData(data)
+	pdfFileStruct := ParseData(data, config.Mappers)
 	pdfFileStruct.Build(pdf, config)
 
 	return pdf, nil

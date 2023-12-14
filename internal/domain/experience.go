@@ -38,8 +38,8 @@ type ApiExperience struct {
 	OrganizationName string  `json:"name" pdf:"header"`
 	JobPosition      string  `json:"job_position" pdf:"content,-,Должность"`
 	Description      string  `json:"description" pdf:"content,-,Описание"`
-	StartDate        string  `json:"start_date" pdf:"content,-,Начало работы"`
-	EndDate          *string `json:"end_date,omitempty" pdf:"content,-,Конец работы"`
+	StartDate        string  `json:"start_date" pdf:"content,-,Начало работы,mm.yyyy"`
+	EndDate          *string `json:"end_date,omitempty" pdf:"content,-,Конец работы,mm.yyyy"`
 }
 
 func (apiExp *ApiExperience) ToDb() *DbExperience {
