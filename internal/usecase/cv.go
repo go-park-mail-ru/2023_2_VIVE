@@ -6,10 +6,12 @@ import (
 	"HnH/internal/repository/psql"
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/pdf"
 	"HnH/pkg/utils"
 	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
+	"github.com/jung-kurt/gofpdf"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,6 +24,7 @@ type ICVUsecase interface {
 	UpdateCVOfUserById(ctx context.Context, cvID int, cv *domain.ApiCV) error
 	DeleteCVOfUserById(ctx context.Context, cvID int) error
 	SearchCVs(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaCV, error)
+	GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error)
 }
 
 type CVUsecase struct {
@@ -74,15 +77,15 @@ func (cvUsecase *CVUsecase) validateRole(ctx context.Context, userID int, requir
 func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExperience, edInsts []domain.DbEducationInstitution) *domain.ApiCV {
 	apiCV := cv.ToAPI()
 
-	apiInsts := make([]domain.ApiEducationInstitution, len(edInsts))
+	apiInsts := make([]*domain.ApiEducationInstitution, len(edInsts))
 	for i := range edInsts {
-		apiInsts[i] = *edInsts[i].ToAPI()
+		apiInsts[i] = edInsts[i].ToAPI()
 	}
 	apiCV.EducationInstitutions = apiInsts
 
-	apiExps := make([]domain.ApiExperience, len(exps))
+	apiExps := make([]*domain.ApiExperience, len(exps))
 	for i := range exps {
-		apiExps[i] = *exps[i].ToAPI()
+		apiExps[i] = exps[i].ToAPI()
 	}
 	apiCV.Experience = apiExps
 
@@ -403,9 +406,62 @@ func (cvUsecase *CVUsecase) SearchCVs(
 		Filters: cvSearchResponse.Filters,
 		CVs: domain.ApiCVCount{
 			Count: cvSearchResponse.Count,
-			CVs: cvsToReturn,
+			CVs:   cvsToReturn,
 		},
 	}
 
 	return result, nil
+}
+
+func (cvUsecase *CVUsecase) createBlankPDF() *gofpdf.Fpdf {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+
+	// left, top, right, bottom := pdf.GetMargins()
+	// fmt.Printf("margins: %f, %f, %f, %f\n", left, top, right, bottom)
+	pdf.SetMargins(0, 0, 0)
+	// left, top, right, bottom = pdf.GetMargins()
+	// fmt.Printf("margins: %f, %f, %f, %f\n", left, top, right, bottom)
+
+	pdf.AddPage()
+	pdf.SetFont("Arial", "", 12)
+
+	return pdf
+}
+
+// type TestStruct struct {
+// 	Title1   string `pdf:"title"`
+// 	Title2   string `pdf:"title"`
+// 	General  string `pdf:"content,Общий раздел"`
+// 	Specific string `pdf:"content,Частный раздел"`
+// }
+
+func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error) {
+	cv, err := cvUsecase.GetCVOfUserById(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+
+	// str := TestStruct{
+	// 	Title1:   "Большой",
+	// 	Title2:   "Заголовок",
+	// 	General:  "Общая информация, которая собирает все основное",
+	// 	Specific: "Какая-то конкретная информация про что-то конкретное без обобщения",
+	// }
+	// str := TestStruct{
+	// 	Title: "saljfsa fsafoasf asifjnasf asipfb",
+	// 	General: "asdfjnaskfnas flkhjas flsanflksahfb ;asdk fsa",
+	// 	Specific: "asjdfnaks;n flkasf lasnf saldjf asdlfj asdfasd bfa",
+	// }
+
+	// fmt.Printf("sv: ")
+
+	pdfFile, err := pdf.MarshalPDF(&pdf.CVConfig, cv)
+	if err != nil {
+		return nil, err
+	}
+
+	// pdf := cvUsecase.createBlankPDF()
+	// pdf.CellFormat(40, 10, "Привет мир", "1", 1, "L", false, 0, "")
+
+	return pdfFile, nil
 }
