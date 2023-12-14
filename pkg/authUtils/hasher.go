@@ -48,9 +48,5 @@ func GenerateHash(password string) (hash []byte, salt []byte, err error) {
 func ComparePasswordAndHash(password string, salt, hashedPass []byte) bool {
 	hashToCheck := argon2.IDKey([]byte(password), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
 
-	if subtle.ConstantTimeCompare(hashedPass, hashToCheck) == 1 {
-		return true
-	}
-
-	return false
+	return subtle.ConstantTimeCompare(hashedPass, hashToCheck) == 1
 }

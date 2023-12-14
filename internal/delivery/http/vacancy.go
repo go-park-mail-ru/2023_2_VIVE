@@ -93,6 +93,17 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
 
+	router.Handle("/vacancies/favourite/{vacancyID}",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.AddToFavourite))).
+		Methods("POST")
+
+	router.Handle("/vacancies/favourite/{vacancyID}",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteFromFavourite))).
+		Methods("DELETE")
+
+	router.Handle("/vacancies/favourite",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetFavourite))).
+		Methods("GET")
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
@@ -268,4 +279,53 @@ func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *
 	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
 
 	responseTemplates.MarshalAndSend(w, info)
+}
+
+func (vacancyHandler *VacancyHandler) AddToFavourite(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	vacID, convErr := strconv.Atoi(vars["vacancyID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	err := vacancyHandler.vacancyUsecase.AddToFavourite(r.Context(), vacID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (vacancyHandler *VacancyHandler) DeleteFromFavourite(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	vacID, convErr := strconv.Atoi(vars["vacancyID"])
+	if convErr != nil {
+		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		return
+	}
+
+	err := vacancyHandler.vacancyUsecase.DeleteFromFavourite(r.Context(), vacID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (vacancyHandler *VacancyHandler) GetFavourite(w http.ResponseWriter, r *http.Request) {
+	vacsList, err := vacancyHandler.vacancyUsecase.GetFavourite(r.Context())
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		responseTemplates.SendErrorMessage(w, errToSend, code)
+		return
+	}
+
+	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacsList...)
+
+	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
 }

@@ -23,6 +23,9 @@ type IVacancyUsecase interface {
 	UpdateVacancy(ctx context.Context, vacancyID int, vacancy *domain.ApiVacancy) error
 	DeleteVacancy(ctx context.Context, vacancyID int) error
 	SearchVacancies(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaVacancy, error)
+	AddToFavourite(ctx context.Context, vacancyID int) error
+	DeleteFromFavourite(ctx context.Context, vacancyID int) error
+	GetFavourite(ctx context.Context) ([]domain.ApiVacancy, error)
 }
 
 type VacancyUsecase struct {
@@ -287,4 +290,37 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	}
 
 	return result, nil
+}
+
+func (vacancyUsecase *VacancyUsecase) AddToFavourite(ctx context.Context, vacancyID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	err := vacancyUsecase.vacancyRepo.AddToFavourite(ctx, userID, vacancyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (vacancyUsecase *VacancyUsecase) DeleteFromFavourite(ctx context.Context, vacancyID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	err := vacancyUsecase.vacancyRepo.DeleteFromFavourite(ctx, userID, vacancyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (vacancyUsecase *VacancyUsecase) GetFavourite(ctx context.Context) ([]domain.ApiVacancy, error) {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	favVacs, err := vacancyUsecase.vacancyRepo.GetFavourite(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return vacancyUsecase.collectApiVacs(favVacs), nil
 }

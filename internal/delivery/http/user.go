@@ -72,7 +72,7 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 

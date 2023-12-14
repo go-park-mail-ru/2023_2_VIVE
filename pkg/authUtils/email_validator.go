@@ -12,9 +12,7 @@ func ValidateEmail(email string) error {
 	}
 
 	ret, err := verifier.Verify(email)
-	if err != nil {
-		return err
-	} else if !ret.Syntax.Valid {
+	if err != nil || !ret.Syntax.Valid {
 		return INVALID_EMAIL
 	}
 
