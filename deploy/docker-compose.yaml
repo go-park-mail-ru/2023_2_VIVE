@@ -7,18 +7,24 @@ services:
       - "8081:8081"
     volumes:
       - ../logs:/logs
+    env_file:
+      - ../.env
   
   hnh_auth:
     restart: always
     image: hnh_auth:${AUTH_SRVC_VERSION}
     volumes:
       - ../logs:/logs
+    env_file:
+      - ../.env
   
   hnh_search:
     restart: always
     image: hnh_search:${SEARCH_SRVC_VERSION}
     volumes:
       - ../logs:/logs
+    env_file:
+      - ../.env
 
   hnh_notifications:
     restart: always
@@ -27,12 +33,16 @@ services:
       - "8065:8065"
     volumes:
       - ../logs:/logs
+    env_file:
+      - ../.env
   
   hnh_csat:
     restart: always
     image: hnh_csat:${CSAT_SRVC_VERSION}
     volumes:
       - ../logs:/logs
+    env_file:
+      - ../.env
 
   sessions_hnh:
     container_name: redis_hnh

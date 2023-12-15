@@ -1,6 +1,5 @@
 *.log
 *.env
-configs/secret_key.go
 *.rdb
 *.out
 *.jpeg

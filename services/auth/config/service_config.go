@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 const (
 	LOGS_DIR = "logs/"
 )
@@ -29,7 +31,7 @@ var AuthRedisConfig = redisConfig{
 	protocol:       "redis",
 	networkAddress: "sessions_hnh",
 	port:           "6379",
-	password:       "vive_password_redis",
+	password:       os.Getenv("REDDIS_PASSWORD"),
 }
 
 func (rConf redisConfig) GetConnectionURL() string {

@@ -40,7 +40,7 @@ var CORS = cors.New(cors.Options{
 
 var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
-	password: "vive_password",
+	password: os.Getenv("POSTGRES_PASSWORD"),
 	dbname:   "hnh",
 	host:     "db_hnh",
 	port:     "5432",

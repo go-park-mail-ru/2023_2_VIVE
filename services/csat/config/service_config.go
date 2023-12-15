@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 const (
 	LOGS_DIR = "logs/"
 )
@@ -29,7 +31,7 @@ type postgresConfig struct {
 
 var CsatPostgresConfig = postgresConfig{
 	user:     "vive_admin",
-	password: "vive_password",
+	password: os.Getenv("POSTGRES_PASSWORD"),
 	dbname:   "hnh_csat",
 	host:     "db_hnh_csat",
 	port:     "5432",
