@@ -9,6 +9,10 @@ services:
   hnh_auth:
     restart: always
     image: hnh_auth:${AUTH_SRVC_VERSION}
+  
+  hnh_search:
+    restart: always
+    image: hnh_search:${SEARCH_SRVC_VERSION}
 
   sessions_hnh:
     container_name: redis_hnh

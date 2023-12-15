@@ -40,6 +40,10 @@ build-hnh-main: Dockerfile
 build-hnh-auth:
 	docker build --file ./services/auth/Dockerfile --tag hnh_auth:${AUTH_SRVC_VERSION} .
 
+.PHONY: build-hnh-search
+build-hnh-search:
+	docker build --file ./services/searchEngineService/Dockerfile --tag hnh_search:${SEARCH_SRVC_VERSION} .
+
 .PHONY: build-hnh
-build-hnh: build-hnh-main build-hnh-auth
-	
+build-hnh: build-hnh-main build-hnh-auth build-hnh-search
+
