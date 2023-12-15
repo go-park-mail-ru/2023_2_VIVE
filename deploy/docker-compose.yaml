@@ -19,6 +19,10 @@ services:
     image: hnh_notifications:${NOTIFICATION_SRVC_VERSION}
     ports:
       - "8065:8065"
+  
+  hnh_csat:
+    restart: always
+    image: hnh_csat:${CSAT_SRVC_VERSION}
 
   sessions_hnh:
     container_name: redis_hnh
