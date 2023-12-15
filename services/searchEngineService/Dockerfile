@@ -12,6 +12,7 @@ FROM alpine:3.19
 
 COPY --from=build /hnh/services/searchEngineService/bin/ /bin
 
-WORKDIR /bin
+RUN mkdir /logs
+# WORKDIR /bin
 
-CMD [ "search_engine" ]
+CMD [ "bin/search_engine" ]

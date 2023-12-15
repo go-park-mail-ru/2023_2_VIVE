@@ -14,7 +14,7 @@ import (
 )
 
 func initLogger() error {
-	logFile, err := os.OpenFile(config.SearchEngineServiceConfig.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(config.LOGS_DIR+config.SearchEngineServiceConfig.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}

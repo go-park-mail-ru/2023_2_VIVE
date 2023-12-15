@@ -12,6 +12,7 @@ FROM alpine:3.19
 
 COPY --from=build /hnh/services/auth/bin/ /bin
 
-WORKDIR /bin
+RUN mkdir /logs
+# WORKDIR /bin
 
-CMD [ "auth" ]
+CMD [ "bin/auth" ]

@@ -8,11 +8,11 @@ import (
 
 var CURRENT_DIR, _ = os.Getwd()
 
-const UPLOADS_DIR = "/assets/avatars/"
-
 const (
 	PORT         = ":8081"
+	LOGS_DIR     = "/logs/"
 	LOGFILE_NAME = "server.log"
+	UPLOADS_DIR  = "/assets/avatars/"
 )
 
 var CORS = cors.New(cors.Options{

@@ -16,5 +16,7 @@ WORKDIR /
 COPY --from=build /hnh/bin/ /bin
 COPY --from=build /hnh/assets/ /assets
 
+RUN mkdir /logs
+
 
 CMD [ "bin/hnh" ]

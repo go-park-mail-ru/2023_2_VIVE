@@ -12,6 +12,7 @@ FROM alpine:3.19
 
 COPY --from=build /hnh/services/notifications/bin/ /bin
 
-WORKDIR /bin
+RUN mkdir /logs
+# WORKDIR /bin
 
-CMD [ "notifications" ]
+CMD [ "bin/notifications" ]

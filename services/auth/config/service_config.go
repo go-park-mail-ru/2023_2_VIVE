@@ -1,5 +1,9 @@
 package config
 
+const (
+	LOGS_DIR = "logs/"
+)
+
 type AuthConfig struct {
 	ServiceName string
 	Host        string
