@@ -8,7 +8,6 @@ require (
 	github.com/AfterShip/email-verifier v1.3.3
 	github.com/go-faker/faker/v4 v4.2.0
 	github.com/golang/protobuf v1.5.3
-	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.1

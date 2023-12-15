@@ -1,5 +1,15 @@
 services:
 
+  hnh_main:
+    restart: always
+    image: hnh_main:${HNH_VERSION}
+    ports:
+      - "8081:8081"
+  
+  hnh_auth:
+    restart: always
+    image: hnh_auth:${AUTH_SRVC_VERSION}
+
   sessions_hnh:
     container_name: redis_hnh
     image: redis:${REDDIS_VERSION}-alpine

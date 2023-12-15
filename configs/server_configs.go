@@ -31,28 +31,28 @@ var CORS = cors.New(cors.Options{
 	AllowCredentials: true,
 })
 
-var HnHRedisConfig = redisConfig{
-	protocol:       "redis",
-	networkAddress: "localhost",
-	port:           "8008",
-	password:       "vive_password_redis",
-}
+// var HnHRedisConfig = redisConfig{
+// 	protocol:       "redis",
+// 	networkAddress: "localhost",
+// 	port:           "8008",
+// 	password:       "vive_password_redis",
+// }
 
 var HnHPostgresConfig = postgresConfig{
 	user:     "vive_admin",
 	password: "vive_password",
 	dbname:   "hnh",
-	host:     "localhost",
-	port:     "8054",
+	host:     "db_hnh",
+	port:     "5432",
 	sslmode:  "disable",
 }
 
-type redisConfig struct {
-	protocol       string
-	networkAddress string
-	port           string
-	password       string
-}
+// type redisConfig struct {
+// 	protocol       string
+// 	networkAddress string
+// 	port           string
+// 	password       string
+// }
 
 type postgresConfig struct {
 	user     string
@@ -63,9 +63,9 @@ type postgresConfig struct {
 	sslmode  string
 }
 
-func (rConf redisConfig) GetConnectionURL() string {
-	return rConf.protocol + "://" + rConf.password + "@" + rConf.networkAddress + ":" + rConf.port
-}
+// func (rConf redisConfig) GetConnectionURL() string {
+// 	return rConf.protocol + "://" + rConf.password + "@" + rConf.networkAddress + ":" + rConf.port
+// }
 
 func (pConf postgresConfig) GetConnectionString() string {
 	return "user=" + pConf.user + " password=" + pConf.password + " dbname=" + pConf.dbname +

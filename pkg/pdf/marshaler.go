@@ -230,10 +230,14 @@ func ParseData(data any, mappers map[string]Mapper) *PDFFileStruct {
 }
 
 func MarshalPDF(config *PDFConfig, data any) (*gofpdf.Fpdf, error) {
+	fmt.Println(1)
 	pdf := initPDF(config)
+	fmt.Println(2)
 
 	pdfFileStruct := ParseData(data, config.Mappers)
+	fmt.Println(3)
 	pdfFileStruct.Build(pdf, config)
+	fmt.Println(4)
 
 	return pdf, nil
 }
