@@ -9,7 +9,7 @@ type NotificationsGRPCConfig struct {
 
 var NotificationGRPCServiceConfig = NotificationsGRPCConfig{
 	ServiceName: "Notifications",
-	Host:        "localhost",
+	Host:        "hnh_notifications",
 	Port:        8064,
 	LogFile:     "notification_service.log",
 }
@@ -21,6 +21,6 @@ type NotificationsWSConfig struct {
 }
 
 var NotificationWSServiceConfig = NotificationsWSConfig{
-	Host:    "localhost",
+	Host:    "",
 	Port:    8065,
 }

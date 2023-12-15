@@ -14,6 +14,12 @@ services:
     restart: always
     image: hnh_search:${SEARCH_SRVC_VERSION}
 
+  hnh_notifications:
+    restart: always
+    image: hnh_notifications:${NOTIFICATION_SRVC_VERSION}
+    ports:
+      - "8065:8065"
+
   sessions_hnh:
     container_name: redis_hnh
     image: redis:${REDDIS_VERSION}-alpine

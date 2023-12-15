@@ -44,6 +44,10 @@ build-hnh-auth:
 build-hnh-search:
 	docker build --file ./services/searchEngineService/Dockerfile --tag hnh_search:${SEARCH_SRVC_VERSION} .
 
+.PHONY: build-hnh-notifications
+build-hnh-notifications:
+	docker build --file ./services/notifications/Dockerfile --tag hnh_notifications:${NOTIFICATION_SRVC_VERSION} .
+
 .PHONY: build-hnh
-build-hnh: build-hnh-main build-hnh-auth build-hnh-search
+build-hnh: build-hnh-main build-hnh-auth build-hnh-search build-hnh-notifications
 
