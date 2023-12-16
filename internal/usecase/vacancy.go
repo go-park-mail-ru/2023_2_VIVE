@@ -94,6 +94,37 @@ func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []
 	return res
 }
 
+func (vacancyUsecase *VacancyUsecase) setFavouriteFlags(ctx context.Context, vacs ...domain.ApiVacancy) ([]domain.ApiVacancy, error) {
+	userID, loggedIn := contextUtils.IsLoggedIn(ctx)
+	if !loggedIn {
+		return vacs, nil
+	}
+
+	vacIDs := []int{}
+	for _, vac := range vacs {
+		vacIDs = append(vacIDs, vac.ID)
+	}
+
+	vacIDToFav, err := vacancyUsecase.vacancyRepo.GetFavouriteFlags(ctx, userID, vacIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	vacsToReturn := []domain.ApiVacancy{}
+	for _, vac := range vacs {
+		isFav, found := vacIDToFav[vac.ID]
+		if found {
+			vac.Favourite = isFav
+		} else {
+			vac.Favourite = false
+		}
+
+		vacsToReturn = append(vacsToReturn, vac)
+	}
+
+	return vacsToReturn, nil
+}
+
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
 	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx)
 	if getErr != nil {
@@ -108,6 +139,11 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 			return nil, err
 		}
 		apiVacs[i].Skills = skills
+	}
+
+	apiVacs, err := vacancyUsecase.setFavouriteFlags(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
 	}
 
 	return apiVacs, nil
@@ -125,7 +161,13 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 		return nil, err
 	}
 	apiVac.Skills = skills
-	return apiVac, nil
+
+	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *apiVac)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vacToReturn[0], nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error) {
@@ -146,9 +188,14 @@ func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Cont
 		return nil, err
 	}
 
+	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *vacancy)
+	if err != nil {
+		return nil, err
+	}
+
 	compVac := &domain.CompanyVacancy{
 		CompanyName: companyName,
-		Vacancy:     *vacancy,
+		Vacancy:     vacToReturn[0],
 	}
 
 	return compVac, nil
@@ -225,7 +272,14 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context) ([]d
 	}
 	// fmt.Printf("vacancies: %v\n", vacanciesList)
 
-	return vacancyUsecase.collectApiVacs(vacanciesList), nil
+	apiVacs := vacancyUsecase.collectApiVacs(vacanciesList)
+
+	apiVacs, err = vacancyUsecase.setFavouriteFlags(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiVacs, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
@@ -241,6 +295,11 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		LastName:    last_name,
 		CompanyName: compName,
 		Vacancies:   vacsToReturn,
+	}
+
+	info.Vacancies, err = vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
+	if err != nil {
+		return nil, err
 	}
 
 	return info, nil
@@ -279,6 +338,14 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 			return domain.ApiMetaVacancy{}, err
 		}
 		vacanciesToReturn[i].Skills = skills
+	}
+
+	vacanciesToReturn, err = vacancyUsecase.setFavouriteFlags(ctx, vacanciesToReturn...)
+	if err != nil {
+		return domain.ApiMetaVacancy{
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
+		}, err
 	}
 
 	result := domain.ApiMetaVacancy{

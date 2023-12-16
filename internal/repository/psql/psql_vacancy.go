@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +29,7 @@ type IVacancyRepository interface {
 	AddToFavourite(ctx context.Context, userID, vacancyID int) error
 	DeleteFromFavourite(ctx context.Context, userID, vacancyID int) error
 	GetFavourite(ctx context.Context, userID int) ([]domain.DbVacancy, error)
+	GetFavouriteFlags(ctx context.Context, userID int, vacID ...int) (map[int]bool, error)
 }
 
 type psqlVacancyRepository struct {
@@ -753,4 +755,33 @@ func (repo *psqlVacancyRepository) GetFavourite(ctx context.Context, userID int)
 	}
 
 	return favVacs, nil
+}
+
+func (repo *psqlVacancyRepository) GetFavouriteFlags(ctx context.Context, userID int, vacID ...int) (map[int]bool, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vac_ids": vacID,
+	}).
+		Info("getting favourite flags by 'vac_ids' in postgres")
+
+	rows, err := repo.DB.Query(`SELECT vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = ANY($1)`, userID, pq.Array(vacID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]bool{}, nil
+	}
+	defer rows.Close()
+
+	vacIDToFavFlag := map[int]bool{}
+	for rows.Next() {
+		var vacID int
+
+		err := rows.Scan(&vacID)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		vacIDToFavFlag[vacID] = true
+	}
+
+	return vacIDToFavFlag, nil
 }

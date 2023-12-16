@@ -64,11 +64,12 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		vacancyUsecase: vacancyUCase,
 	}
 
-	router.HandleFunc("/vacancies",
-		handler.GetVacancies).
+	router.Handle("/vacancies",
+		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.GetVacancies))).
 		Methods("GET")
 
-	router.HandleFunc("/vacancies/search", handler.SearchVacancies).
+	router.Handle("/vacancies/search",
+		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.SearchVacancies))).
 		Methods("GET")
 
 	router.Handle("/vacancies",
@@ -78,11 +79,12 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 	router.Handle("/vacancies/current_user", middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserVacancies))).
 		Methods("GET")
 
-	router.HandleFunc("/vacancies/employer/{employerID}", handler.GetEmployerInfo).
+	router.Handle("/vacancies/employer/{employerID}",
+		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.GetEmployerInfo))).
 		Methods("GET")
 
-	router.HandleFunc("/vacancies/{vacancyID}",
-		handler.GetVacancy).
+	router.Handle("/vacancies/{vacancyID}",
+		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.GetVacancy))).
 		Methods("GET")
 
 	router.Handle("/vacancies/{vacancyID}",

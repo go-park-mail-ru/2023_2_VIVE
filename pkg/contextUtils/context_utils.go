@@ -16,6 +16,20 @@ const (
 	USER_ID_KEY    = ContextKey("user_id")
 )
 
+func IsLoggedIn(ctx context.Context) (int, bool) {
+	_, ok := ctx.Value(SESSION_ID_KEY).(string)
+	if !ok {
+		return 0, false
+	}
+
+	userID, ok := ctx.Value(USER_ID_KEY).(int)
+	if !ok {
+		return 0, false
+	}
+
+	return userID, true
+}
+
 func GetContextLogger(ctx context.Context) *logrus.Entry {
 	return ctx.Value(LOGGER_KEY).(*logrus.Entry)
 }

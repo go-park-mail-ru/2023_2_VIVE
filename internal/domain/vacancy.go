@@ -84,6 +84,7 @@ type ApiVacancy struct {
 	Location         *string        `json:"location,omitempty"`
 	Description      string         `json:"description,omitempty"`
 	Skills           []string       `json:"skills,omitempty"`
+	Favourite        bool           `json:"favourite"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }

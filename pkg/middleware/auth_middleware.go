@@ -36,3 +36,25 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 		next.ServeHTTP(w, r.WithContext(ctxWithUID))
 	})
 }
+
+func SetSessionIDIfExists(sessionUsecase usecase.ISessionUsecase, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session")
+		if errors.Is(err, http.ErrNoCookie) {
+			next.ServeHTTP(w, r)
+		} else if err != nil {
+			responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+			return
+		}
+
+		ctxWithCookie := context.WithValue(r.Context(), contextUtils.SESSION_ID_KEY, cookie.Value)
+		userID, authErr := sessionUsecase.CheckLogin(ctxWithCookie)
+		if authErr != nil {
+			next.ServeHTTP(w, r)
+		}
+
+		ctxWithUID := context.WithValue(ctxWithCookie, contextUtils.USER_ID_KEY, userID)
+
+		next.ServeHTTP(w, r.WithContext(ctxWithUID))
+	})
+}
