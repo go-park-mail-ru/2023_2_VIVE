@@ -43,7 +43,7 @@ cover: test
 
 search_db_image = vovchenskiy/hnh:search_db-v${SEARCH_DB_VERSION}
 
-.PHONY: build-hnh_search-db
+.PHONY: build-hnh-search-db
 build-hnh-search-db: deploy/Dockerfile
 	docker build -t ${search_db_image} ./deploy/
 
@@ -78,7 +78,7 @@ build-hnh-csat: services/csat/Dockerfile
 	docker build --file ./services/csat/Dockerfile --tag ${csat_service_image} .
 
 .PHONY: build-hnh
-build-hnh: build-hnh-main build-hnh-auth build-hnh-search build-hnh-notifications build-hnh-csat build-hnh_search-db
+build-hnh: build-hnh-main build-hnh-auth build-hnh-search build-hnh-notifications build-hnh-csat build-hnh-search-db
 
 .PHONY: push-images
 push-images:
