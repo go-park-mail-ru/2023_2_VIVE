@@ -1,5 +1,6 @@
 *.log
 *.env
+!versions.env
 *.rdb
 *.out
 *.jpeg
