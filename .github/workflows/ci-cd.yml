@@ -42,7 +42,7 @@ jobs:
 
   build-and-push:
     needs: [lint, test]
-    runs-on: ubuntu-latedt
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
