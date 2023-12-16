@@ -1,4 +1,4 @@
-include .env
+-include .env
 
 .PHONY: create-migration
 create-migration:
