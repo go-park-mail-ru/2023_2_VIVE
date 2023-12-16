@@ -21,9 +21,9 @@ func (dbInst *DbEducationInstitution) ToAPI() *ApiEducationInstitution {
 type ApiEducationInstitution struct {
 	ID             int    `json:"id"`
 	CvID           int    `json:"cv_id"`
-	Name           string `json:"name"`
-	MajorField     string `json:"major_field"`
-	GraduationYear string `json:"graduation_year"`
+	Name           string `json:"name" pdf:"header"`
+	MajorField     string `json:"major_field" pdf:"content,-,Специальность"`
+	GraduationYear string `json:"graduation_year" pdf:"content,-,Год выпуска"`
 }
 
 func (apiEdInst *ApiEducationInstitution) ToDb() *DbEducationInstitution {
