@@ -1,5 +1,9 @@
 include .env
 
+.PHONY: create-migration
+create-migration:
+	tern new -m deploy/migrations/hnh/ $(name)
+
 .PHONY: migrate
 migrate:
 	dotenv -- tern migrate -m ./deploy/migrations/hnh
@@ -16,13 +20,21 @@ build:
 run:
 	go run ./cmd/HnH/HnH.go
 
-.PHONY: search_postgres
-search_postgres: /deploy/Dockerfile
+.PHONY: search-postgres
+search-postgres: /deploy/Dockerfile
 	docker build -t search_postgres ./deploy/
 
-.PHONY: compose
-compose:
+.PHONY: compose-up
+compose-up:
 	dotenv -- docker compose -f ./deploy/docker-compose.yaml up -d
+
+.PHONY: compose-down
+compose-down:
+	dotenv -- docker compose -f ./deploy/docker-compose.yaml down
+
+.PHONY: lint
+lint:
+	golangci-lint run
 
 .PHONY: test
 test:

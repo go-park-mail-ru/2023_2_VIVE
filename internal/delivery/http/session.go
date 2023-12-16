@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type SessionHandler struct {
@@ -38,13 +39,21 @@ func NewSessionHandler(router *mux.Router, sessionUCase usecase.ISessionUsecase)
 }
 
 func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
 	user := new(domain.DbUser)
 
 	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -53,7 +62,14 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 	sessionID, loginErr := sessionHandler.sessionUsecase.Login(r.Context(), user, expiryTime.Unix())
 	if loginErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(loginErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -71,10 +87,18 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 }
 
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context())
 	if deleteErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(deleteErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -92,10 +116,18 @@ func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Requ
 }
 
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	_, sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context())
 	if sessionErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(sessionErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 

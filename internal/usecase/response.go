@@ -91,7 +91,10 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, va
 		Message: notificationMessages.NewVacancyResponse,
 	}
 
-	responseUsecase.notificationsRepo.SendMessage(ctx, &message)
+	sendErr := responseUsecase.notificationsRepo.SendMessage(ctx, &message)
+	if sendErr != nil {
+		return sendErr
+	}
 	return nil
 }
 

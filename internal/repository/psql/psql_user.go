@@ -150,16 +150,25 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 	contextLogger.Info("checking user in postgres")
 	err := tx.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
 	if exists {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	} else if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 
 	hashedPass, salt, err := hasher(user.Password)
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
@@ -180,7 +189,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 			Scan(&userID)
 
 		if addErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return addErr
 		}
 
@@ -191,7 +203,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 
 		_, appErr := tx.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
 		if appErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return appErr
 		}
 	} else if user.Type == domain.Employer {
@@ -204,7 +219,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 		// contextLogger.Info("adding organization for employer")
 		// orgID, addOrgErr := p.orgRepo.AddTxOrganization(ctx, tx, &employer)
 		// if addOrgErr != nil {
-		// 	tx.Rollback()
+		// 	rollbackErr := tx.Rollback()
+		// if rollbackErr != nil {
+		// 	return rollbackErr
+		// }
 		// 	return addOrgErr
 		// }
 
@@ -216,7 +234,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 			Scan(&userID)
 
 		if addErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return addErr
 		}
 
@@ -238,7 +259,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 				"error": empErr,
 			}).
 				Error("adding employer failed")
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return empErr
 		}
 		_, err = result.RowsAffected()
@@ -247,11 +271,17 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 				"error": err,
 			}).
 				Error("adding employer failed")
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return err
 		}
 	} else {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.INVALID_ROLE
 	}
 

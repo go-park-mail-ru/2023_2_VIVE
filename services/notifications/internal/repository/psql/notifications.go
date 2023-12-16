@@ -77,7 +77,10 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 	notificationsToReturn := []*notificationsPB.NotificationMessage{}
 	for rows.Next() {
 		notification := notificationsPB.NotificationMessage{UserId: userID}
-		err := rows.Scan(&notification.Message)
+		err := rows.Scan(
+			&notification.Message,
+			&notification.CreatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}

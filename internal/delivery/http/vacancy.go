@@ -96,19 +96,34 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vacancies, getErr := vacancyHandler.vacancyUsecase.GetAllVacancies(r.Context())
 
 	if getErr == psql.ErrEntityNotFound {
 		vacancies = []domain.ApiVacancy{}
 	} else if getErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
 
-	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    sanitizedVacancies,
+		}).
+			Error("could not marshal and send data")
+	}
 }
 
 func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
@@ -137,65 +152,131 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 
 	if getErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedMetaVacancies := vacancyHandler.sanitizeMetaVacancies(metaVacancies)
 
-	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
+	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    sanitizedMetaVacancies,
+		}).
+			Error("could not marshal and send data")
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	vacancy, err := vacancyHandler.vacancyUsecase.GetVacancy(r.Context(), vacancyID)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	*vacancy = vacancyHandler.sanitizeVacancies(*vacancy)[0]
 
-	responseTemplates.MarshalAndSend(w, vacancy)
+	marshalErr := responseTemplates.MarshalAndSend(w, vacancy)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    vacancy,
+		}).
+			Error("could not marshal and send data")
+	}
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
 	apiVac := new(domain.ApiVacancy)
 
 	readErr := json.NewDecoder(r.Body).Decode(apiVac)
 	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": readErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	vacID, addStatus := vacancyHandler.vacancyUsecase.AddVacancy(r.Context(), apiVac)
 	if addStatus != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(addStatus)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"id":%d}`, vacID)))
+	_, wErr := w.Write([]byte(fmt.Sprintf(`{"id":%d}`, vacID)))
+	if wErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"error_msg": wErr,
+			"data":      fmt.Sprintf(`{"id":%d}`, vacID),
+		}).
+			Error("could not send data")
+	}
 }
 
 func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -205,14 +286,28 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 
 	readErr := json.NewDecoder(r.Body).Decode(updatedVac)
 	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": readErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	updStatus := vacancyHandler.vacancyUsecase.UpdateVacancy(r.Context(), vacancyID, updatedVac)
 	if updStatus != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(updStatus)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -220,17 +315,32 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 }
 
 func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	vacancyID, convErr := strconv.Atoi(vars["vacancyID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	delStatus := vacancyHandler.vacancyUsecase.DeleteVacancy(r.Context(), vacancyID)
 	if delStatus != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(delStatus)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -238,34 +348,71 @@ func (vacancyHandler *VacancyHandler) DeleteVacancy(w http.ResponseWriter, r *ht
 }
 
 func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vacanciesList, err := vacancyHandler.vacancyUsecase.GetUserVacancies(r.Context())
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedList := vacancyHandler.sanitizeVacancies(vacanciesList...)
 
-	responseTemplates.MarshalAndSend(w, sanitizedList)
+	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedList)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    sanitizedList,
+		}).
+			Error("could not marshal and send data")
+	}
 }
 
 func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	empID, convErr := strconv.Atoi(vars["employerID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	info, err := vacancyHandler.vacancyUsecase.GetEmployerInfo(r.Context(), empID)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
 
-	responseTemplates.MarshalAndSend(w, info)
+	marshalErr := responseTemplates.MarshalAndSend(w, info)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    info,
+		}).
+			Error("could not marshal and send data")
+	}
 }

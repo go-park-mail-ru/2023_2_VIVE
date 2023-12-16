@@ -218,10 +218,19 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 		return err
 	}
 
-	io.Copy(f, uploadedData)
+	_, copyErr := io.Copy(f, uploadedData)
+	if copyErr != nil {
+		return copyErr
+	}
 
-	f.Sync()
-	f.Close()
+	syncErr := f.Sync()
+	if syncErr != nil {
+		return syncErr
+	}
+	closeErr := f.Close()
+	if closeErr != nil {
+		return closeErr
+	}
 
 	err = userUsecase.userRepo.UploadAvatarByUserID(ctx, userID, filePath)
 	if err != nil {

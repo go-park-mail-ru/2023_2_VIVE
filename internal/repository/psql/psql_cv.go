@@ -92,23 +92,35 @@ func (repo *psqlCVRepository) GetCVById(ctx context.Context, cvID int) (*domain.
 			&cvToReturn.UpdatedAt,
 		)
 	if err == sql.ErrNoRows {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, ErrEntityNotFound
 	}
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, err
 	}
 
 	expToReturn, expErr := repo.expRepo.GetTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, expErr
 	}
 
 	edInstToReturn, instErr := repo.instRepo.GetTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, instErr
 	}
 
@@ -129,7 +141,10 @@ func (repo *psqlCVRepository) GetCVsByIds(ctx context.Context, idList []int) ([]
 		return nil, nil, nil, txErr
 	}
 	if len(idList) == 0 {
-		tx.Commit()
+		commitErr := tx.Commit()
+		if commitErr != nil {
+			return nil, nil, nil, commitErr
+		}
 		return nil, nil, nil, ErrEntityNotFound
 	}
 
@@ -145,7 +160,10 @@ func (repo *psqlCVRepository) GetCVsByIds(ctx context.Context, idList []int) ([]
 
 	cvRows, err := tx.Query(query, placeHolderValues...)
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, err
 	}
 	defer cvRows.Close()
@@ -171,25 +189,41 @@ func (repo *psqlCVRepository) GetCVsByIds(ctx context.Context, idList []int) ([]
 			&cv.UpdatedAt,
 		)
 		if err != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return nil, nil, nil, rollbackErr
+			}
+
 			return nil, nil, nil, err
 		}
 		cvIDs = append(cvIDs, cv.ID)
 		cvsToReturn = append(cvsToReturn, cv)
 	}
 	if len(cvsToReturn) == 0 {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
+
 		return nil, nil, nil, ErrEntityNotFound
 	}
 
 	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(ctx, tx, cvIDs)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
+
 		return nil, nil, nil, expErr
 	}
 	instsToReturn, instErr := repo.instRepo.GetTxInstitutionsByIds(ctx, tx, cvIDs)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
+
 		return nil, nil, nil, instErr
 	}
 
@@ -206,7 +240,10 @@ func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([
 	contextLogger.Info("getting user's cv list")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
-		tx.Commit()
+		commitErr := tx.Commit()
+		if commitErr != nil {
+			return nil, nil, nil, commitErr
+		}
 		return nil, nil, nil, txErr
 	}
 	query := `SELECT
@@ -238,7 +275,10 @@ func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([
 
 	rows, err := tx.Query(query, userID)
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, err
 	}
 	defer rows.Close()
@@ -264,14 +304,20 @@ func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([
 			&cv.UpdatedAt,
 		)
 		if err != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return nil, nil, nil, rollbackErr
+			}
 			return nil, nil, nil, err
 		}
 		cvIDs = append(cvIDs, cv.ID)
 		cvsToReturn = append(cvsToReturn, cv)
 	}
 	if len(cvsToReturn) == 0 {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, ErrEntityNotFound
 	}
 
@@ -280,14 +326,20 @@ func (repo *psqlCVRepository) GetCVsByUserId(ctx context.Context, userID int) ([
 
 	expsToReturn, expErr := repo.expRepo.GetTxExperiencesByIds(ctx, tx, cvIDs)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, expErr
 	}
 	// fmt.Printf("after exp select\n")
 
 	instsToReturn, instErr := repo.instRepo.GetTxInstitutionsByIds(ctx, tx, cvIDs)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, instErr
 	}
 	// fmt.Printf("after inst select\n")
@@ -361,7 +413,10 @@ func (repo *psqlCVRepository) AddCV(ctx context.Context,
 	contextLogger.Info("adding new cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return 0, rollbackErr
+		}
 		return 0, txErr
 	}
 
@@ -404,23 +459,35 @@ func (repo *psqlCVRepository) AddCV(ctx context.Context,
 		Scan(&insertedCVID)
 
 	if insertCvErr == sql.ErrNoRows {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return 0, rollbackErr
+		}
 		return 0, ErrNotInserted
 	}
 	if insertCvErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return 0, rollbackErr
+		}
 		return 0, insertCvErr
 	}
 	// fmt.Println("after cv insert")
 	expErr := repo.expRepo.AddTxExperiences(ctx, tx, insertedCVID, experiences)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return 0, rollbackErr
+		}
 		return 0, expErr
 	}
 	// fmt.Println("after exp insert")
 	instErr := repo.instRepo.AddTxInstitutions(ctx, tx, insertedCVID, insitutions)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return 0, rollbackErr
+		}
 		return 0, instErr
 	}
 	// fmt.Println("after inst insert")
@@ -438,7 +505,10 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(ctx context.Context, userID, cvID 
 	contextLogger.Info("getting one of the user's cv by 'user_id' and 'cv_id'")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, txErr
 	}
 	query := `SELECT
@@ -494,23 +564,35 @@ func (repo *psqlCVRepository) GetOneOfUsersCV(ctx context.Context, userID, cvID 
 		)
 
 	if err == sql.ErrNoRows {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, ErrEntityNotFound
 	}
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, err
 	}
 
 	exps, expErr := repo.expRepo.GetTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, expErr
 	}
 
 	insts, instErr := repo.instRepo.GetTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return nil, nil, nil, rollbackErr
+		}
 		return nil, nil, nil, instErr
 	}
 
@@ -531,7 +613,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	contextLogger.Info("updating one of the user's cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return txErr
 	}
 	query := `UPDATE
@@ -570,16 +655,25 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 		userID,
 	)
 	if err == sql.ErrNoRows {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return ErrNoRowsUpdated
 	}
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 	_, err = result.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 	// fmt.Printf("after update cv\n")
@@ -587,7 +681,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// updating experiences
 	expUpdErr := repo.expRepo.UpdateTxExperiences(ctx, tx, cvID, experiencesToUpdate)
 	if expUpdErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return expUpdErr
 	}
 	// fmt.Printf("after update experiences\n")
@@ -595,7 +692,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// deleting experiences
 	expDelErr := repo.expRepo.DeleteTxExperiencesByIDs(ctx, tx, experiencesIDsToDelete)
 	if expDelErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return expDelErr
 	}
 	// fmt.Printf("after deleting experiences\n")
@@ -603,7 +703,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// inserting experiences
 	expInsErr := repo.expRepo.AddTxExperiences(ctx, tx, cvID, experiencesToInsert)
 	if expInsErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return expInsErr
 	}
 	// fmt.Printf("after inserting experiences\n")
@@ -611,7 +714,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// updating institutions
 	instUpdErr := repo.instRepo.UpdateTxInstitutions(ctx, tx, cvID, insitutionsToUpdate)
 	if instUpdErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return instUpdErr
 	}
 	// fmt.Printf("after updating institutions\n")
@@ -619,7 +725,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// deleting institutions
 	instDelErr := repo.instRepo.DeleteTxInstitutionsByIDs(ctx, tx, insitutionsIDsToDelete)
 	if instDelErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return instDelErr
 	}
 	// fmt.Printf("after deleting institutions\n")
@@ -627,7 +736,10 @@ func (repo *psqlCVRepository) UpdateOneOfUsersCV(
 	// inserting institutions
 	instInsErr := repo.instRepo.AddTxInstitutions(ctx, tx, cvID, insitutionsToInsert)
 	if instInsErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return instInsErr
 	}
 	// fmt.Printf("after inserting institutions\n")
@@ -645,7 +757,10 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(ctx context.Context, userID, cv
 	contextLogger.Info("deleting one of the user's cv")
 	tx, txErr := repo.DB.Begin()
 	if txErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return txErr
 	}
 	query := `DELETE
@@ -659,28 +774,43 @@ func (repo *psqlCVRepository) DeleteOneOfUsersCV(ctx context.Context, userID, cv
 
 	result, err := tx.Exec(query, cvID, userID)
 	if err == sql.ErrNoRows {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return ErrNoRowsDeleted
 	}
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 	_, err = result.RowsAffected()
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 
 	expErr := repo.expRepo.DeleteTxExperiences(ctx, tx, cvID)
 	if expErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return expErr
 	}
 
 	instErr := repo.instRepo.DeleteTxInstitutions(ctx, tx, cvID)
 	if instErr != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return instErr
 	}
 
