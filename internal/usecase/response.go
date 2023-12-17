@@ -89,6 +89,8 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, va
 	message := notificationsPB.NotificationMessage{
 		UserId:  empUserID,
 		Message: notificationMessages.NewVacancyResponse,
+		VacancyId: int64(vacancyID),
+		CvId: int64(cvID),
 	}
 
 	responseUsecase.notificationsRepo.SendMessage(ctx, &message)

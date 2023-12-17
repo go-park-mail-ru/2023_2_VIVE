@@ -35,11 +35,17 @@ func (repo *PsqlNotificationRepository) AddNotification(ctx context.Context, mes
 
 	query := `INSERT
 			INTO
-				hnh_data.notification (user_id, message)
-			VALUES ($1, $2)
+				hnh_data.vacancy_responce_notification (user_id, vacancy_id, cv_id, message)
+			VALUES ($1, $2, $3, $4)
 			RETURNING created_at`
 
-	err := repo.db.QueryRow(query, message.GetUserId(), message.GetMessage()).Scan(&message.CreatedAt)
+	err := repo.db.QueryRow(
+		query,
+		message.GetUserId(),
+		message.GetVacancyId(),
+		message.GetCvId(),
+		message.GetMessage(),
+	).Scan(&message.CreatedAt)
 	if err == sql.ErrNoRows {
 		return psql.ErrNotInserted
 	}
@@ -62,10 +68,12 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 		Info("getting user's notifications")
 
 	query := `SELECT
+			n.vacancy_id,
+			n.cv_id,
 			n.message,
 			n.created_at
 		FROM
-			hnh_data.notification n
+			hnh_data.vacancy_responce_notification n
 		WHERE
 			n.user_id = $1`
 
@@ -77,7 +85,12 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 	notificationsToReturn := []*notificationsPB.NotificationMessage{}
 	for rows.Next() {
 		notification := notificationsPB.NotificationMessage{UserId: userID}
-		err := rows.Scan(&notification.Message)
+		err := rows.Scan(
+			&notification.VacancyId,
+			&notification.CvId,
+			&notification.Message,
+			&notification.CreatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +113,7 @@ func (repo *PsqlNotificationRepository) DeleteUsersNotifications(ctx context.Con
 
 	query := `DELETE
 			FROM
-				hnh_data.notification n
+				hnh_data.vacancy_responce_notification n
 			WHERE
 				n.user_id = $1`
 
