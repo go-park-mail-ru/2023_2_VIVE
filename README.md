@@ -22,11 +22,11 @@ https://app.swaggerhub.com/apis/VIVE_TEAM/HeadHunter/1.0.0#/
 
 ## Деплой Backend'а
 
-http://212.233.90.231:8081/
+http://84.23.53.171:8081/
 
 ## Деплой Frontend'а
 
-http://212.233.90.231:8082/
+http://84.23.53.171:8082/
 
 ## Figma
 

@@ -42,6 +42,7 @@ func SetSessionIDIfExists(sessionUsecase usecase.ISessionUsecase, next http.Hand
 		cookie, err := r.Cookie("session")
 		if errors.Is(err, http.ErrNoCookie) {
 			next.ServeHTTP(w, r)
+			return
 		} else if err != nil {
 			responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 			return
@@ -51,6 +52,7 @@ func SetSessionIDIfExists(sessionUsecase usecase.ISessionUsecase, next http.Hand
 		userID, authErr := sessionUsecase.CheckLogin(ctxWithCookie)
 		if authErr != nil {
 			next.ServeHTTP(w, r)
+			return
 		}
 
 		ctxWithUID := context.WithValue(ctxWithCookie, contextUtils.USER_ID_KEY, userID)

@@ -160,8 +160,6 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 	sanitizedMetaVacancies := cvHandler.sanitizeMetaCVs(metaCVs)
 
 	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {

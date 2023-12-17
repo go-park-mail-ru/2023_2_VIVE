@@ -11,7 +11,7 @@ run:
 	go run ./cmd/HnH/HnH.go
 
 .PHONY: search_postgres
-search_postgres: /deploy/Dockerfile
+search_postgres: deploy/Dockerfile
 	docker build -t search_postgres ./deploy/
 
 /PHONY: compose

@@ -21,6 +21,6 @@ type NotificationsWSConfig struct {
 }
 
 var NotificationWSServiceConfig = NotificationsWSConfig{
-	Host:    "localhost",
+	Host:    "84.23.53.171",
 	Port:    8065,
 }

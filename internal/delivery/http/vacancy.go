@@ -157,8 +157,6 @@ func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *
 	sanitizedMetaVacancies := vacancyHandler.sanitizeMetaVacancies(metaVacancies)
 
 	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.Request) {

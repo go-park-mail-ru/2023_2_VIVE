@@ -6,7 +6,7 @@ import (
 	"github.com/rs/cors"
 )
 
-const SERVER_ADDRESS = "http://212.233.90.231:8081"
+const SERVER_ADDRESS = "http://84.23.53.171:8081"
 
 var CURRENT_DIR, _ = os.Getwd()
 
@@ -23,11 +23,11 @@ var CORS = cors.New(cors.Options{
 		"http://localhost:8083",
 		"http://localhost:8084",
 		"http://localhost:8085",
-		"http://212.233.90.231:8082",
-		"http://212.233.90.231:8083",
-		"http://212.233.90.231:8084",
-		"http://212.233.90.231:8085",
-		"http://212.233.90.231:8086",
+		"http://84.23.53.171:8082",
+		"http://84.23.53.171:8083",
+		"http://84.23.53.171:8084",
+		"http://84.23.53.171:8085",
+		"http://84.23.53.171:8086",
 	},
 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	AllowCredentials: true,
