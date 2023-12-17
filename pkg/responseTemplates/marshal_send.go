@@ -24,7 +24,7 @@ func MarshalAndSend(w http.ResponseWriter, data any) {
 
 func SendPDF(w http.ResponseWriter, pdf *gofpdf.Fpdf, fileName string) {
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename='%s.pdf'", fileName))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.pdf", fileName))
 
 	err := pdf.Output(w)
 	if err != nil {

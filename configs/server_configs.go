@@ -31,6 +31,7 @@ var CORS = cors.New(cors.Options{
 	},
 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	AllowCredentials: true,
+	ExposedHeaders: []string{"Content-Disposition"},
 })
 
 var HnHRedisConfig = redisConfig{

@@ -489,7 +489,7 @@ func (cvUsecase *CVUsecase) createBlankPDF() *gofpdf.Fpdf {
 // }
 
 func (cvUsecase *CVUsecase) GenerateCVsPDF(ctx context.Context, cvID int) (*gofpdf.Fpdf, error) {
-	cv, err := cvUsecase.GetCVOfUserById(ctx, cvID)
+	cv, err := cvUsecase.GetCVById(ctx, cvID)
 	if err != nil {
 		return nil, err
 	}

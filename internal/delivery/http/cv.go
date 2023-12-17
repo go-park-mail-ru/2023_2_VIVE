@@ -59,7 +59,7 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 		Methods("DELETE")
 
 	router.Handle("/current_user/cvs/{cvID}/pdf",
-		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetCVsPDF))).
+		http.HandlerFunc(handler.GetCVsPDF)).
 		Methods("GET")
 }
 
@@ -299,16 +299,5 @@ func (cvHandler *CVHandler) GetCVsPDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseTemplates.SendPDF(w, pdf, "file") // TODO: rename file
-
-	// cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cvID)
-	// if err != nil {
-	// 	errToSend, code := appErrors.GetErrAndCodeToSend(err)
-	// 	responseTemplates.SendErrorMessage(w, errToSend, code)
-	// 	return
-	// }
-
-	// sanitizedCV := cvHandler.sanitizeCVs(*cv)
-
-	// responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+	responseTemplates.SendPDF(w, pdf, "resume") // TODO: rename file
 }
