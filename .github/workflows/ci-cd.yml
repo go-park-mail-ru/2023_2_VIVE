@@ -41,7 +41,7 @@ jobs:
   #       run: make test
 
   build-and-push:
-    needs: [lint, test]
+    # needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
