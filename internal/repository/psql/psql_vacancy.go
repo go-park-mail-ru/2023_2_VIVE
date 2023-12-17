@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -765,9 +766,26 @@ func (repo *psqlVacancyRepository) GetFavouriteFlags(ctx context.Context, userID
 	}).
 		Info("getting favourite flags by 'vac_ids' in postgres")
 
-	rows, err := repo.DB.Query(`SELECT vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = ANY($1)`, userID, pq.Array(vacID))
+	query := `SELECT vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = ANY($2)`
+
+	contextLogger.WithFields(logrus.Fields{
+		"query": query,
+	}).
+		Debug("query in db")
+
+	rows, err := repo.DB.Query(query, userID, pq.Array(vacID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return map[int]bool{}, nil
+	}
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+
+			"err_msg": err,
+		}).
+			Error("while selecting in db error occured")
+		fmt.Printf("err: %v\n", err)
+		return map[int]bool{}, err
+
 	}
 	defer rows.Close()
 
