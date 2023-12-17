@@ -43,7 +43,11 @@ func NewUserHandler(router *mux.Router, userUCase usecase.IUserUsecase, sessionU
 		Methods("POST")
 
 	router.Handle("/get_avatar",
-		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetAvatar))).
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetUserAvatar))).
+		Methods("GET")
+
+	fileServer := http.FileServer(http.Dir("./"))
+	router.PathPrefix("/image").Handler(http.StripPrefix("/image", fileServer)).
 		Methods("GET")
 }
 
@@ -165,8 +169,8 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
-	file, err := userHandler.userUsecase.GetAvatar(r.Context())
+func (userHandler *UserHandler) GetUserAvatar(w http.ResponseWriter, r *http.Request) {
+	file, err := userHandler.userUsecase.GetUserAvatar(r.Context())
 	if file == nil && err == nil {
 		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		return

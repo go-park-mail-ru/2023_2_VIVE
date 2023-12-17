@@ -11,6 +11,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,6 +27,8 @@ type IUserRepository interface {
 	GetUserEmpId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
 	GetAvatarByUserID(ctx context.Context, userID int) (string, error)
+	GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error)
+	GetAvatarPathesByCVIDList(ctx context.Context, cvIDs ...int) (map[int]string, error)
 }
 
 type psqlUserRepository struct {
@@ -520,4 +523,100 @@ func (p *psqlUserRepository) GetAvatarByUserID(ctx context.Context, userID int) 
 	}
 
 	return *path, nil
+}
+
+func (p *psqlUserRepository) GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_ids": vacIDs,
+	}).
+		Info("getting companies' logo pathes by vacancy id list from postgres")
+
+	query := `SELECT
+				v.id, up.avatar_path
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.employer e ON
+				e.user_id = up.id
+			JOIN hnh_data.vacancy v ON
+				v.employer_id = e.id
+			WHERE
+				v.id = ANY($1)`
+
+	rows, err := p.userStorage.Query(query, pq.Array(vacIDs))
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]string{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vacIDToUserID := map[int]string{}
+
+	for rows.Next() {
+		var vacID int
+		var avaPath *string
+
+		err = rows.Scan(&vacID, &avaPath)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		if avaPath == nil {
+			vacIDToUserID[vacID] = ""
+		} else {
+			vacIDToUserID[vacID] = *avaPath
+		}
+	}
+
+	return vacIDToUserID, nil
+}
+
+func (p *psqlUserRepository) GetAvatarPathesByCVIDList(ctx context.Context, cvIDs ...int) (map[int]string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"cv_ids": cvIDs,
+	}).
+		Info("getting companies' avatar pathes by cx id list from postgres")
+
+	query := `SELECT
+				res.id, up.avatar_path
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.applicant app ON
+				app.user_id = up.id
+			JOIN hnh_data.cv res ON
+				res.applicant_id = app.id
+			WHERE
+				res.id = ANY($1)`
+
+	rows, err := p.userStorage.Query(query, pq.Array(cvIDs))
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]string{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vacIDToUserID := map[int]string{}
+
+	for rows.Next() {
+		var cvID int
+		var avaPath *string
+
+		err = rows.Scan(&cvID, &avaPath)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		if avaPath == nil {
+			vacIDToUserID[cvID] = ""
+		} else {
+			vacIDToUserID[cvID] = *avaPath
+		}
+	}
+
+	return vacIDToUserID, nil
 }

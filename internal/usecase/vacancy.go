@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
@@ -125,6 +126,33 @@ func (vacancyUsecase *VacancyUsecase) setFavouriteFlags(ctx context.Context, vac
 	return vacsToReturn, nil
 }
 
+func (vacancyUsecase *VacancyUsecase) setLogoPath(ctx context.Context, vacs ...domain.ApiVacancy) ([]domain.ApiVacancy, error) {
+	vacIDs := []int{}
+
+	for _, vac := range vacs {
+		vacIDs = append(vacIDs, vac.ID)
+	}
+
+	vacIDToPath, err := vacancyUsecase.userRepo.GetLogoPathesByVacancyIDList(ctx, vacIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	vacsToReturn := []domain.ApiVacancy{}
+	for _, vac := range vacs {
+		path, found := vacIDToPath[vac.ID]
+		if !found || path == "" {
+			vac.LogoURL = ""
+		} else {
+			vac.LogoURL = configs.SERVER_ADDRESS + "/image" + path
+		}
+
+		vacsToReturn = append(vacsToReturn, vac)
+	}
+
+	return vacsToReturn, nil
+}
+
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
 	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx)
 	if getErr != nil {
@@ -146,6 +174,11 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 		return nil, err
 	}
 
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
 	return apiVacs, nil
 }
 
@@ -163,6 +196,11 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 	apiVac.Skills = skills
 
 	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *apiVac)
+	if err != nil {
+		return nil, err
+	}
+
+	vacToReturn, err = vacancyUsecase.setLogoPath(ctx, vacToReturn...)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +227,11 @@ func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Cont
 	}
 
 	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *vacancy)
+	if err != nil {
+		return nil, err
+	}
+
+	vacToReturn, err = vacancyUsecase.setLogoPath(ctx, vacToReturn...)
 	if err != nil {
 		return nil, err
 	}
@@ -279,6 +322,11 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context) ([]d
 		return nil, err
 	}
 
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
 	return apiVacs, nil
 }
 
@@ -298,6 +346,11 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 	}
 
 	info.Vacancies, err = vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
+	if err != nil {
+		return nil, err
+	}
+
+	info.Vacancies, err = vacancyUsecase.setLogoPath(ctx, info.Vacancies...)
 	if err != nil {
 		return nil, err
 	}
@@ -348,6 +401,14 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 		}, err
 	}
 
+	vacanciesToReturn, err = vacancyUsecase.setLogoPath(ctx, vacanciesToReturn...)
+	if err != nil {
+		return domain.ApiMetaVacancy{
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
+		}, err
+	}
+
 	result := domain.ApiMetaVacancy{
 		Filters: vacanciesSearchResponse.Filters,
 		Vacancies: domain.ApiVacancyCount{
@@ -389,5 +450,15 @@ func (vacancyUsecase *VacancyUsecase) GetFavourite(ctx context.Context) ([]domai
 		return nil, err
 	}
 
-	return vacancyUsecase.collectApiVacs(favVacs), nil
+	apiVacs := vacancyUsecase.collectApiVacs(favVacs)
+	for i := range apiVacs {
+		apiVacs[i].Favourite = true
+	}
+
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiVacs, nil
 }

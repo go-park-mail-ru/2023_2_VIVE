@@ -95,6 +95,7 @@ type ApiCV struct {
 	Experience            []*ApiExperience           `json:"companies" pdf:"content,Опыт работы"`
 	Skills                []string                   `json:"skills" pdf:"content,Ключевые навыки"`
 	Description           *string                    `json:"description,omitempty" pdf:"content,О себе"`
+	AvatarURL             string                     `json:"avatar_url"`
 	CreatedAt             time.Time                  `json:"created_at,omitempty"`
 	UpdatedAt             time.Time                  `json:"updated_at,omitempty"`
 }

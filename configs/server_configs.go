@@ -6,6 +6,8 @@ import (
 	"github.com/rs/cors"
 )
 
+const SERVER_ADDRESS = "http://212.233.90.231:8081"
+
 var CURRENT_DIR, _ = os.Getwd()
 
 const UPLOADS_DIR = "/assets/avatars/"

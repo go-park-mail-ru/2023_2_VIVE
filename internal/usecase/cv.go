@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
@@ -92,6 +93,33 @@ func (cvUsecase *CVUsecase) constructApiCV(cv *domain.DbCV, exps []domain.DbExpe
 	return apiCV
 }
 
+func (cvUsecase *CVUsecase) setAvatarPath(ctx context.Context, cvs ...domain.ApiCV) ([]domain.ApiCV, error) {
+	cvIDs := []int{}
+
+	for _, cv := range cvs {
+		cvIDs = append(cvIDs, cv.ID)
+	}
+
+	cvIDToPath, err := cvUsecase.userRepo.GetAvatarPathesByCVIDList(ctx, cvIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	cvsToReturn := []domain.ApiCV{}
+	for _, cv := range cvs {
+		path, found := cvIDToPath[cv.ID]
+		if !found || path == "" {
+			cv.AvatarURL = ""
+		} else {
+			cv.AvatarURL = configs.SERVER_ADDRESS + "/image" + path
+		}
+
+		cvsToReturn = append(cvsToReturn, cv)
+	}
+
+	return cvsToReturn, nil
+}
+
 // Finds cv that responded to one of the current user's vacancy
 func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.ApiCV, error) {
 	// userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Employer)
@@ -130,7 +158,12 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.Ap
 	}
 	apiCV.Skills = skills
 
-	return apiCV, nil
+	cvToReturn, err := cvUsecase.setAvatarPath(ctx, *apiCV)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cvToReturn[0], nil
 }
 
 func (cvUsecase *CVUsecase) combineDbCVs(cvs []domain.DbCV, exps []domain.DbExperience, insts []domain.DbEducationInstitution) []domain.ApiCV {
@@ -181,6 +214,11 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context) ([]domain.ApiCV, erro
 			return nil, err
 		}
 		apiCvs[i].Skills = skills
+	}
+
+	apiCvs, err = cvUsecase.setAvatarPath(ctx, apiCvs...)
+	if err != nil {
+		return nil, err
 	}
 
 	return apiCvs, nil
@@ -244,7 +282,12 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, cvID int) (*dom
 	}
 	apiCv.Skills = skills
 
-	return apiCv, nil
+	cvToReturn, err := cvUsecase.setAvatarPath(ctx, *apiCv)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cvToReturn[0], nil
 }
 
 func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error) {
@@ -259,6 +302,11 @@ func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID in
 		FirstName: first_name,
 		LastName:  last_name,
 		CVs:       cvsToReturn,
+	}
+
+	info.CVs, err = cvUsecase.setAvatarPath(ctx, info.CVs...)
+	if err != nil {
+		return nil, err
 	}
 
 	return info, nil
@@ -400,6 +448,11 @@ func (cvUsecase *CVUsecase) SearchCVs(
 			return domain.ApiMetaCV{}, err
 		}
 		cvsToReturn[i].Skills = skills
+	}
+
+	cvsToReturn, err = cvUsecase.setAvatarPath(ctx, cvsToReturn...)
+	if err != nil {
+		return domain.ApiMetaCV{}, err
 	}
 
 	result := domain.ApiMetaCV{

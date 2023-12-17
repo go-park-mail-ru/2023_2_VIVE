@@ -24,7 +24,8 @@ type IUserUsecase interface {
 	GetInfo(ctx context.Context) (*domain.ApiUser, error)
 	UpdateInfo(ctx context.Context, user *domain.UserUpdate) error
 	UploadAvatar(ctx context.Context, uploadedData multipart.File, header *multipart.FileHeader) error
-	GetAvatar(ctx context.Context) ([]byte, error)
+	GetUserAvatar(ctx context.Context) ([]byte, error)
+	GetImage(ctx context.Context, imageID int) ([]byte, error)
 }
 
 type UserUsecase struct {
@@ -231,12 +232,29 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 	return nil
 }
 
-func (userUsecase *UserUsecase) GetAvatar(ctx context.Context) ([]byte, error) {
+func (userUsecase *UserUsecase) GetUserAvatar(ctx context.Context) ([]byte, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	contextLogger.Info("getting user's avatar")
 	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+
+	if path == "" {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	fileBytes, err := os.ReadFile(configs.CURRENT_DIR + path)
+	if err != nil {
+		return nil, ErrReadAvatar
+	}
+
+	return fileBytes, nil
+}
+
+func (userUsecase *UserUsecase) GetImage(ctx context.Context, imageID int) ([]byte, error) {
+	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, imageID)
 
 	if path == "" {
 		return nil, nil
