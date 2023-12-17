@@ -1,12 +1,15 @@
 package usecase
 
 import (
+	"HnH/pkg/contextUtils"
 	notificationsPB "HnH/services/notifications/api/proto"
 	repositoryIM "HnH/services/notifications/internal/repository/inMemory"
 	repositoryPSQL "HnH/services/notifications/internal/repository/psql"
+	"HnH/services/notifications/pkg/serviceErrors"
 	"context"
 
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 )
 
 type INotificationUseCase interface {
@@ -29,6 +32,11 @@ func NewNotificationUseCase(connRepo repositoryIM.IConnectionRepository, notific
 }
 
 func (u *NotificationUseCase) SendNotification(ctx context.Context, message *notificationsPB.NotificationMessage) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"message": message,
+	}).
+		Info("sending notification")
 	addErr := u.notificationRepo.AddNotification(ctx, message)
 	if addErr != nil {
 		return addErr
@@ -52,7 +60,7 @@ func (u *NotificationUseCase) SendNotification(ctx context.Context, message *not
 
 func (u *NotificationUseCase) SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error {
 	err := u.connRepo.SaveConn(ctx, userID, connection)
-	if err != nil {
+	if err != nil && err != serviceErrors.ErrConnAlreadyExists {
 		return err
 	}
 	return nil

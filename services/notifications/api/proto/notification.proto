@@ -14,9 +14,11 @@ import "google/protobuf/empty.proto";
 
 message NotificationMessage {
     int64 user_id = 1;
-    string message = 2;
-    string data = 3;
-    string created_at = 4;
+    int64 vacancy_id = 2;
+    int64 cv_id = 3;
+    string message = 4;
+    string data = 5;
+    string created_at = 6;
 }
 
 message UserNotifications {
