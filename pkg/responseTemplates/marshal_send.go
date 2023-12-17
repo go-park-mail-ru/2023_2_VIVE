@@ -11,6 +11,12 @@ import (
 )
 
 func MarshalAndSend(w http.ResponseWriter, data any) {
+	/*started, _, err := easyjson.MarshalToHTTPResponseWriter(data, w)
+	if !started || err != nil {
+		SendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
+		return
+	}*/
+
 	js, err := json.Marshal(data)
 	if err != nil {
 		SendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)

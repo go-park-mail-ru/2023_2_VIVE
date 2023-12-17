@@ -10,12 +10,12 @@ import (
 	"HnH/pkg/sanitizer"
 	"HnH/services/searchEngineService/searchEnginePB"
 
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -178,15 +178,15 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	apiCV := new(domain.ApiCV)
-
-	readErr := json.NewDecoder(r.Body).Decode(apiCV)
-	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
-		return
-	}
 	// fmt.Println(cv)
 	// bdCV := apiCV.ToDb()
+
+	apiCV := new(domain.ApiCV)
+	err := easyjson.UnmarshalFromReader(r.Body, apiCV)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		return
+	}
 
 	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), apiCV)
 	if addErr != nil {
@@ -228,11 +228,12 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	cv := new(domain.ApiCV)
+	defer r.Body.Close()
 
-	decodeErr := json.NewDecoder(r.Body).Decode(cv)
-	if decodeErr != nil {
-		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
+	cv := new(domain.ApiCV)
+	err := easyjson.UnmarshalFromReader(r.Body, cv)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 

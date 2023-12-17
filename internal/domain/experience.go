@@ -32,6 +32,7 @@ func (apiExp *DbExperience) ToAPI() *ApiExperience {
 	}
 }
 
+//easyjson:json
 type ApiExperience struct {
 	ID               int     `json:"id"`
 	CvID             int     `json:"cv_id"`

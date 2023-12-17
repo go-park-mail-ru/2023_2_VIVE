@@ -18,6 +18,7 @@ func (dbInst *DbEducationInstitution) ToAPI() *ApiEducationInstitution {
 	}
 }
 
+//easyjson:json
 type ApiEducationInstitution struct {
 	ID             int    `json:"id"`
 	CvID           int    `json:"cv_id"`

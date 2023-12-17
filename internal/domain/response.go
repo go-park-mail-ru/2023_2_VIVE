@@ -1,5 +1,6 @@
 package domain
 
+//easyjson:json
 type ApiResponse struct {
 	Id               int    `json:"id"`
 	VacancyName      string `json:"vacancy_name"`

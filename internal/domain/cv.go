@@ -79,6 +79,7 @@ func (cv *DbCV) ToAPI() *ApiCV {
 	return &res
 }
 
+//easyjson:json
 type ApiCV struct {
 	ID                    int                        `json:"id"`
 	ApplicantID           int                        `json:"applicant_id"`
@@ -119,11 +120,13 @@ func (cv *ApiCV) ToDb() *DbCV {
 	}
 }
 
+//easyjson:json
 type ApiCVCount struct {
 	Count int64   `json:"count"`
 	CVs   []ApiCV `json:"list"`
 }
 
+//easyjson:json
 type ApiMetaCV struct {
 	Filters []*searchEnginePB.Filter `json:"filters,omitempty"`
 	CVs     ApiCVCount               `json:"cvs"`

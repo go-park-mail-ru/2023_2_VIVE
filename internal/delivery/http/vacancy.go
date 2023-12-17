@@ -11,12 +11,12 @@ import (
 	"HnH/pkg/sanitizer"
 	"HnH/services/searchEngineService/searchEnginePB"
 
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -183,10 +183,9 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 	defer r.Body.Close()
 
 	apiVac := new(domain.ApiVacancy)
-
-	readErr := json.NewDecoder(r.Body).Decode(apiVac)
-	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, apiVac)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 
@@ -213,10 +212,9 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 	defer r.Body.Close()
 
 	updatedVac := new(domain.ApiVacancy)
-
-	readErr := json.NewDecoder(r.Body).Decode(updatedVac)
-	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, updatedVac)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 

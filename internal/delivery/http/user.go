@@ -10,11 +10,11 @@ import (
 	"HnH/pkg/serverErrors"
 	"errors"
 
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 )
 
 type UserHandler struct {
@@ -73,8 +73,7 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	newUser := new(domain.ApiUser)
-
-	err := json.NewDecoder(r.Body).Decode(newUser)
+	err := easyjson.UnmarshalFromReader(r.Body, newUser)
 	if err != nil {
 		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
@@ -128,10 +127,9 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 	defer r.Body.Close()
 
 	updateInfo := new(domain.UserUpdate)
-
-	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
-	if decodeErr != nil {
-		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, updateInfo)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 

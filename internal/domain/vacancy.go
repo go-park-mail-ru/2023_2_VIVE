@@ -66,11 +66,13 @@ func (vac *DbVacancy) ToAPI() *ApiVacancy {
 	return &res
 }
 
+//easyjson:json
 type CompanyVacancy struct {
 	CompanyName string     `json:"organization_name"`
 	Vacancy     ApiVacancy `json:"vacancy"`
 }
 
+//easyjson:json
 type ApiVacancy struct {
 	ID               int            `json:"id"`
 	EmployerID       int            `json:"employer_id"`
@@ -136,11 +138,13 @@ func (vac *ApiVacancy) ToDb() *DbVacancy {
 	return &res
 }
 
+//easyjson:json
 type ApiVacancyCount struct {
 	Count     int64        `json:"count"`
 	Vacancies []ApiVacancy `json:"list"`
 }
 
+//easyjson:json
 type ApiMetaVacancy struct {
 	Filters   []*searchEnginePB.Filter `json:"filters,omitempty"`
 	Vacancies ApiVacancyCount          `json:"vacancies"`
