@@ -72,7 +72,7 @@ jobs:
         key: ${{ secrets.VM_PRIVATE_KEY }}
         debug: true
         script: |
-          cd /home/ubuntu/projects/hnh/back/back_test
+          cd /home/ubuntu/projects/hnh/back/back_dev
           git pull
           make pull-images
           make compose-up
