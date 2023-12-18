@@ -418,5 +418,111 @@ func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *
 
 	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
 
-	responseTemplates.MarshalAndSend(w, info)
+	marshalErr := responseTemplates.MarshalAndSend(w, info)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    info,
+		}).
+			Error("could not marshal and send data")
+	}
+}
+
+func (vacancyHandler *VacancyHandler) AddToFavourite(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	vars := mux.Vars(r)
+	vacID, convErr := strconv.Atoi(vars["vacancyID"])
+	if convErr != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
+		
+		return
+	}
+
+	err := vacancyHandler.vacancyUsecase.AddToFavourite(r.Context(), vacID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
+		
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (vacancyHandler *VacancyHandler) DeleteFromFavourite(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	vars := mux.Vars(r)
+	vacID, convErr := strconv.Atoi(vars["vacancyID"])
+	if convErr != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
+		
+		return
+	}
+
+	err := vacancyHandler.vacancyUsecase.DeleteFromFavourite(r.Context(), vacID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
+		
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (vacancyHandler *VacancyHandler) GetFavourite(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	vacsList, err := vacancyHandler.vacancyUsecase.GetFavourite(r.Context())
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
+		
+		return
+	}
+
+	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacsList...)
+
+	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    sanitizedVacancies,
+		}).
+			Error("could not marshal and send data")
+	}
 }

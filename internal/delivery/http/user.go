@@ -245,9 +245,9 @@ func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+func (userHandler *UserHandler) GetUserAvatar(w http.ResponseWriter, r *http.Request) {
 	contextLogger := contextUtils.GetContextLogger(r.Context())
-	file, err := userHandler.userUsecase.GetAvatar(r.Context())
+	file, err := userHandler.userUsecase.GetUserAvatar(r.Context())
 	if file == nil && err == nil {
 		sendErr := responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		if sendErr != nil {

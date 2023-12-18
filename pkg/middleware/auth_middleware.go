@@ -63,12 +63,20 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 
 func SetSessionIDIfExists(sessionUsecase usecase.ISessionUsecase, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contextLogger := contextUtils.GetContextLogger(r.Context())
 		cookie, err := r.Cookie("session")
 		if errors.Is(err, http.ErrNoCookie) {
 			next.ServeHTTP(w, r)
 			return
 		} else if err != nil {
-			responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+			sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg":       sendErr,
+					"error_to_send": err,
+				}).
+					Error("could not send error")
+			}
 			return
 		}
 
