@@ -1,3 +1,4 @@
+![CI/CD Pipline](https://github.com/go-park-mail-ru/2023_2_VIVE/actions/workflows/ci-cd.yml/badge.svg)
 # 2023_2_VIVE
 Проект Headhunter команды "VIVE"
 
