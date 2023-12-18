@@ -72,7 +72,6 @@ jobs:
         debug: true
         script: |
           cd /home/ubuntu/projects/hnh/back/back_test
-          ls 
           git pull
           dotenv -e .env -e versions.env -- docker compose -f deploy/docker-compose.yaml pull
           # make pull-images
