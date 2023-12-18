@@ -93,7 +93,10 @@ func (responseUsecase *ResponseUsecase) RespondToVacancy(ctx context.Context, va
 		CvId: int64(cvID),
 	}
 
-	responseUsecase.notificationsRepo.SendMessage(ctx, &message)
+	sendErr := responseUsecase.notificationsRepo.SendMessage(ctx, &message)
+	if sendErr != nil {
+		return sendErr
+	}
 	return nil
 }
 

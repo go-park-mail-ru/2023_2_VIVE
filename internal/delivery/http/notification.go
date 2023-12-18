@@ -3,6 +3,7 @@ package http
 import (
 	"HnH/internal/appErrors"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type NotificationHandler struct {
@@ -46,38 +48,75 @@ func (h *NotificationHandler) sanitizeNotifications(notifications *notifications
 }
 
 func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 
 	userID, convErr := strconv.ParseInt(vars["userID"], 10, 64)
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	userNotifications, err := h.notificationUsecase.GetUsersNotifications(r.Context(), userID)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 	h.sanitizeNotifications(userNotifications)
 
-	responseTemplates.MarshalAndSend(w, userNotifications)
+	marshalErr := responseTemplates.MarshalAndSend(w, userNotifications)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"error_msg": marshalErr,
+			"data": userNotifications,
+		}).
+			Error("could not send data")
+	}
 }
 
 func (h *NotificationHandler) DeleteUsersNotifications(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 
 	userID, convErr := strconv.ParseInt(vars["userID"], 10, 64)
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+				"error_to_send": convErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	err := h.notificationUsecase.DeleteUsersNotifications(r.Context(), userID)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 

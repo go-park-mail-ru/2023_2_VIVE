@@ -1,5 +1,9 @@
 package config
 
+const (
+	LOGS_DIR = "logs/"
+)
+
 type NotificationsGRPCConfig struct {
 	ServiceName string
 	Host        string
@@ -9,7 +13,7 @@ type NotificationsGRPCConfig struct {
 
 var NotificationGRPCServiceConfig = NotificationsGRPCConfig{
 	ServiceName: "Notifications",
-	Host:        "localhost",
+	Host:        "hnh_notifications",
 	Port:        8064,
 	LogFile:     "notification_service.log",
 }
@@ -21,6 +25,6 @@ type NotificationsWSConfig struct {
 }
 
 var NotificationWSServiceConfig = NotificationsWSConfig{
-	Host:    "84.23.53.171",
-	Port:    8065,
+	Host: "",
+	Port: 8065,
 }

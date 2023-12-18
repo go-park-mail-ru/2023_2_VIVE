@@ -2,14 +2,16 @@ package http
 
 import (
 	"HnH/internal/appErrors"
-	"HnH/pkg/middleware"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/services/csat/csatPB"
 	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type CsatHandler struct {
@@ -35,28 +37,58 @@ func NewCsatHandler(router *mux.Router, csatUCase usecase.ICsatUsecase, sessionU
 }
 
 func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	questionList, err := handler.csatUsecase.GetQuestions(r.Context())
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg":       sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error")
+		}
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, questionList)
+	marshalErr := responseTemplates.MarshalAndSend(w, questionList)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    questionList,
+		}).
+			Error("could not marshal and send data")
+	}
 }
 
 func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	answer := &csatPB.Answer{}
 	readErr := json.NewDecoder(r.Body).Decode(answer)
 	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg":       sendErr,
+				"error_to_send": readErr,
+			}).
+				Error("could not send error")
+		}
 		return
 	}
 
 	err := handler.csatUsecase.RegisterAnswer(r.Context(), answer)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg":       sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error")
+		}
 		return
 	}
 
@@ -64,12 +96,27 @@ func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Reques
 }
 
 func (handler *CsatHandler) GetStatistics(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	statistics, err := handler.csatUsecase.GetStatistic(r.Context())
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg":       sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error")
+		}
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, statistics)
+	marshalErr := responseTemplates.MarshalAndSend(w, statistics)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    statistics,
+		}).
+			Error("could not marshal and send data")
+	}
 }

@@ -79,7 +79,7 @@ func initInterceptors() []grpc.ServerOption {
 }
 
 func Run() {
-	logFile, err := os.OpenFile(config.AuthServiceConfig.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(config.LOGS_DIR+config.AuthServiceConfig.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		fmt.Printf("failed to open .log file: %v", err)
 		os.Exit(1)

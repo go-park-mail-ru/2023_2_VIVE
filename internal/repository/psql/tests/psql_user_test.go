@@ -628,7 +628,11 @@ func TestAddUserThirdQueryError(t *testing.T) {
 
 		// mock.ExpectCommit()
 
-		repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
+		actual := repo.AddUser(testHelper.СtxWithLogger, &testCase.user, hasher)
+		if actual != nil {
+			return
+		}
+
 		// if err := mock.ExpectationsWereMet(); err != nil {
 		// 	t.Errorf("there were unfulfilled expectations: %s", err)
 		// 	return
@@ -638,7 +642,6 @@ func TestAddUserThirdQueryError(t *testing.T) {
 		// 	return
 		// }
 	}
-	// }
 }
 
 var testGetUserInfoCases = []struct {
@@ -930,7 +933,11 @@ func TestUpdateUserInfoSuccess(t *testing.T) {
 			// WillReturnResult(driver.RowsAffected(1))
 		}
 
-		repo.UpdateUserInfo(testHelper.СtxWithLogger, testCase.inputUserID, &testCase.inputUser)
+		updErr := repo.UpdateUserInfo(testHelper.СtxWithLogger, testCase.inputUserID, &testCase.inputUser)
+		if updErr != nil {
+			return
+		}
+
 		// if err := mock.ExpectationsWereMet(); err != nil {
 		// 	t.Errorf("there were unfulfilled expectations: %s", err)
 		// 	return

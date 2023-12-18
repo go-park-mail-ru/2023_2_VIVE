@@ -4,6 +4,7 @@ import (
 	"HnH/internal/appErrors"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 type UserHandler struct {
@@ -70,13 +72,21 @@ func (userHandler *UserHandler) sanitizeUser(user *domain.ApiUser) {
 }
 
 func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
 	newUser := new(domain.ApiUser)
 
 	err := json.NewDecoder(r.Body).Decode(newUser)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -85,7 +95,14 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := userHandler.userUsecase.SignUp(r.Context(), newUser, expiryTime.Unix())
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -103,6 +120,7 @@ func (userHandler *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	// logger := r.Context().Value(middleware.LOGGER_KEY).(*logrus.Entry)
 	// logger.Info("GOT REQUEST")
 
@@ -115,30 +133,59 @@ func (userHandler *UserHandler) GetInfo(w http.ResponseWriter, r *http.Request) 
 	user, err := userHandler.userUsecase.GetInfo(r.Context())
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	userHandler.sanitizeUser(user)
 
-	responseTemplates.MarshalAndSend(w, *user)
+	marshalErr := responseTemplates.MarshalAndSend(w, *user)
+	if marshalErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": marshalErr,
+			"data":    user,
+		}).
+			Error("could not marshal and send data")
+	}
 }
 
 func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
 	updateInfo := new(domain.UserUpdate)
 
 	decodeErr := json.NewDecoder(r.Body).Decode(updateInfo)
 	if decodeErr != nil {
-		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": decodeErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	updStatus := userHandler.userUsecase.UpdateInfo(r.Context(), updateInfo)
 	if updStatus != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(updStatus)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -146,41 +193,91 @@ func (userHandler *UserHandler) UpdateInfo(w http.ResponseWriter, r *http.Reques
 }
 
 func (userHandler *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	uploadedData, header, err := r.FormFile("avatar")
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 	defer uploadedData.Close()
 
 	uplErr := userHandler.userUsecase.UploadAvatar(r.Context(), uploadedData, header)
 	if errors.Is(uplErr, usecase.BadAvatarSize) {
-		responseTemplates.SendErrorMessage(w, usecase.BadAvatarSize, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, usecase.BadAvatarSize, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": usecase.BadAvatarSize,
+			}).
+				Error("could not send error message")
+		}
 		return
 	} else if errors.Is(uplErr, usecase.BadAvatarType) {
-		responseTemplates.SendErrorMessage(w, usecase.BadAvatarType, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, usecase.BadAvatarType, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": usecase.BadAvatarType,
+			}).
+				Error("could not send error message")
+		}
 		return
 	} else if uplErr != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(uplErr)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (userHandler *UserHandler) GetUserAvatar(w http.ResponseWriter, r *http.Request) {
-	file, err := userHandler.userUsecase.GetUserAvatar(r.Context())
+func (userHandler *UserHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	file, err := userHandler.userUsecase.GetAvatar(r.Context())
 	if file == nil && err == nil {
-		responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
+		sendErr := responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": serverErrors.NO_DATA_FOUND,
+			}).
+				Error("could not send error message")
+		}
 		return
 	} else if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
-		responseTemplates.SendErrorMessage(w, errToSend, code)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(file)
+	_, wErr := w.Write(file)
+	if wErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"error_msg": wErr,
+		}).
+			Error("could not send avatar file")
+	}
 }

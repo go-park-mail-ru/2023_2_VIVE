@@ -10,16 +10,33 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contextLogger := contextUtils.GetContextLogger(r.Context())
 		cookie, err := r.Cookie("session")
 		if errors.Is(err, http.ErrNoCookie) {
-			responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusBadRequest)
+			sendErr := responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusBadRequest)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg":       sendErr,
+					"error_to_send": serverErrors.NO_COOKIE,
+				}).
+					Error("could not send error")
+			}
 			return
 		} else if err != nil {
-			responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+			sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg":       sendErr,
+					"error_to_send": err,
+				}).
+					Error("could not send error")
+			}
 			return
 		}
 
@@ -27,7 +44,14 @@ func AuthMiddleware(sessionUsecase usecase.ISessionUsecase, next http.Handler) h
 		userID, authErr := sessionUsecase.CheckLogin(ctxWithCookie)
 		if authErr != nil {
 			errToSend, code := appErrors.GetErrAndCodeToSend(authErr)
-			responseTemplates.SendErrorMessage(w, errToSend, code)
+			sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg":       sendErr,
+					"error_to_send": errToSend,
+				}).
+					Error("could not send error")
+			}
 			return
 		}
 

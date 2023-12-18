@@ -7,11 +7,8 @@ toolchain go1.21.0
 require (
 	github.com/AfterShip/email-verifier v1.3.3
 	github.com/go-faker/faker/v4 v4.2.0
-	github.com/golang/protobuf v1.5.3
-	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
-	github.com/gorilla/websocket v1.5.1
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/microcosm-cc/bluemonday v1.0.26
@@ -19,7 +16,6 @@ require (
 	github.com/rs/cors v1.10.1
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.59.0
-	google.golang.org/protobuf v1.31.0
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0
 )
 
@@ -28,6 +24,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -35,6 +32,7 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 )
 
 require (

@@ -1,5 +1,49 @@
 services:
 
+  hnh_main:
+    restart: always
+    image: vovchenskiy/hnh:main-v${MAIN_SRVC_VERSION}
+    ports:
+      - "8081:8081"
+    volumes:
+      - ../logs:/logs
+    env_file:
+      - ../.env
+  
+  hnh_auth:
+    restart: always
+    image: vovchenskiy/hnh:auth-v${AUTH_SRVC_VERSION}
+    volumes:
+      - ../logs:/logs
+    env_file:
+      - ../.env
+  
+  hnh_search:
+    restart: always
+    image: vovchenskiy/hnh:search-v${SEARCH_SRVC_VERSION}
+    volumes:
+      - ../logs:/logs
+    env_file:
+      - ../.env
+
+  hnh_notifications:
+    restart: always
+    image: vovchenskiy/hnh:notifications-v${NOTIFICATION_SRVC_VERSION}
+    ports:
+      - "8065:8065"
+    volumes:
+      - ../logs:/logs
+    env_file:
+      - ../.env
+  
+  hnh_csat:
+    restart: always
+    image: vovchenskiy/hnh:csat-v${CSAT_SRVC_VERSION}
+    volumes:
+      - ../logs:/logs
+    env_file:
+      - ../.env
+
   sessions_hnh:
     container_name: redis_hnh
     image: redis:${REDDIS_VERSION}-alpine
@@ -14,7 +58,7 @@ services:
 
   db_hnh:
     container_name: db_hnh
-    image: search_postgres
+    image: vovchenskiy/hnh:search_db-v${SEARCH_DB_VERSION}
     restart: always
     environment:
       POSTGRES_DB: "hnh"

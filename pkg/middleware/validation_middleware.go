@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var authorizationURLs = map[string]string{
@@ -36,16 +38,31 @@ func ifAuthURL(path string, method string) bool {
 
 func JSONBodyValidationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contextLogger := contextUtils.GetContextLogger(r.Context())
 		contentType := r.Header.Get("Content-Type")
 
 		mt, _, err := mime.ParseMediaType(contentType)
 		if err != nil {
-			responseTemplates.SendErrorMessage(w, MALFORMED_CONTENT_TYPE_HEADER, http.StatusBadRequest)
+			sendErr := responseTemplates.SendErrorMessage(w, MALFORMED_CONTENT_TYPE_HEADER, http.StatusBadRequest)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg": sendErr,
+					"error_to_send": MALFORMED_CONTENT_TYPE_HEADER,
+				}).
+				Error("could not send error")
+			}
 			return
 		}
 
 		if mt != "application/json" {
-			responseTemplates.SendErrorMessage(w, INCORRECT_CONTENT_TYPE_JSON, http.StatusUnsupportedMediaType)
+			sendErr := responseTemplates.SendErrorMessage(w, INCORRECT_CONTENT_TYPE_JSON, http.StatusUnsupportedMediaType)
+			if sendErr != nil {
+				contextLogger.WithFields(logrus.Fields{
+					"err_msg": sendErr,
+					"error_to_send": INCORRECT_CONTENT_TYPE_JSON,
+				}).
+				Error("could not send error")
+			}
 			return
 		}
 
@@ -55,10 +72,18 @@ func JSONBodyValidationMiddleware(next http.Handler) http.Handler {
 
 func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contextLogger := contextUtils.GetContextLogger(r.Context())
 		if r.Method != "GET" && !ifAuthURL(r.URL.Path, r.Method) {
 			cookie, err := r.Cookie("session")
 			if err != nil {
-				responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+				sendErr := responseTemplates.SendErrorMessage(w, serverErrors.NO_COOKIE, http.StatusUnauthorized)
+				if sendErr != nil {
+					contextLogger.WithFields(logrus.Fields{
+						"err_msg": sendErr,
+						"error_to_send": serverErrors.NO_COOKIE,
+					}).
+					Error("could not send error")
+				}
 				return
 			}
 
@@ -66,7 +91,14 @@ func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Ha
 			userID, err := sessionUCase.CheckLogin(ctxWithCookie)
 			if err != nil {
 				errToSend, code := appErrors.GetErrAndCodeToSend(err)
-				responseTemplates.SendErrorMessage(w, errToSend, code)
+				sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+				if sendErr != nil {
+					contextLogger.WithFields(logrus.Fields{
+						"err_msg": sendErr,
+						"error_to_send": errToSend,
+					}).
+					Error("could not send error")
+				}
 				return
 			}
 
@@ -76,7 +108,14 @@ func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Ha
 				newToken := createToken(cookie.Value, userID, time.Now().Add(1*time.Hour).Unix())
 				w.Header().Set("X-CSRF-token", newToken)
 
-				responseTemplates.SendErrorMessage(w, NO_TOKEN, http.StatusForbidden)
+				sendErr := responseTemplates.SendErrorMessage(w, NO_TOKEN, http.StatusForbidden)
+				if sendErr != nil {
+					contextLogger.WithFields(logrus.Fields{
+						"err_msg": sendErr,
+						"error_to_send": NO_TOKEN,
+					}).
+					Error("could not send error")
+				}
 				return
 			}
 
@@ -89,7 +128,14 @@ func CSRFProtectionMiddleware(sessionUCase usecase.ISessionUsecase, next http.Ha
 					err = BAD_TOKEN
 				}
 
-				responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+				sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+				if sendErr != nil {
+					contextLogger.WithFields(logrus.Fields{
+						"err_msg": sendErr,
+						"error_to_send": err,
+					}).
+					Error("could not send error")
+				}
 				return
 			}
 		}

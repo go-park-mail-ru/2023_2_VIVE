@@ -1,5 +1,11 @@
 package config
 
+import "os"
+
+const (
+	LOGS_DIR = "logs/"
+)
+
 type CsatConfig struct {
 	ServiceName string
 	Host        string
@@ -9,7 +15,7 @@ type CsatConfig struct {
 
 var CsatServiceConfig = CsatConfig{
 	ServiceName: "csat service",
-	Host:        "84.23.53.171",
+	Host:        "hnh_csat",
 	Port:        8061,
 	LogFile:     "csat_service.log",
 }
@@ -25,10 +31,10 @@ type postgresConfig struct {
 
 var CsatPostgresConfig = postgresConfig{
 	user:     "vive_admin",
-	password: "vive_password",
+	password: os.Getenv("POSTGRES_PASSWORD"),
 	dbname:   "hnh_csat",
-	host:     "84.23.53.171",
-	port:     "8055",
+	host:     "db_hnh_csat",
+	port:     "5432",
 	sslmode:  "disable",
 }
 

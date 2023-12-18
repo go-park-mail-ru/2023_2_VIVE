@@ -91,7 +91,7 @@ func initSearchEngineClient(config searchConfig.SearchEngineConfig) (searchEngin
 }
 
 func Run() error {
-	logFile, err := os.OpenFile(configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(configs.LOGS_DIR + configs.LOGFILE_NAME, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}

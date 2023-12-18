@@ -3,6 +3,7 @@ package psql
 import (
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
+	"HnH/pkg/queryUtils"
 	"HnH/pkg/testHelper"
 	"database/sql"
 	"database/sql/driver"
@@ -26,6 +27,7 @@ var (
 		`"location"`,
 		"created_at",
 		"updated_at",
+		"organization_name",
 	}
 
 	salaryLowerBound = 50000
@@ -96,22 +98,13 @@ func TestGetAllVacanciesSuccess(t *testing.T) {
 	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetAllVacanciesSuccessCases {
-		rows := sqlmock.NewRows(vacanciesColumns)
+		rows := sqlmock.NewRows(queryUtils.GetColumnNames(
+			vacanciesColumns,
+			"organization_name",
+		))
 
 		for _, item := range testCase.expected {
 			rows = rows.AddRow(
-				// item.ID,
-				// item.EmployerID,
-				// item.VacancyName,
-				// item.Description,
-				// item.SalaryLowerBound,
-				// item.SalaryUpperBound,
-				// item.Employment,
-				// item.Experience,
-				// item.EducationType,
-				// item.Location,
-				// item.CreatedAt,
-				// item.UpdatedAt,
 				item.ID,
 				item.EmployerID,
 				item.VacancyName,
@@ -223,7 +216,10 @@ func TestGetEmpVacanciesByIdsSuccess(t *testing.T) {
 	repo := psql.NewPsqlVacancyRepository(db)
 
 	for _, testCase := range testGetEmpVacanciesByIdsSuccessCases {
-		rows := sqlmock.NewRows(vacanciesColumns)
+		rows := sqlmock.NewRows(queryUtils.GetColumnNames(
+			vacanciesColumns,
+			"organization_name",
+		))
 
 		for _, item := range testCase.expected {
 			rows = rows.AddRow(
@@ -374,6 +370,7 @@ func TestGetVacanciesByIdsSuccess(t *testing.T) {
 				item.Location,
 				item.CreatedAt,
 				item.UpdatedAt,
+				item.OrganizationName,
 			)
 		}
 
@@ -524,6 +521,7 @@ func TestGetVacancySuccess(t *testing.T) {
 				testCase.expected.Experience,
 				testCase.expected.EducationType,
 				testCase.expected.Location,
+				testCase.expected.OrganizationName,
 				testCase.expected.CreatedAt,
 				testCase.expected.UpdatedAt,
 			)
@@ -721,7 +719,10 @@ func TestGetUserVacanciesSuccess(t *testing.T) {
 					AddRow(1),
 			)
 
-		rows := sqlmock.NewRows(vacanciesColumns)
+		rows := sqlmock.NewRows(queryUtils.GetColumnNames(
+			vacanciesColumns,
+			"organization_name",
+		))
 		for _, vac := range testCase.expected {
 			rows.AddRow(
 				vac.ID,
@@ -936,7 +937,10 @@ func TestGetEmployerInfoSuccess(t *testing.T) {
 						AddRow(testCase.employerID),
 				)
 
-			rows := sqlmock.NewRows(vacanciesColumns)
+			rows := sqlmock.NewRows(queryUtils.GetColumnNames(
+				vacanciesColumns,
+				"organization_name",
+			))
 			for _, vac := range testCase.expectedVacancies {
 				rows.AddRow(
 					vac.ID,
