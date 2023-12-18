@@ -3,64 +3,65 @@ name: CI/CD Pipline
 on:
   push:
     branches:
-      - vive-148-ci
+      - dev
+      - main
   pull_request:
     branches:
-      - vive-148-ci
+      - main
 
 jobs:
-  # lint:
-  #   name: Run Lint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
+  lint:
+    name: Run Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - uses: actions/setup-go@v4
-  #       with:
-  #         go-version: '1.21'
-  #         cache: false
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: false
 
-  #     - name: golangci-lint
-  #       uses: golangci/golangci-lint-action@v3
-  #       with:
-  #         version: latest
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
 
-  # test:
-  #   name: Run Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v2
-  #       with:
-  #         go-version: '1.21'
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'
 
-  #     - name: Run Tests
-  #       run: make test
+      - name: Run Tests
+        run: make test
 
-  # build-and-push:
-  #   # needs: [lint, test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v2
+  build-and-push:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKER_HUB_USERNAME }}
-  #         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         
-  #     - name: Build Docker images
-  #       run: make build-hnh
+      - name: Build Docker images
+        run: make build-hnh
       
-  #     - name: Push Docker images
-  #       run: make push-images
+      - name: Push Docker images
+        run: make push-images
   
   deploy:
-    # needs: build-and-push
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
     - name: Deploy to VM
