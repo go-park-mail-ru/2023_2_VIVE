@@ -71,7 +71,7 @@ jobs:
           username: ${{ secrets.VM_USERNAME }}
           key: ${{ secrets.VM_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/projects/hnh/back/back_dev
+            cd /home/ubuntu/projects/hnh/back/back_prod
             git pull
             make pull-images
             make compose-up
