@@ -80,7 +80,7 @@ func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *ht
 
 	h.sanitizeNotifications(userNotifications)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, userNotifications)
+	marshalErr := responseTemplates.MarshalAndSend(w, *userNotifications)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"error_msg": marshalErr,

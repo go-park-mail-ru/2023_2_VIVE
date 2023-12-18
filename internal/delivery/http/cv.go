@@ -421,7 +421,7 @@ func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Requ
 
 	info.CVs = cvHandler.sanitizeCVs(info.CVs...)
 
-	marshalAndSendErr := responseTemplates.MarshalAndSend(w, info)
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, *info)
 	if marshalAndSendErr != nil {
 		contextLogger.WithFields(
 			logrus.Fields{

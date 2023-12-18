@@ -53,7 +53,7 @@ func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	marshalErr := responseTemplates.MarshalAndSend(w, questionList)
+	marshalErr := responseTemplates.MarshalAndSend(w, *questionList)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
@@ -115,7 +115,7 @@ func (handler *CsatHandler) GetStatistics(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	marshalErr := responseTemplates.MarshalAndSend(w, statistics)
+	marshalErr := responseTemplates.MarshalAndSend(w, *statistics)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
