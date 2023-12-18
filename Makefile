@@ -1,6 +1,14 @@
 -include .env
 include versions.env
 
+.PHONY: test
+test:
+	go test -coverpkg=./... -coverprofile=c.out ./...
+
+.PHONY: cover
+cover: test
+	go tool cover -func=c.out
+
 .PHONY: create-migration
 create-migration:
 	tern new -m deploy/migrations/hnh/ $(name)
@@ -23,23 +31,15 @@ run:
 
 .PHONY: compose-up
 compose-up:
-	dotenv -- docker compose -f ./deploy/docker-compose.yaml up -d
+	dotenv -e .env -e versions.env -- docker compose -f ./deploy/docker-compose.yaml up -d
 
 .PHONY: compose-down
 compose-down:
-	dotenv -- docker compose -f ./deploy/docker-compose.yaml down
+	dotenv -e .env -e versions.env -- docker compose -f ./deploy/docker-compose.yaml down
 
 .PHONY: lint
 lint:
 	golangci-lint run
-
-.PHONY: test
-test:
-	go test -coverpkg=./... -coverprofile=c.out ./...
-
-.PHONY: cover
-cover: test
-	go tool cover -func=c.out
 
 search_db_image = vovchenskiy/hnh:search_db-v${SEARCH_DB_VERSION}
 
