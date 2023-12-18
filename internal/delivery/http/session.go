@@ -8,11 +8,11 @@ import (
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,8 +43,7 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 	defer r.Body.Close()
 
 	user := new(domain.DbUser)
-
-	err := json.NewDecoder(r.Body).Decode(user)
+	err := easyjson.UnmarshalFromReader(r.Body, user)
 	if err != nil {
 		sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
 		if sendErr != nil {

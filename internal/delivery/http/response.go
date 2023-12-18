@@ -147,12 +147,13 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 	}
 
 	sanitizedApplicants := responseHandler.sanitizeApplicants(applicantsList...)
+	toSend := domain.ApiApplicantSlice(sanitizedApplicants)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedApplicants)
+	marshalErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
-			"data":    sanitizedApplicants,
+			"data":    toSend,
 		}).
 			Error("could not marshal and send data")
 	}
@@ -189,11 +190,13 @@ func (responseHandler *ResponseHandler) GetUserResponses(w http.ResponseWriter, 
 	}
 
 	sanitizedResponses := responseHandler.sanitizeResponses(responses...)
-	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedResponses)
+	toSend := domain.ApiResponseSlice(sanitizedResponses)
+
+	marshalErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
-			"data":    sanitizedResponses,
+			"data":    toSend,
 		}).
 			Error("could not marshal and send data")
 	}

@@ -13,6 +13,7 @@ func (r Role) IsRole() bool {
 	return r == Applicant || r == Employer
 }
 
+//easyjson:json
 type ApiUser struct {
 	ID                      int     `json:"id,omitempty"`
 	EmployerID              *int    `json:"employer_id,omitempty"`
@@ -55,6 +56,7 @@ func (u *ApiUser) ToDb() *DbUser {
 	return &res
 }
 
+//easyjson:json
 type DbUser struct {
 	ID          int     `json:"id,omitempty"`
 	Email       string  `json:"email"`
@@ -85,6 +87,7 @@ func (u *DbUser) ToAPI(empID, appID *int) *ApiUser {
 	}
 }
 
+//easyjson:json
 type UserUpdate struct {
 	Email       string  `json:"email,omitempty"`
 	FirstName   string  `json:"first_name,omitempty"`

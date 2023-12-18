@@ -1,5 +1,6 @@
 package domain
 
+//easyjson:json
 type ApiResponse struct {
 	Id               int    `json:"id"`
 	VacancyName      string `json:"vacancy_name"`
@@ -9,3 +10,6 @@ type ApiResponse struct {
 	CreatedAt        string `json:"created_at"`
 	UpdatedAt        string `json:"updated_at"`
 }
+
+//easyjson:json
+type ApiResponseSlice []ApiResponse

@@ -2,15 +2,16 @@ package http
 
 import (
 	"HnH/internal/appErrors"
+	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
-	"HnH/services/csat/csatPB"
-	"encoding/json"
+
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,21 +65,24 @@ func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request)
 
 func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Request) {
 	contextLogger := contextUtils.GetContextLogger(r.Context())
-	answer := &csatPB.Answer{}
-	readErr := json.NewDecoder(r.Body).Decode(answer)
-	if readErr != nil {
-		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+
+	defer r.Body.Close()
+
+	answer := new(domain.Answer)
+	err := easyjson.UnmarshalFromReader(r.Body, answer)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"err_msg":       sendErr,
-				"error_to_send": readErr,
+				"err_msg":       err,
+				"error_to_send": sendErr,
 			}).
 				Error("could not send error")
 		}
 		return
 	}
 
-	err := handler.csatUsecase.RegisterAnswer(r.Context(), answer)
+	err = handler.csatUsecase.RegisterAnswer(r.Context(), answer)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
 		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)

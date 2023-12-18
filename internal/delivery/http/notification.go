@@ -2,12 +2,12 @@ package http
 
 import (
 	"HnH/internal/appErrors"
+	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
-	notificationsPB "HnH/services/notifications/api/proto"
 	"net/http"
 	"strconv"
 
@@ -33,7 +33,7 @@ func NewNotificationHandler(router *mux.Router, notificationUCase usecase.INotif
 		Methods("DELETE")
 }
 
-func (h *NotificationHandler) sanitizeNotifications(notifications *notificationsPB.UserNotifications) {
+func (h *NotificationHandler) sanitizeNotifications(notifications *domain.UserNotifications) {
 	// result := make([]*notificationsPB.NotificationMessage, 0, len(notifications))
 	// result := &notificationsPB.UserNotifications{Notifications: make([]*notificationsPB.NotificationMessage, len(notifications.Notifications))}
 
@@ -56,7 +56,7 @@ func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *ht
 		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": sendErr,
+				"error_msg":     sendErr,
 				"error_to_send": convErr,
 			}).
 				Error("could not send error message")
@@ -70,20 +70,21 @@ func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *ht
 		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": sendErr,
+				"error_msg":     sendErr,
 				"error_to_send": errToSend,
 			}).
 				Error("could not send error message")
 		}
 		return
 	}
+
 	h.sanitizeNotifications(userNotifications)
 
 	marshalErr := responseTemplates.MarshalAndSend(w, userNotifications)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"error_msg": marshalErr,
-			"data": userNotifications,
+			"data":      userNotifications,
 		}).
 			Error("could not send data")
 	}
@@ -98,7 +99,7 @@ func (h *NotificationHandler) DeleteUsersNotifications(w http.ResponseWriter, r 
 		sendErr := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": sendErr,
+				"error_msg":     sendErr,
 				"error_to_send": convErr,
 			}).
 				Error("could not send error message")
@@ -112,7 +113,7 @@ func (h *NotificationHandler) DeleteUsersNotifications(w http.ResponseWriter, r 
 		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": sendErr,
+				"error_msg":     sendErr,
 				"error_to_send": errToSend,
 			}).
 				Error("could not send error message")

@@ -10,12 +10,12 @@ import (
 	"HnH/pkg/sanitizer"
 	"HnH/services/searchEngineService/searchEnginePB"
 
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -215,13 +215,14 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
+	toSend := domain.ApiCVSlice(sanitizedCVs)
 
-	marshalAndSendErr := responseTemplates.MarshalAndSend(w, sanitizedCVs)
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalAndSendErr != nil {
 		contextLogger.WithFields(
 			logrus.Fields{
 				"error_msg": marshalAndSendErr,
-				"data":      sanitizedCVs,
+				"data":      toSend,
 			},
 		).
 			Error("could not marshal and send data")
@@ -232,21 +233,21 @@ func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
 	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
-	apiCV := new(domain.ApiCV)
+	// fmt.Println(cv)
+	// bdCV := apiCV.ToDb()
 
-	readErr := json.NewDecoder(r.Body).Decode(apiCV)
-	if readErr != nil {
-		err := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
-		if err != nil {
+	apiCV := new(domain.ApiCV)
+	err := easyjson.UnmarshalFromReader(r.Body, apiCV)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": err,
+				"error_msg": sendErr,
 			}).
 				Error("could not send error message")
 		}
 		return
 	}
-	// fmt.Println(cv)
-	// bdCV := apiCV.ToDb()
 
 	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), apiCV)
 	if addErr != nil {
@@ -328,14 +329,15 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	cv := new(domain.ApiCV)
+	defer r.Body.Close()
 
-	decodeErr := json.NewDecoder(r.Body).Decode(cv)
-	if decodeErr != nil {
-		err := responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
-		if err != nil {
+	cv := new(domain.ApiCV)
+	err := easyjson.UnmarshalFromReader(r.Body, cv)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
-				"error_msg": err,
+				"error_msg": sendErr,
 			}).
 				Error("could not send error message")
 		}

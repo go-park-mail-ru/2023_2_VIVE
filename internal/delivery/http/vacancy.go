@@ -11,12 +11,12 @@ import (
 	"HnH/pkg/sanitizer"
 	"HnH/services/searchEngineService/searchEnginePB"
 
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -128,12 +128,13 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	}
 
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
+	toSend := domain.ApiVacancySlice(sanitizedVacancies)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	marshalErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
-			"data":    sanitizedVacancies,
+			"data":    toSend,
 		}).
 			Error("could not marshal and send data")
 	}
@@ -220,7 +221,7 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 
 	*vacancy = vacancyHandler.sanitizeVacancies(*vacancy)[0]
 
-	marshalErr := responseTemplates.MarshalAndSend(w, vacancy)
+	marshalErr := responseTemplates.MarshalAndSend(w, *vacancy)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
@@ -235,14 +236,13 @@ func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.
 	defer r.Body.Close()
 
 	apiVac := new(domain.ApiVacancy)
-
-	readErr := json.NewDecoder(r.Body).Decode(apiVac)
-	if readErr != nil {
-		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, apiVac)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
 				"error_msg":     sendErr,
-				"error_to_send": readErr,
+				"error_to_send": err,
 			}).
 				Error("could not send error message")
 		}
@@ -294,14 +294,13 @@ func (vacancyHandler *VacancyHandler) UpdateVacancy(w http.ResponseWriter, r *ht
 	defer r.Body.Close()
 
 	updatedVac := new(domain.ApiVacancy)
-
-	readErr := json.NewDecoder(r.Body).Decode(updatedVac)
-	if readErr != nil {
-		sendErr := responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, updatedVac)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{
 				"error_msg":     sendErr,
-				"error_to_send": readErr,
+				"error_to_send": err,
 			}).
 				Error("could not send error message")
 		}
@@ -375,12 +374,13 @@ func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r 
 	}
 
 	sanitizedList := vacancyHandler.sanitizeVacancies(vacanciesList...)
+	toSend := domain.ApiVacancySlice(sanitizedList)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedList)
+	marshalErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
-			"data":    sanitizedList,
+			"data":    toSend,
 		}).
 			Error("could not marshal and send data")
 	}
@@ -418,7 +418,7 @@ func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *
 
 	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, info)
+	marshalErr := responseTemplates.MarshalAndSend(w, *info)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
@@ -441,7 +441,7 @@ func (vacancyHandler *VacancyHandler) AddToFavourite(w http.ResponseWriter, r *h
 			}).
 				Error("could not send error message")
 		}
-		
+
 		return
 	}
 
@@ -456,7 +456,7 @@ func (vacancyHandler *VacancyHandler) AddToFavourite(w http.ResponseWriter, r *h
 			}).
 				Error("could not send error message")
 		}
-		
+
 		return
 	}
 
@@ -476,7 +476,7 @@ func (vacancyHandler *VacancyHandler) DeleteFromFavourite(w http.ResponseWriter,
 			}).
 				Error("could not send error message")
 		}
-		
+
 		return
 	}
 
@@ -491,7 +491,7 @@ func (vacancyHandler *VacancyHandler) DeleteFromFavourite(w http.ResponseWriter,
 			}).
 				Error("could not send error message")
 		}
-		
+
 		return
 	}
 
@@ -511,17 +511,18 @@ func (vacancyHandler *VacancyHandler) GetFavourite(w http.ResponseWriter, r *htt
 			}).
 				Error("could not send error message")
 		}
-		
+
 		return
 	}
 
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacsList...)
+	toSend := domain.ApiVacancySlice(sanitizedVacancies)
 
-	marshalErr := responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	marshalErr := responseTemplates.MarshalAndSend(w, toSend)
 	if marshalErr != nil {
 		contextLogger.WithFields(logrus.Fields{
 			"err_msg": marshalErr,
-			"data":    sanitizedVacancies,
+			"data":    toSend,
 		}).
 			Error("could not marshal and send data")
 	}
