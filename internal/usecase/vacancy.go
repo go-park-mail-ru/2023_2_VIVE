@@ -144,7 +144,7 @@ func (vacancyUsecase *VacancyUsecase) setLogoPath(ctx context.Context, vacs ...d
 		if !found || path == "" {
 			vac.LogoURL = ""
 		} else {
-			vac.LogoURL = configs.SERVER_ADDRESS + "/image" + path
+			vac.LogoURL = configs.SERVER_DOMAIN + "/image" + path
 		}
 
 		vacsToReturn = append(vacsToReturn, vac)

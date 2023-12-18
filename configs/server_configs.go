@@ -6,7 +6,10 @@ import (
 	"github.com/rs/cors"
 )
 
-const SERVER_ADDRESS = "http://84.23.53.171:8081"
+const (
+	SERVER_ADDRESS = "http://84.23.53.171:8081"
+	SERVER_DOMAIN  = "https://hunt-n-hire/api"
+)
 
 var CURRENT_DIR, _ = os.Getwd()
 
@@ -31,7 +34,7 @@ var CORS = cors.New(cors.Options{
 	},
 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	AllowCredentials: true,
-	ExposedHeaders: []string{"Content-Disposition"},
+	ExposedHeaders:   []string{"Content-Disposition"},
 })
 
 // var HnHRedisConfig = redisConfig{

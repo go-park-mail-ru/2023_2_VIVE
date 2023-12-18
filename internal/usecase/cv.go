@@ -111,7 +111,7 @@ func (cvUsecase *CVUsecase) setAvatarPath(ctx context.Context, cvs ...domain.Api
 		if !found || path == "" {
 			cv.AvatarURL = ""
 		} else {
-			cv.AvatarURL = configs.SERVER_ADDRESS + "/image" + path
+			cv.AvatarURL = configs.SERVER_DOMAIN + "/image" + path
 		}
 
 		cvsToReturn = append(cvsToReturn, cv)
