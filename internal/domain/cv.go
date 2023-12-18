@@ -101,6 +101,9 @@ type ApiCV struct {
 	UpdatedAt             time.Time                  `json:"updated_at,omitempty"`
 }
 
+//easyjson:json
+type ApiCVSlice []ApiCV
+
 func (cv *ApiCV) ToDb() *DbCV {
 	return &DbCV{
 		ID:             cv.ID,

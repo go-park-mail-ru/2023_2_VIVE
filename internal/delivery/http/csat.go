@@ -2,14 +2,14 @@ package http
 
 import (
 	"HnH/internal/appErrors"
+	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
-	"HnH/services/csat/csatPB"
-	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 )
 
 type CsatHandler struct {
@@ -42,18 +42,20 @@ func (handler *CsatHandler) GetQuestions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, questionList)
+	responseTemplates.MarshalAndSend(w, *questionList)
 }
 
 func (handler *CsatHandler) RegisterAnswer(w http.ResponseWriter, r *http.Request) {
-	answer := &csatPB.Answer{}
-	readErr := json.NewDecoder(r.Body).Decode(answer)
-	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
+	defer r.Body.Close()
+
+	answer := new(domain.Answer)
+	err := easyjson.UnmarshalFromReader(r.Body, answer)
+	if err != nil {
+		responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
 		return
 	}
 
-	err := handler.csatUsecase.RegisterAnswer(r.Context(), answer)
+	err = handler.csatUsecase.RegisterAnswer(r.Context(), answer)
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
 		responseTemplates.SendErrorMessage(w, errToSend, code)
@@ -71,5 +73,5 @@ func (handler *CsatHandler) GetStatistics(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	responseTemplates.MarshalAndSend(w, statistics)
+	responseTemplates.MarshalAndSend(w, *statistics)
 }

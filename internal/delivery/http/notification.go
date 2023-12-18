@@ -2,11 +2,11 @@ package http
 
 import (
 	"HnH/internal/appErrors"
+	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
-	notificationsPB "HnH/services/notifications/api/proto"
 	"net/http"
 	"strconv"
 
@@ -31,7 +31,7 @@ func NewNotificationHandler(router *mux.Router, notificationUCase usecase.INotif
 		Methods("DELETE")
 }
 
-func (h *NotificationHandler) sanitizeNotifications(notifications *notificationsPB.UserNotifications) {
+func (h *NotificationHandler) sanitizeNotifications(notifications *domain.UserNotifications) {
 	// result := make([]*notificationsPB.NotificationMessage, 0, len(notifications))
 	// result := &notificationsPB.UserNotifications{Notifications: make([]*notificationsPB.NotificationMessage, len(notifications.Notifications))}
 
@@ -60,9 +60,10 @@ func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *ht
 		responseTemplates.SendErrorMessage(w, errToSend, code)
 		return
 	}
+
 	h.sanitizeNotifications(userNotifications)
 
-	responseTemplates.MarshalAndSend(w, userNotifications)
+	responseTemplates.MarshalAndSend(w, *userNotifications)
 }
 
 func (h *NotificationHandler) DeleteUsersNotifications(w http.ResponseWriter, r *http.Request) {

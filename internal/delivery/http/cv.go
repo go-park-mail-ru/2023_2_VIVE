@@ -171,8 +171,9 @@ func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
+	toSend := domain.ApiCVSlice(sanitizedCVs)
 
-	responseTemplates.MarshalAndSend(w, sanitizedCVs)
+	responseTemplates.MarshalAndSend(w, toSend)
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
@@ -282,7 +283,7 @@ func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Requ
 
 	info.CVs = cvHandler.sanitizeCVs(info.CVs...)
 
-	responseTemplates.MarshalAndSend(w, info)
+	responseTemplates.MarshalAndSend(w, *info)
 }
 
 func (cvHandler *CVHandler) GetCVsPDF(w http.ResponseWriter, r *http.Request) {

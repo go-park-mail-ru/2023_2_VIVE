@@ -92,6 +92,9 @@ type ApiVacancy struct {
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
+//easyjson:json
+type ApiVacancySlice []ApiVacancy
+
 func (vac *ApiVacancy) ToDb() *DbVacancy {
 	res := DbVacancy{
 		ID:               vac.ID,

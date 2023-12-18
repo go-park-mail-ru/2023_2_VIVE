@@ -8,6 +8,9 @@ type ApiApplicant struct {
 	Skills    []string `json:"skills,omitempty"`
 }
 
+//easyjson:json
+type ApiApplicantSlice []ApiApplicant
+
 type DbApplicant struct {
 	UserID int    `json:"user_id"`
 	Status string `json:"status"`

@@ -120,8 +120,9 @@ func (vacancyHandler *VacancyHandler) GetVacancies(w http.ResponseWriter, r *htt
 	}
 
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacancies...)
+	toSend := domain.ApiVacancySlice(sanitizedVacancies)
 
-	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	responseTemplates.MarshalAndSend(w, toSend)
 }
 
 func (vacancyHandler *VacancyHandler) SearchVacancies(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +177,7 @@ func (vacancyHandler *VacancyHandler) GetVacancy(w http.ResponseWriter, r *http.
 
 	*vacancy = vacancyHandler.sanitizeVacancies(*vacancy)[0]
 
-	responseTemplates.MarshalAndSend(w, vacancy)
+	responseTemplates.MarshalAndSend(w, *vacancy)
 }
 
 func (vacancyHandler *VacancyHandler) AddVacancy(w http.ResponseWriter, r *http.Request) {
@@ -255,8 +256,9 @@ func (vacancyHandler *VacancyHandler) GetUserVacancies(w http.ResponseWriter, r 
 	}
 
 	sanitizedList := vacancyHandler.sanitizeVacancies(vacanciesList...)
+	toSend := domain.ApiVacancySlice(sanitizedList)
 
-	responseTemplates.MarshalAndSend(w, sanitizedList)
+	responseTemplates.MarshalAndSend(w, toSend)
 }
 
 func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *http.Request) {
@@ -276,7 +278,7 @@ func (vacancyHandler *VacancyHandler) GetEmployerInfo(w http.ResponseWriter, r *
 
 	info.Vacancies = vacancyHandler.sanitizeVacancies(info.Vacancies...)
 
-	responseTemplates.MarshalAndSend(w, info)
+	responseTemplates.MarshalAndSend(w, *info)
 }
 
 func (vacancyHandler *VacancyHandler) AddToFavourite(w http.ResponseWriter, r *http.Request) {
@@ -324,6 +326,7 @@ func (vacancyHandler *VacancyHandler) GetFavourite(w http.ResponseWriter, r *htt
 	}
 
 	sanitizedVacancies := vacancyHandler.sanitizeVacancies(vacsList...)
+	toSend := domain.ApiVacancySlice(sanitizedVacancies)
 
-	responseTemplates.MarshalAndSend(w, sanitizedVacancies)
+	responseTemplates.MarshalAndSend(w, toSend)
 }

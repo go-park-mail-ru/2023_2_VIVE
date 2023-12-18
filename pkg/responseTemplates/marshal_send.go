@@ -4,20 +4,20 @@ import (
 	"HnH/pkg/serverErrors"
 	"fmt"
 
-	"encoding/json"
 	"net/http"
 
 	"github.com/jung-kurt/gofpdf"
+	"github.com/mailru/easyjson"
 )
 
-func MarshalAndSend(w http.ResponseWriter, data any) {
-	/*started, _, err := easyjson.MarshalToHTTPResponseWriter(data, w)
+func MarshalAndSend(w http.ResponseWriter, data easyjson.Marshaler) {
+	started, _, err := easyjson.MarshalToHTTPResponseWriter(data, w)
 	if !started || err != nil {
 		SendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
 		return
-	}*/
+	}
 
-	js, err := json.Marshal(data)
+	/*js, err := json.Marshal(data)
 	if err != nil {
 		SendErrorMessage(w, serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
 		return
@@ -25,7 +25,7 @@ func MarshalAndSend(w http.ResponseWriter, data any) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	w.Write(js)*/
 }
 
 func SendPDF(w http.ResponseWriter, pdf *gofpdf.Fpdf, fileName string) {

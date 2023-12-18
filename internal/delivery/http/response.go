@@ -108,8 +108,9 @@ func (responseHandler *ResponseHandler) GetApplicants(w http.ResponseWriter, r *
 	}
 
 	sanitizedApplicants := responseHandler.sanitizeApplicants(applicantsList...)
+	toSend := domain.ApiApplicantSlice(sanitizedApplicants)
 
-	responseTemplates.MarshalAndSend(w, sanitizedApplicants)
+	responseTemplates.MarshalAndSend(w, toSend)
 }
 
 func (responseHandler *ResponseHandler) GetUserResponses(w http.ResponseWriter, r *http.Request) {
@@ -128,5 +129,7 @@ func (responseHandler *ResponseHandler) GetUserResponses(w http.ResponseWriter, 
 	}
 
 	sanitizedResponses := responseHandler.sanitizeResponses(responses...)
-	responseTemplates.MarshalAndSend(w, sanitizedResponses)
+	toSend := domain.ApiResponseSlice(sanitizedResponses)
+
+	responseTemplates.MarshalAndSend(w, toSend)
 }
