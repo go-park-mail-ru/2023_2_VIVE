@@ -97,9 +97,9 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 		notificationsToReturn = append(notificationsToReturn, &notification)
 	}
 
-	if len(notificationsToReturn) == 0 {
-		return nil, psql.ErrEntityNotFound
-	}
+	// if len(notificationsToReturn) == 0 {
+	// 	return nil, psql.ErrEntityNotFound
+	// }
 
 	return notificationsToReturn, nil
 }

@@ -4,12 +4,11 @@ import (
 	"HnH/pkg/contextUtils"
 	"HnH/services/notifications/pkg/serviceErrors"
 	"context"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 )
-
-type ConnectionStorage map[int64]*websocket.Conn
 
 type IConnectionRepository interface {
 	SaveConn(ctx context.Context, userID int64, connection *websocket.Conn) error
@@ -18,12 +17,12 @@ type IConnectionRepository interface {
 }
 
 type InMemoryConnectionRepository struct {
-	storage ConnectionStorage
+	storage sync.Map
 }
 
 func NewInMemoryConnectionRepository() IConnectionRepository {
 	return &InMemoryConnectionRepository{
-		storage: make(ConnectionStorage),
+		storage: sync.Map{},
 	}
 }
 
@@ -33,28 +32,37 @@ func (repo *InMemoryConnectionRepository) SaveConn(ctx context.Context, userID i
 		"user_id": userID,
 	}).
 		Info("saving new incoming connection")
-	_, exists := repo.storage[userID]
-	if exists {
-		return serviceErrors.ErrConnAlreadyExists
+
+	if value, loaded := repo.storage.LoadAndDelete(userID); loaded {
+		contextLogger.Info("rewriting existing connection")
+		existingConn, ok := value.(*websocket.Conn)
+		if !ok {
+			return serviceErrors.ErrInvalidConnection
+		}
+		existingConn.Close()
 	}
-	repo.storage[userID] = connection
+	repo.storage.Store(userID, connection)
 	return nil
 }
 
 func (repo *InMemoryConnectionRepository) GetConn(ctx context.Context, userID int64) (*websocket.Conn, error) {
-	conn, exists := repo.storage[userID]
+	value, exists := repo.storage.Load(userID)
 	if !exists {
 		return nil, serviceErrors.ErrNoConn
 	}
-	// TODO: get connection from memory
+	conn, ok := value.(*websocket.Conn)
+	if !ok {
+		return nil, serviceErrors.ErrInvalidConnection
+	}
 	return conn, nil
 }
 
 func (repo *InMemoryConnectionRepository) DeleteConn(ctx context.Context, userID int64) {
-	conn, exists := repo.storage[userID]
-	if !exists {
-		return
+	if value, loaded := repo.storage.LoadAndDelete(userID); loaded {
+		conn, ok := value.(*websocket.Conn)
+		if !ok {
+			return
+		}
+		conn.Close()
 	}
-	conn.Close()
-	delete(repo.storage, userID)
 }
