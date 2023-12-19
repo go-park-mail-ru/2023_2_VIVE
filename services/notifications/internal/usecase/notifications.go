@@ -7,6 +7,7 @@ import (
 	repositoryPSQL "HnH/services/notifications/internal/repository/psql"
 	"HnH/services/notifications/pkg/serviceErrors"
 	"context"
+	"errors"
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,9 @@ func (u *NotificationUseCase) SendNotification(ctx context.Context, message *not
 
 	userID := message.UserId
 	conn, err := u.connRepo.GetConn(ctx, userID)
-	if err != nil {
+	if errors.Is(err, serviceErrors.ErrNoConn) || errors.Is(err, serviceErrors.ErrInvalidConnection) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 
