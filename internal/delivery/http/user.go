@@ -247,6 +247,10 @@ func (userHandler *UserHandler) GetUserAvatar(w http.ResponseWriter, r *http.Req
 	contextLogger := contextUtils.GetContextLogger(r.Context())
 	file, err := userHandler.userUsecase.GetUserAvatar(r.Context())
 	if file == nil && err == nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while getting avatars")
 		sendErr := responseTemplates.SendErrorMessage(w, serverErrors.NO_DATA_FOUND, http.StatusNotFound)
 		if sendErr != nil {
 			contextLogger.WithFields(logrus.Fields{

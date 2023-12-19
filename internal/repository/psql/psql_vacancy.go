@@ -690,13 +690,25 @@ func (repo *psqlVacancyRepository) AddToFavourite(ctx context.Context, userID, v
 	var exists bool
 	err := repo.DB.QueryRow(`SELECT EXISTS (SELECT user_id, vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = $2)`, userID, vacancyID).Scan(&exists)
 	if exists {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": ErrRecordAlredyExists,
+		}).
+			Error("error while adding vacancy to favourite")
 		return ErrRecordAlredyExists
 	} else if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while adding vacancy to favourite")
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
-	_, err = repo.DB.Exec(`INSERT INTO hnh_data.favourite_vacancy (user_id, vacancy_id) VALUES ($1, $2)`)
+	_, err = repo.DB.Exec(`INSERT INTO hnh_data.favourite_vacancy (user_id, vacancy_id) VALUES ($1, $2)`, userID, vacancyID)
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while adding vacancy to favourite")
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 

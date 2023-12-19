@@ -443,10 +443,16 @@ func (vacancyUsecase *VacancyUsecase) DeleteFromFavourite(ctx context.Context, v
 }
 
 func (vacancyUsecase *VacancyUsecase) GetFavourite(ctx context.Context) ([]domain.ApiVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
 	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	favVacs, err := vacancyUsecase.vacancyRepo.GetFavourite(ctx, userID)
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+			"user_id": userID,
+		}).
+			Error("error while getting favourite vacancies")
 		return nil, err
 	}
 
@@ -457,6 +463,11 @@ func (vacancyUsecase *VacancyUsecase) GetFavourite(ctx context.Context) ([]domai
 
 	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+			"user_id": userID,
+		}).
+			Error("error while getting favourite vacancies")
 		return nil, err
 	}
 

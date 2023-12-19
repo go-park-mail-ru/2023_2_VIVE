@@ -502,6 +502,10 @@ func (vacancyHandler *VacancyHandler) GetFavourite(w http.ResponseWriter, r *htt
 	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vacsList, err := vacancyHandler.vacancyUsecase.GetFavourite(r.Context())
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while getting vacancy to favourite")
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
 		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
 		if sendErr != nil {

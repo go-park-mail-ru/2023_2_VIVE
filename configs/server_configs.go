@@ -8,7 +8,7 @@ import (
 
 const (
 	SERVER_ADDRESS = "http://84.23.53.171:8081"
-	SERVER_DOMAIN  = "https://hunt-n-hire/api"
+	SERVER_DOMAIN  = "https://hunt-n-hire.ru/api"
 )
 
 var CURRENT_DIR, _ = os.Getwd()
