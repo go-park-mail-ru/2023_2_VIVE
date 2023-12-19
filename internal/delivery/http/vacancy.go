@@ -83,6 +83,10 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.GetEmployerInfo))).
 		Methods("GET")
 
+	router.Handle("/vacancies/favourite",
+		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetFavourite))).
+		Methods("GET")
+
 	router.Handle("/vacancies/{vacancyID}",
 		middleware.SetSessionIDIfExists(sessionUCase, http.HandlerFunc(handler.GetVacancy))).
 		Methods("GET")
@@ -94,10 +98,6 @@ func NewVacancyHandler(router *mux.Router, vacancyUCase usecase.IVacancyUsecase,
 	router.Handle("/vacancies/{vacancyID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteVacancy))).
 		Methods("DELETE")
-
-	router.Handle("/vacancies/favourite",
-		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.GetFavourite))).
-		Methods("GET")
 
 	router.Handle("/vacancies/favourite/{vacancyID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.AddToFavourite))).
