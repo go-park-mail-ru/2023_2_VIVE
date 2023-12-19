@@ -197,7 +197,7 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 			return err
 		}
 
-		delErr := os.Remove(configs.CURRENT_DIR + path)
+		delErr := os.Remove(path)
 		if delErr != nil {
 			return err
 		}
@@ -209,13 +209,13 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 	day := strconv.Itoa(now.Day())
 
 	dirToSave := configs.UPLOADS_DIR + year + "/" + month + "/" + day
-	err = os.MkdirAll(configs.CURRENT_DIR+dirToSave, 0777)
+	err = os.MkdirAll(dirToSave, 0777)
 	if err != nil {
 		return err
 	}
 
 	filePath := dirToSave + "/" + header.Filename
-	f, err := os.OpenFile(configs.CURRENT_DIR+filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func (userUsecase *UserUsecase) GetUserAvatar(ctx context.Context) ([]byte, erro
 		return nil, err
 	}
 
-	fileBytes, err := os.ReadFile(configs.CURRENT_DIR + path)
+	fileBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, ErrReadAvatar
 	}
@@ -275,7 +275,7 @@ func (userUsecase *UserUsecase) GetImage(ctx context.Context, imageID int) ([]by
 		return nil, err
 	}
 
-	fileBytes, err := os.ReadFile(configs.CURRENT_DIR + path)
+	fileBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, ErrReadAvatar
 	}
