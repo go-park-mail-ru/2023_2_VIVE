@@ -98,6 +98,8 @@ type ApiCV struct {
 	AvatarURL             string                     `json:"avatar_url"`
 	CreatedAt             time.Time                  `json:"created_at,omitempty"`
 	UpdatedAt             time.Time                  `json:"updated_at,omitempty"`
+	ViewsCount            int                        `json:"views_count"`
+	ResponsesCount        int                        `json:"responses_count"`
 }
 
 func (cv *ApiCV) ToDb() *DbCV {

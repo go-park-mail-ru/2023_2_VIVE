@@ -141,7 +141,7 @@ func Run() error {
 	sessionUsecase := usecase.NewSessionUsecase(authRepo, userRepo)
 	userUsecase := usecase.NewUserUsecase(userRepo, authRepo)
 	vacancyUsecase := usecase.NewVacancyUsecase(vacancyRepo, authRepo, userRepo, searchEngineClientRepo, skillRepo, statRepo)
-	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo, skillRepo)
+	cvUsecase := usecase.NewCVUsecase(cvRepo, experienceRepo, institutionRepo, authRepo, userRepo, responseRepo, vacancyRepo, searchEngineClientRepo, skillRepo, statRepo)
 	responseUsecase := usecase.NewResponseUsecase(responseRepo, authRepo, userRepo, vacancyRepo, cvRepo, notificationsRepo)
 	csatUsecase := usecase.NewCsatUsecase(csatRepo, authRepo)
 	notificationUsecase := usecase.NewNotificationUsecase(notificationsRepo)
