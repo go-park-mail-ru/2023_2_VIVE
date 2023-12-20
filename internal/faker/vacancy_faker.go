@@ -4,7 +4,6 @@ import (
 	"HnH/app"
 	"HnH/internal/domain"
 	"HnH/internal/repository/psql"
-	"HnH/pkg/authUtils"
 	"HnH/pkg/contextUtils"
 	"context"
 	"database/sql"
@@ -121,7 +120,7 @@ func (vFaker *VacancyFaker) PushEmployers() error {
 			OrganizationDescription: employer.Description,
 		}
 
-		addStatus := vFaker.userRepo.AddUser(ctxLogger, user, authUtils.GenerateHash)
+		addStatus := vFaker.userRepo.AddUser(ctxLogger, user)
 		if addStatus != nil {
 			fmt.Printf("user addition error: %v\n\n\n", addStatus)
 			return true

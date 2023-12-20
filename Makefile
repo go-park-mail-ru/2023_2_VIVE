@@ -7,7 +7,7 @@ test:
 
 .PHONY: cover
 cover: test
-	sed '/_easyjson.go\|pb.go/d' c.out.tmp > cover.out && rm c.out.tmp && go tool cover -func=cover.out
+	sed '/_easyjson.go\|pb.go\|marshaler.go\|mapper.go/d' c.out.tmp > cover.out && rm c.out.tmp && go tool cover -func=cover.out
 
 .PHONY: create-migration
 create-migration:

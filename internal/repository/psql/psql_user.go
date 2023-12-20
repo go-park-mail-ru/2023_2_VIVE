@@ -18,7 +18,7 @@ import (
 type IUserRepository interface {
 	CheckUser(ctx context.Context, user *domain.DbUser) error
 	CheckPasswordById(ctx context.Context, id int, passwordToCheck string) error
-	AddUser(ctx context.Context, user *domain.ApiUser, hasher authUtils.HashGenerator) error
+	AddUser(ctx context.Context, user *domain.ApiUser) error
 	GetUserIdByEmail(ctx context.Context, email string) (int, error)
 	GetRoleById(ctx context.Context, userID int) (domain.Role, error)
 	GetUserInfo(ctx context.Context, userID int) (*domain.DbUser, *int, *int, error)
@@ -138,7 +138,7 @@ func (p *psqlUserRepository) CheckPasswordById(ctx context.Context, id int, pass
 	return p.castRawPasswordAndCompare(actualHash, salt, passwordToCheck)
 }
 
-func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, hasher authUtils.HashGenerator) error {
+func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	tx, txErr := p.userStorage.Begin()
@@ -166,7 +166,7 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 		return err
 	}
 
-	hashedPass, salt, err := hasher(user.Password)
+	hashedPass, salt, err := authUtils.GenerateHash(user.Password)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {

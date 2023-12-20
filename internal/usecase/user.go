@@ -79,7 +79,7 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 	// }
 
 	contextLogger.Info("adding user")
-	addStatus := userUsecase.userRepo.AddUser(ctx, user, authUtils.GenerateHash)
+	addStatus := userUsecase.userRepo.AddUser(ctx, user)
 	if addStatus != nil {
 		return "", addStatus
 	}
