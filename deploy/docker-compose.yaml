@@ -7,6 +7,7 @@ services:
       - "8081:8081"
     volumes:
       - ../logs:/logs
+      - ../assets/avatars:/assets/avatars
     env_file:
       - ../.env
   
