@@ -25,6 +25,7 @@ type IUserRepository interface {
 	GetUserIDByVacID(ctx context.Context, vacancyID int) (int64, error)
 	UpdateUserInfo(ctx context.Context, userID int, user *domain.UserUpdate) error
 	GetUserEmpId(ctx context.Context, userID int) (int, error)
+	GetUserAppId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
 	GetAvatarByUserID(ctx context.Context, userID int) (string, error)
 	GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error)
@@ -521,6 +522,27 @@ func (p *psqlUserRepository) GetUserEmpId(ctx context.Context, userID int) (int,
 	}
 
 	return empID, nil
+}
+
+func (p *psqlUserRepository) GetUserAppId(ctx context.Context, userID int) (int, error) {
+	var appID int
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.Info("getting user's 'applicant_id'")
+	query := `SELECT
+		a.id
+	FROM
+		hnh_data.applicant a
+	WHERE
+		a.user_id = $1`
+	err := p.userStorage.QueryRow(query, userID).Scan(&appID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrEntityNotFound
+	} else if err != nil {
+		return 0, err
+	}
+
+	return appID, nil
 }
 
 func (p *psqlUserRepository) UploadAvatarByUserID(ctx context.Context, userID int, path string) error {

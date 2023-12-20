@@ -11,6 +11,7 @@ import (
 	"HnH/pkg/utils"
 	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
+	"errors"
 
 	"github.com/jung-kurt/gofpdf"
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ type CVUsecase struct {
 	vacancyRepo      psql.IVacancyRepository
 	searchEngineRepo grpc.ISearchEngineRepository
 	skillRepo        psql.ISkillRepository
+	statRepo         psql.IStatRepository
 }
 
 func NewCVUsecase(
@@ -50,6 +52,7 @@ func NewCVUsecase(
 	vacancyRepository psql.IVacancyRepository,
 	searchEngineRepository grpc.ISearchEngineRepository,
 	skillRepository psql.ISkillRepository,
+	statRepo psql.IStatRepository,
 ) ICVUsecase {
 	return &CVUsecase{
 		cvRepo:           cvRepository,
@@ -61,6 +64,7 @@ func NewCVUsecase(
 		vacancyRepo:      vacancyRepository,
 		searchEngineRepo: searchEngineRepository,
 		skillRepo:        skillRepository,
+		statRepo:         statRepo,
 	}
 }
 
@@ -122,28 +126,21 @@ func (cvUsecase *CVUsecase) setAvatarPath(ctx context.Context, cvs ...domain.Api
 
 // Finds cv that responded to one of the current user's vacancy
 func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.ApiCV, error) {
-	// userID, validStatus := cvUsecase.validateRoleAndGetUserId(ctx, sessionID, domain.Employer)
-	// if validStatus != nil {
-	// 	return nil, validStatus
-	// }
-
-	// vacIdsList, err := cvUsecase.responseRepo.GetVacanciesIdsByCVId(ctx, cvID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// userEmpID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// _, err = cvUsecase.vacancyRepo.GetEmpVacanciesByIds(ctx, userEmpID, vacIdsList)
-	// if err == psql.ErrEntityNotFound {
-	// 	return nil, serverErrors.FORBIDDEN
-	// }
-	// if err != nil {
-	// 	return nil, err
-	// }
+	sesssionID, err := contextUtils.GetSessionIDFromCtx(ctx)
+	if err == nil {
+		userID, err := cvUsecase.sessionRepo.GetUserIdBySession(ctx, sesssionID)
+		if err != nil {
+			return nil, err
+		}
+		employerID, err := cvUsecase.userRepo.GetUserEmpId(ctx, userID)
+		if !errors.Is(err, psql.ErrEntityNotFound) {
+			if err != nil {
+				return nil, err
+			} else {
+				cvUsecase.statRepo.AddCvView(ctx, cvID, employerID)
+			}
+		}
+	}
 
 	cv, exps, edInsts, err := cvUsecase.cvRepo.GetCVById(ctx, cvID)
 	if err != nil {
@@ -151,6 +148,18 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.Ap
 	}
 
 	apiCV := cvUsecase.constructApiCV(cv, exps, edInsts)
+
+	viewsCount, err := cvUsecase.statRepo.CountCvViews(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+	apiCV.ViewsCount = viewsCount
+
+	responsesCount, err := cvUsecase.statRepo.CountCvResponses(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+	apiCV.ResponsesCount = responsesCount
 
 	skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, apiCV.ID)
 	if err != nil {
@@ -206,6 +215,20 @@ func (cvUsecase *CVUsecase) GetCVList(ctx context.Context) ([]domain.ApiCV, erro
 	}
 
 	apiCvs := cvUsecase.combineDbCVs(cvs, exps, insts)
+
+	for i := range apiCvs {
+		viewsCount, err := cvUsecase.statRepo.CountCvViews(ctx, apiCvs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiCvs[i].ViewsCount = viewsCount
+
+		responsesCount, err := cvUsecase.statRepo.CountCvResponses(ctx, apiCvs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiCvs[i].ResponsesCount = responsesCount
+	}
 
 	// TODO: optimize
 	for i := range apiCvs {
@@ -275,6 +298,18 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, cvID int) (*dom
 	}
 
 	apiCv := cvUsecase.constructApiCV(cv, exps, insts)
+
+	viewsCount, err := cvUsecase.statRepo.CountCvViews(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+	apiCv.ViewsCount = viewsCount
+
+	responsesCount, err := cvUsecase.statRepo.CountCvResponses(ctx, cvID)
+	if err != nil {
+		return nil, err
+	}
+	apiCv.ResponsesCount = responsesCount
 
 	skills, err := cvUsecase.skillRepo.GetSkillsByCvID(ctx, apiCv.ID)
 	if err != nil {
@@ -440,6 +475,20 @@ func (cvUsecase *CVUsecase) SearchCVs(
 	}
 
 	cvsToReturn := cvUsecase.combineDbCVs(dbCvs, dbExps, dbInsts)
+
+	for i := range cvsToReturn {
+		viewsCount, err := cvUsecase.statRepo.CountCvViews(ctx, cvsToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaCV{}, err
+		}
+		cvsToReturn[i].ViewsCount = viewsCount
+
+		responsesCount, err := cvUsecase.statRepo.CountCvResponses(ctx, cvsToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaCV{}, err
+		}
+		cvsToReturn[i].ResponsesCount = responsesCount
+	}
 
 	// TODO: optimize
 	for i := range cvsToReturn {

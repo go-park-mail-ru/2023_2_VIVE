@@ -241,9 +241,12 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 		}
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
-	// if len(vacanciesToReturn) == 0 {
-	// 	return nil, ErrEntityNotFound
-	// }
+
+	contextLogger.WithFields(logrus.Fields{
+		"vacancies_to_return": vacanciesToReturn,
+	}).
+		Debug("got result")
+
 	return vacanciesToReturn, nil
 }
 

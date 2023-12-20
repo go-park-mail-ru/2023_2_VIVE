@@ -61,7 +61,10 @@ func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.Db
 }
 
 func (sessionUsecase *SessionUsecase) Logout(ctx context.Context) error {
-	sessionID := contextUtils.GetSessionIDFromCtx(ctx)
+	sessionID, err := contextUtils.GetSessionIDFromCtx(ctx)
+	if err != nil {
+		return err
+	}
 
 	deleteErr := sessionUsecase.sessionRepo.DeleteSession(ctx, sessionID)
 	if deleteErr != nil {
@@ -72,7 +75,10 @@ func (sessionUsecase *SessionUsecase) Logout(ctx context.Context) error {
 }
 
 func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context) (int, error) {
-	sessionID := contextUtils.GetSessionIDFromCtx(ctx)
+	sessionID, err := contextUtils.GetSessionIDFromCtx(ctx)
+	if err != nil {
+		return 0, err
+	}
 
 	userID, sessionErr := sessionUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if sessionErr != nil {
