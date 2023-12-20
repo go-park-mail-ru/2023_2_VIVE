@@ -6,6 +6,7 @@ type DbEmployer struct {
 	OrganizationDescription string `json:"organization_description"`
 }
 
+//easyjson:json
 type EmployerInfo struct {
 	FirstName   string       `json:"first_name"`
 	LastName    string       `json:"last_name"`

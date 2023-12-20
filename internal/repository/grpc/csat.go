@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type ICsatRepository interface {
@@ -38,8 +39,14 @@ func (repo *grpcCsatRepository) GetQuestions(ctx context.Context, userID int) (*
 	}).
 		Debug("got result")
 	if err != nil {
-		return nil, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
 	}
+
 	return questions, nil
 }
 
@@ -49,8 +56,14 @@ func (repo *grpcCsatRepository) RegisterAnswer(ctx context.Context, answer *csat
 
 	_, err := repo.client.RegisterAnswer(ctx, answer)
 	if err != nil {
-		return err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return errToReturn
 	}
+
 	return nil
 }
 
@@ -60,7 +73,12 @@ func (repo *grpcCsatRepository) GetStatistic(ctx context.Context) (*csatPB.Stati
 
 	statistics, err := repo.client.GetStatistic(ctx, &csatPB.Empty{})
 	if err != nil {
-		return nil, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
 	}
 
 	return statistics, nil

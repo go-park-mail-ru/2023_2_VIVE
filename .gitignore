@@ -1,6 +1,11 @@
 *.log
-deploy/.env
-configs/secret_key.go
+*.env
+!versions.env
 *.rdb
 *.out
-*tern.conf
+*.jpeg
+*.jpg
+*.png
+*.gif
+*.webp
+*bin

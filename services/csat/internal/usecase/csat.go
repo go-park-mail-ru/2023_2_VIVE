@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"HnH/pkg/serverErrors"
 	pb "HnH/services/csat/csatPB"
 	"HnH/services/csat/internal/repository/psql"
 	"context"
@@ -42,7 +43,7 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 	// if err == psql.ErrEntityNotFound {
 	// 	return &res, nil
 	// }
-	if err != nil && err != psql.ErrEntityNotFound {
+	if err != nil && err != serverErrors.ErrEntityNotFound {
 		return &res, err
 	}
 
@@ -55,7 +56,6 @@ func (u *CsatUsecase) GetQuestions(ctx context.Context, userID *pb.UserID) (*pb.
 		return &res, err
 	}
 
-	
 	res.Questions = append(res.Questions, questions...)
 	// for _, question := range questions {
 	// 	res.Questions = append(res.Questions, question)

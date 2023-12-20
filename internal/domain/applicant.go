@@ -1,5 +1,6 @@
 package domain
 
+//easyjson:json
 type ApiApplicant struct {
 	CVid      int      `json:"cv_id"`
 	FirstName string   `json:"first_name,omitempty"`
@@ -7,11 +8,15 @@ type ApiApplicant struct {
 	Skills    []string `json:"skills,omitempty"`
 }
 
+//easyjson:json
+type ApiApplicantSlice []ApiApplicant
+
 type DbApplicant struct {
 	UserID int    `json:"user_id"`
 	Status string `json:"status"`
 }
 
+//easyjson:json
 type ApplicantInfo struct {
 	FirstName string  `json:"first_name"`
 	LastName  string  `json:"last_name"`

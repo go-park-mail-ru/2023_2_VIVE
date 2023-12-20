@@ -3,8 +3,8 @@ package usecase
 import (
 	"HnH/configs"
 	"HnH/internal/domain"
+	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
-	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
@@ -21,39 +21,26 @@ import (
 
 type IUserUsecase interface {
 	SignUp(ctx context.Context, user *domain.ApiUser, expiryUnixSeconds int64) (string, error)
-	GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error)
-	UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error
-	UploadAvatar(ctx context.Context, sessionID string, uploadedData multipart.File, header *multipart.FileHeader) error
-	GetAvatar(ctx context.Context, sessionID string) ([]byte, error)
+	GetInfo(ctx context.Context) (*domain.ApiUser, error)
+	UpdateInfo(ctx context.Context, user *domain.UserUpdate) error
+	UploadAvatar(ctx context.Context, uploadedData multipart.File, header *multipart.FileHeader) error
+	GetUserAvatar(ctx context.Context) ([]byte, error)
+	GetImage(ctx context.Context, imageID int) ([]byte, error)
 }
 
 type UserUsecase struct {
 	userRepo    psql.IUserRepository
-	sessionRepo redisRepo.ISessionRepository
+	sessionRepo grpc.IAuthRepository
 }
 
 func NewUserUsecase(
 	userRepository psql.IUserRepository,
-	sessionRepository redisRepo.ISessionRepository,
+	sessionRepository grpc.IAuthRepository,
 ) IUserUsecase {
 	return &UserUsecase{
 		userRepo:    userRepository,
 		sessionRepo: sessionRepository,
 	}
-}
-
-func (userUsecase *UserUsecase) validateSessionAndGetUserId(ctx context.Context, sessionID string) (int, error) {
-	validStatus := userUsecase.sessionRepo.ValidateSession(ctx, sessionID)
-	if validStatus != nil {
-		return 0, validStatus
-	}
-
-	userID, err := userUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, nil
 }
 
 func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser, expiryUnixSeconds int64) (string, error) {
@@ -116,12 +103,9 @@ func (userUsecase *UserUsecase) SignUp(ctx context.Context, user *domain.ApiUser
 	return sessionID, nil
 }
 
-func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (*domain.ApiUser, error) {
+func (userUsecase *UserUsecase) GetInfo(ctx context.Context) (*domain.ApiUser, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return nil, validStatus
-	}
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	contextLogger.Info("getting user information")
 	user, appID, empID, getErr := userUsecase.userRepo.GetUserInfo(ctx, userID)
@@ -135,12 +119,9 @@ func (userUsecase *UserUsecase) GetInfo(ctx context.Context, sessionID string) (
 	return apiUser, nil
 }
 
-func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, sessionID string, user *domain.UserUpdate) error {
+func (userUsecase *UserUsecase) UpdateInfo(ctx context.Context, user *domain.UserUpdate) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return validStatus
-	}
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	validPassStatus := userUsecase.userRepo.CheckPasswordById(ctx, userID, user.Password)
 	if validPassStatus != nil {
@@ -176,12 +157,9 @@ func (userUsecase *UserUsecase) avatarExists(ctx context.Context, userID int) (b
 	return true, nil
 }
 
-func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID string, uploadedData multipart.File, header *multipart.FileHeader) error {
+func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData multipart.File, header *multipart.FileHeader) error {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return validStatus
-	}
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	contextLogger.Info("uploading avatar")
 
@@ -218,7 +196,7 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID stri
 			return err
 		}
 
-		delErr := os.Remove(configs.CURRENT_DIR + path)
+		delErr := os.Remove(path)
 		if delErr != nil {
 			return err
 		}
@@ -230,21 +208,30 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID stri
 	day := strconv.Itoa(now.Day())
 
 	dirToSave := configs.UPLOADS_DIR + year + "/" + month + "/" + day
-	err = os.MkdirAll(configs.CURRENT_DIR+dirToSave, 0777)
+	err = os.MkdirAll(dirToSave, 0777)
 	if err != nil {
 		return err
 	}
 
 	filePath := dirToSave + "/" + header.Filename
-	f, err := os.OpenFile(configs.CURRENT_DIR+filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 
-	io.Copy(f, uploadedData)
+	_, copyErr := io.Copy(f, uploadedData)
+	if copyErr != nil {
+		return copyErr
+	}
 
-	f.Sync()
-	f.Close()
+	syncErr := f.Sync()
+	if syncErr != nil {
+		return syncErr
+	}
+	closeErr := f.Close()
+	if closeErr != nil {
+		return closeErr
+	}
 
 	err = userUsecase.userRepo.UploadAvatarByUserID(ctx, userID, filePath)
 	if err != nil {
@@ -254,13 +241,9 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, sessionID stri
 	return nil
 }
 
-func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string) ([]byte, error) {
+func (userUsecase *UserUsecase) GetUserAvatar(ctx context.Context) ([]byte, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
-
-	userID, validStatus := userUsecase.validateSessionAndGetUserId(ctx, sessionID)
-	if validStatus != nil {
-		return nil, validStatus
-	}
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	contextLogger.Info("getting user's avatar")
 	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
@@ -271,7 +254,24 @@ func (userUsecase *UserUsecase) GetAvatar(ctx context.Context, sessionID string)
 		return nil, err
 	}
 
-	fileBytes, err := os.ReadFile(configs.CURRENT_DIR + path)
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, ErrReadAvatar
+	}
+
+	return fileBytes, nil
+}
+
+func (userUsecase *UserUsecase) GetImage(ctx context.Context, imageID int) ([]byte, error) {
+	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, imageID)
+
+	if path == "" {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	fileBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, ErrReadAvatar
 	}

@@ -4,10 +4,13 @@ import (
 	"HnH/internal/domain"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/queryUtils"
+	"HnH/pkg/serverErrors"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +27,10 @@ type IVacancyRepository interface {
 	AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error)
 	UpdateEmpVacancy(ctx context.Context, empID, vacancyID int, vacancy *domain.DbVacancy) error
 	DeleteEmpVacancy(ctx context.Context, empID, vacancyID int) error
+	AddToFavourite(ctx context.Context, userID, vacancyID int) error
+	DeleteFromFavourite(ctx context.Context, userID, vacancyID int) error
+	GetFavourite(ctx context.Context, userID int) ([]domain.DbVacancy, error)
+	GetFavouriteFlags(ctx context.Context, userID int, vacID ...int) (map[int]bool, error)
 }
 
 type psqlVacancyRepository struct {
@@ -174,7 +181,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 	}).
 		Info("getting vacancies by 'id_list' from postgres")
 	if len(idList) == 0 {
-		return nil, ErrEntityNotFound
+		return []domain.DbVacancy{}, nil
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
@@ -192,7 +199,8 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 		v.education_type,
 		v."location",
 		v.created_at,
-		v.updated_at
+		v.updated_at,
+		v.organization_name
 	FROM
 		hnh_data.vacancy v
 	WHERE
@@ -226,15 +234,16 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 			&vacancy.Location,
 			&vacancy.CreatedAt,
 			&vacancy.UpdatedAt,
+			&vacancy.OrganizationName,
 		)
 		if err != nil {
 			return nil, err
 		}
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
-	if len(vacanciesToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(vacanciesToReturn) == 0 {
+	// 	return nil, ErrEntityNotFound
+	// }
 	return vacanciesToReturn, nil
 }
 
@@ -256,6 +265,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 		experience,
 		education_type,
 		"location",
+		organization_name,
 		created_at,
 		updated_at
 	FROM
@@ -277,6 +287,7 @@ func (repo *psqlVacancyRepository) GetVacancy(ctx context.Context, vacancyID int
 			&vacancyToReturn.Experience,
 			&vacancyToReturn.EducationType,
 			&vacancyToReturn.Location,
+			&vacancyToReturn.OrganizationName,
 			&vacancyToReturn.CreatedAt,
 			&vacancyToReturn.UpdatedAt,
 		)
@@ -502,7 +513,7 @@ func (repo *psqlVacancyRepository) GetEmpId(ctx context.Context, vacancyID int) 
 		"vacancy_id": vacancyID,
 	}).
 		Info("getting employer id by 'vacancy_id' from postgres")
-		
+
 	query := `SELECT
 		v.employer_id 
 	FROM
@@ -543,10 +554,11 @@ func (repo *psqlVacancyRepository) AddVacancy(ctx context.Context, empID int, va
 			employment,
 			experience,
 			education_type,
-			"location"
+			"location",
+			organization_name
 		)
 		SELECT
-			e.id, $1, $2, $3, $4, $5, $6, $7, $8
+			e.id, $1, $2, $3, $4, $5, $6, $7, $8, e.organization_name
 	FROM
 		hnh_data.employer e
 	WHERE
@@ -664,4 +676,142 @@ func (repo *psqlVacancyRepository) DeleteEmpVacancy(ctx context.Context, empID, 
 	}
 
 	return nil
+}
+
+func (repo *psqlVacancyRepository) AddToFavourite(ctx context.Context, userID, vacancyID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"user_id":    userID,
+		"vacancy_id": vacancyID,
+	}).
+		Info("adding vacancy to favourite by 'vacancy_id' and 'user_id' in postgres")
+
+	var exists bool
+	err := repo.DB.QueryRow(`SELECT EXISTS (SELECT user_id, vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = $2)`, userID, vacancyID).Scan(&exists)
+	if exists {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": ErrRecordAlredyExists,
+		}).
+			Error("error while adding vacancy to favourite")
+		return ErrRecordAlredyExists
+	} else if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while adding vacancy to favourite")
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
+
+	_, err = repo.DB.Exec(`INSERT INTO hnh_data.favourite_vacancy (user_id, vacancy_id) VALUES ($1, $2)`, userID, vacancyID)
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while adding vacancy to favourite")
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
+
+	return nil
+}
+
+func (repo *psqlVacancyRepository) DeleteFromFavourite(ctx context.Context, userID, vacancyID int) error {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"user_id":    userID,
+		"vacancy_id": vacancyID,
+	}).
+		Info("deleting vacancy from favourite by 'vacancy_id' and 'user_id' in postgres")
+
+	result, delErr := repo.DB.Exec(`DELETE FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = $2`, userID, vacancyID)
+	rowsAff, err := result.RowsAffected()
+
+	if rowsAff == 0 {
+		return ErrNoRowsDeleted
+	} else if delErr != nil || err != nil {
+		return serverErrors.INTERNAL_SERVER_ERROR
+	}
+
+	return nil
+}
+
+func (repo *psqlVacancyRepository) GetFavourite(ctx context.Context, userID int) ([]domain.DbVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).
+		Info("getting user's favourite vacancies by 'user_id' in postgres")
+
+	rows, err := repo.DB.Query(`SELECT vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1`, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return []domain.DbVacancy{}, nil
+	}
+	defer rows.Close()
+
+	vacIDsList := []int{}
+	for rows.Next() {
+		var id int
+
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		vacIDsList = append(vacIDsList, id)
+	}
+
+	favVacs, err := repo.GetVacanciesByIds(ctx, vacIDsList)
+	if err != nil {
+		return nil, err
+	}
+
+	return favVacs, nil
+}
+
+func (repo *psqlVacancyRepository) GetFavouriteFlags(ctx context.Context, userID int, vacID ...int) (map[int]bool, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
+	contextLogger.WithFields(logrus.Fields{
+		"vac_ids": vacID,
+	}).
+		Info("getting favourite flags by 'vac_ids' in postgres")
+
+	query := `SELECT vacancy_id FROM hnh_data.favourite_vacancy WHERE user_id = $1 AND vacancy_id = ANY($2)`
+
+	contextLogger.WithFields(logrus.Fields{
+		"query": query,
+	}).
+		Debug("query in db")
+
+	rows, err := repo.DB.Query(query, userID, pq.Array(vacID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]bool{}, nil
+	}
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+
+			"err_msg": err,
+		}).
+			Error("while selecting in db error occured")
+		fmt.Printf("err: %v\n", err)
+		return map[int]bool{}, err
+
+	}
+	defer rows.Close()
+
+	vacIDToFavFlag := map[int]bool{}
+	for rows.Next() {
+		var vacID int
+
+		err := rows.Scan(&vacID)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		vacIDToFavFlag[vacID] = true
+	}
+
+	return vacIDToFavFlag, nil
 }

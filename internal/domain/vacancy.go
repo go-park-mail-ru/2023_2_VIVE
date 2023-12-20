@@ -27,6 +27,7 @@ type DbVacancy struct {
 	Experience       ExperienceTime `json:"experience"`
 	EducationType    EducationLevel `json:"education_type,omitempty"`
 	Location         *string        `json:"location,omitempty"`
+	OrganizationName *string        `json:"organization_name,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
@@ -42,6 +43,7 @@ func (vac *DbVacancy) ToAPI() *ApiVacancy {
 		Experience:       vac.Experience,
 		EducationType:    vac.EducationType,
 		Employment:       vac.Employment,
+		OrganizationName: vac.OrganizationName,
 		Location:         vac.Location,
 		CreatedAt:        vac.CreatedAt,
 		UpdatedAt:        vac.UpdatedAt,
@@ -64,11 +66,13 @@ func (vac *DbVacancy) ToAPI() *ApiVacancy {
 	return &res
 }
 
+//easyjson:json
 type CompanyVacancy struct {
 	CompanyName string     `json:"organization_name"`
 	Vacancy     ApiVacancy `json:"vacancy"`
 }
 
+//easyjson:json
 type ApiVacancy struct {
 	ID               int            `json:"id"`
 	EmployerID       int            `json:"employer_id"`
@@ -78,12 +82,18 @@ type ApiVacancy struct {
 	Experience       ExperienceTime `json:"experience"`
 	Employment       EmploymentType `json:"employment,omitempty"`
 	EducationType    EducationLevel `json:"education_type,omitempty"`
+	OrganizationName *string        `json:"organization_name,omitempty"`
 	Location         *string        `json:"location,omitempty"`
 	Description      string         `json:"description,omitempty"`
 	Skills           []string       `json:"skills,omitempty"`
+	Favourite        bool           `json:"favourite"`
+	LogoURL          string         `json:"logo_url,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
+
+//easyjson:json
+type ApiVacancySlice []ApiVacancy
 
 func (vac *ApiVacancy) ToDb() *DbVacancy {
 	res := DbVacancy{
@@ -95,6 +105,7 @@ func (vac *ApiVacancy) ToDb() *DbVacancy {
 		EducationType:    vac.EducationType,
 		Experience:       vac.Experience,
 		Employment:       vac.Employment,
+		OrganizationName: vac.OrganizationName,
 		Location:         vac.Location,
 		CreatedAt:        vac.CreatedAt,
 		UpdatedAt:        vac.UpdatedAt,
@@ -130,11 +141,13 @@ func (vac *ApiVacancy) ToDb() *DbVacancy {
 	return &res
 }
 
+//easyjson:json
 type ApiVacancyCount struct {
 	Count     int64        `json:"count"`
 	Vacancies []ApiVacancy `json:"list"`
 }
 
+//easyjson:json
 type ApiMetaVacancy struct {
 	Filters   []*searchEnginePB.Filter `json:"filters,omitempty"`
 	Vacancies ApiVacancyCount          `json:"vacancies"`

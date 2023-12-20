@@ -1,16 +1,19 @@
 package http
 
 import (
-	"HnH/internal/delivery/http/middleware"
+	"HnH/internal/appErrors"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
+	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
+	"github.com/sirupsen/logrus"
 )
 
 type SessionHandler struct {
@@ -36,13 +39,20 @@ func NewSessionHandler(router *mux.Router, sessionUCase usecase.ISessionUsecase)
 }
 
 func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
 	user := new(domain.DbUser)
-
-	err := json.NewDecoder(r.Body).Decode(user)
+	err := easyjson.UnmarshalFromReader(r.Body, user)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		sendErr := responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -50,7 +60,15 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 
 	sessionID, loginErr := sessionHandler.sessionUsecase.Login(r.Context(), user, expiryTime.Unix())
 	if loginErr != nil {
-		responseTemplates.SendErrorMessage(w, loginErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(loginErr)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -68,26 +86,47 @@ func (sessionHandler *SessionHandler) Login(w http.ResponseWriter, r *http.Reque
 }
 
 func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context(), cookie.Value)
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	deleteErr := sessionHandler.sessionUsecase.Logout(r.Context())
 	if deleteErr != nil {
-		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(deleteErr)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
-	cookie.Expires = time.Now().AddDate(0, 0, -1)
+	cookie := &http.Cookie{
+		Name:     "session",
+		Value:    contextUtils.GetSessionIDFromCtx(r.Context()),
+		Expires:  time.Now().AddDate(0, 0, -1),
+		Path:     "/",
+		Secure:   false,
+		HttpOnly: true,
+	}
 
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (sessionHandler *SessionHandler) CheckLogin(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context(), cookie.Value)
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	_, sessionErr := sessionHandler.sessionUsecase.CheckLogin(r.Context())
 	if sessionErr != nil {
-		responseTemplates.SendErrorMessage(w, sessionErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(sessionErr)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 

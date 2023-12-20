@@ -1,0 +1,9 @@
+go 1.21.4
+
+use (
+	.
+	./services/auth
+	./services/csat
+	./services/notifications
+	./services/searchEngineService
+)

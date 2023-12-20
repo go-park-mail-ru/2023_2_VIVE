@@ -2,16 +2,18 @@ package grpc
 
 import (
 	"HnH/pkg/contextUtils"
+	"HnH/services/searchEngineService/searchEnginePB"
 	pb "HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type ISearchEngineRepository interface {
-	SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error)
-	SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error)
+	SearchVacancyIDs(ctx context.Context, options *searchEnginePB.SearchOptions) (*pb.SearchResponse, error)
+	SearchCVsIDs(ctx context.Context, options *searchEnginePB.SearchOptions) (*pb.SearchResponse, error)
 }
 
 type grpcSearchEngineRepository struct {
@@ -24,19 +26,21 @@ func NewGrpcSearchEngineRepository(client pb.SearchEngineClient) ISearchEngineRe
 	}
 }
 
-func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) (*pb.SearchResponse, error) {
+func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, options *searchEnginePB.SearchOptions) (*pb.SearchResponse, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	request := pb.SearchRequest{
-		Query:          query,
-		PageNumber:     pageNumber,
-		ResultsPerPage: resultsPerPage,
+		Options: options,
+		// Query:          query,
+		// PageNumber:     pageNumber,
+		// ResultsPerPage: resultsPerPage,
 	}
 
 	contextLogger.Info("sending request to search engine server via grpc")
 	contextLogger.WithFields(logrus.Fields{
-		"query":            query,
-		"page_num":         pageNumber,
-		"results_per_page": resultsPerPage,
+		"options": options,
+		// "query":            query,
+		// "page_num":         pageNumber,
+		// "results_per_page": resultsPerPage,
 	}).
 		Debug("sending request data")
 
@@ -44,25 +48,32 @@ func (repo *grpcSearchEngineRepository) SearchVacancyIDs(ctx context.Context, qu
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	searchResponse, err := repo.client.SearchVacancies(ctx, &request)
 	if err != nil {
-		return nil, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
 	}
 
 	return searchResponse, nil
 }
 
-func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query string, pageNumber, resultsPerPage int64) ([]int64, int64, error) {
+func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, options *searchEnginePB.SearchOptions) (*pb.SearchResponse, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 	request := pb.SearchRequest{
-		Query:          query,
-		PageNumber:     pageNumber,
-		ResultsPerPage: resultsPerPage,
+		Options: options,
+		// Query:          query,
+		// PageNumber:     pageNumber,
+		// ResultsPerPage: resultsPerPage,
 	}
 
 	contextLogger.Info("sending request to search engine server via grpc")
 	contextLogger.WithFields(logrus.Fields{
-		"query":            query,
-		"page_num":         pageNumber,
-		"results_per_page": resultsPerPage,
+		"options": options,
+		// "query":            query,
+		// "page_num":         pageNumber,
+		// "results_per_page": resultsPerPage,
 	}).
 		Debug("sending request data")
 
@@ -70,11 +81,16 @@ func (repo *grpcSearchEngineRepository) SearchCVsIDs(ctx context.Context, query 
 	ctx = metadata.NewOutgoingContext(ctx, md)
 	searchResponse, err := repo.client.SearchCVs(ctx, &request)
 	if err != nil {
-		return nil, 0, err
+		grpcStatus := status.Convert(err)
+		errMessage := grpcStatus.Message()
+
+		errToReturn := GetErrByMessage(errMessage)
+
+		return nil, errToReturn
 	}
 
 	// foundCVIDs := repo.castVacanciesResponse(searchResponse)
-	foundCVIDs, count := searchResponse.Ids, searchResponse.Count
+	// foundCVIDs,? count := searchResponse.Ids, searchResponse.Count
 
-	return foundCVIDs, count, nil
+	return searchResponse, nil
 }

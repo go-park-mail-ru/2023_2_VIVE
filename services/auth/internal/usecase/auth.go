@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
 	pb "HnH/services/auth/authPB"
 	"HnH/services/auth/internal/repository/redisRepo"
@@ -32,7 +33,7 @@ func (u *AuthUsecase) AddSession(ctx context.Context, authData *pb.AuthData) (*p
 	expTime := authData.ExpiryTime
 
 	err := u.authRepo.AddSession(ctx, sessID, userID, expTime)
-	if errors.Is(err, redisRepo.ERROR_WHILE_WRITING) {
+	if errors.Is(err, authUtils.ERROR_WHILE_WRITING) {
 		return &pb.Empty{}, serverErrors.INTERNAL_SERVER_ERROR
 	} else if err != nil {
 		return &pb.Empty{}, err
@@ -46,7 +47,7 @@ func (u *AuthUsecase) DeleteSession(ctx context.Context, sessionID *pb.SessionID
 
 	err := u.authRepo.DeleteSession(ctx, sessID)
 	if err != nil {
-		return &pb.Empty{}, nil
+		return &pb.Empty{}, err
 	}
 
 	return &pb.Empty{}, nil

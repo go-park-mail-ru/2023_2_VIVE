@@ -1,13 +1,14 @@
 package usecase
 
 import (
+	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
-	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/castUtils"
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
+	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -17,17 +18,20 @@ type IVacancyUsecase interface {
 	GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error)
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error)
 	GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error)
-	GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error)
+	GetUserVacancies(ctx context.Context) ([]domain.ApiVacancy, error)
 	GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error)
-	AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error)
-	UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error
-	DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error
-	SearchVacancies(ctx context.Context, query string, pageNumber, resultsPerPage int64) (domain.ApiMetaVacancy, error)
+	AddVacancy(ctx context.Context, vacancy *domain.ApiVacancy) (int, error)
+	UpdateVacancy(ctx context.Context, vacancyID int, vacancy *domain.ApiVacancy) error
+	DeleteVacancy(ctx context.Context, vacancyID int) error
+	SearchVacancies(ctx context.Context, options *searchEnginePB.SearchOptions) (domain.ApiMetaVacancy, error)
+	AddToFavourite(ctx context.Context, vacancyID int) error
+	DeleteFromFavourite(ctx context.Context, vacancyID int) error
+	GetFavourite(ctx context.Context) ([]domain.ApiVacancy, error)
 }
 
 type VacancyUsecase struct {
 	vacancyRepo      psql.IVacancyRepository
-	sessionRepo      redisRepo.ISessionRepository
+	sessionRepo      grpc.IAuthRepository
 	userRepo         psql.IUserRepository
 	searchEngineRepo grpc.ISearchEngineRepository
 	skillRepo        psql.ISkillRepository
@@ -35,7 +39,7 @@ type VacancyUsecase struct {
 
 func NewVacancyUsecase(
 	vacancyRepository psql.IVacancyRepository,
-	sessionRepository redisRepo.ISessionRepository,
+	sessionRepository grpc.IAuthRepository,
 	userRepository psql.IUserRepository,
 	searchEngineRepository grpc.ISearchEngineRepository,
 	skillRepository psql.ISkillRepository,
@@ -49,17 +53,7 @@ func NewVacancyUsecase(
 	}
 }
 
-func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetEmpId(ctx context.Context, sessionID string) (int, error) {
-	validStatus := vacancyUsecase.sessionRepo.ValidateSession(ctx, sessionID)
-	if validStatus != nil {
-		return 0, validStatus
-	}
-
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
-	if err != nil {
-		return 0, err
-	}
-
+func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetEmpId(ctx context.Context, userID int) (int, error) {
 	userRole, err := vacancyUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
 		return 0, err
@@ -75,8 +69,8 @@ func (vacancyUsecase *VacancyUsecase) validateEmployerAndGetEmpId(ctx context.Co
 	return userEmpID, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) validateEmployer(ctx context.Context, sessionID string, vacancyID int) (int, error) {
-	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
+func (vacancyUsecase *VacancyUsecase) validateEmployer(ctx context.Context, userID int, vacancyID int) (int, error) {
+	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, userID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
@@ -101,6 +95,64 @@ func (vacancyUsecase *VacancyUsecase) collectApiVacs(vacs []domain.DbVacancy) []
 	return res
 }
 
+func (vacancyUsecase *VacancyUsecase) setFavouriteFlags(ctx context.Context, vacs ...domain.ApiVacancy) ([]domain.ApiVacancy, error) {
+	userID, loggedIn := contextUtils.IsLoggedIn(ctx)
+	if !loggedIn {
+		return vacs, nil
+	}
+
+	vacIDs := []int{}
+	for _, vac := range vacs {
+		vacIDs = append(vacIDs, vac.ID)
+	}
+
+	vacIDToFav, err := vacancyUsecase.vacancyRepo.GetFavouriteFlags(ctx, userID, vacIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	vacsToReturn := []domain.ApiVacancy{}
+	for _, vac := range vacs {
+		isFav, found := vacIDToFav[vac.ID]
+		if found {
+			vac.Favourite = isFav
+		} else {
+			vac.Favourite = false
+		}
+
+		vacsToReturn = append(vacsToReturn, vac)
+	}
+
+	return vacsToReturn, nil
+}
+
+func (vacancyUsecase *VacancyUsecase) setLogoPath(ctx context.Context, vacs ...domain.ApiVacancy) ([]domain.ApiVacancy, error) {
+	vacIDs := []int{}
+
+	for _, vac := range vacs {
+		vacIDs = append(vacIDs, vac.ID)
+	}
+
+	vacIDToPath, err := vacancyUsecase.userRepo.GetLogoPathesByVacancyIDList(ctx, vacIDs...)
+	if err != nil {
+		return nil, err
+	}
+
+	vacsToReturn := []domain.ApiVacancy{}
+	for _, vac := range vacs {
+		path, found := vacIDToPath[vac.ID]
+		if !found || path == "" {
+			vac.LogoURL = ""
+		} else {
+			vac.LogoURL = configs.SERVER_DOMAIN + "/image" + path
+		}
+
+		vacsToReturn = append(vacsToReturn, vac)
+	}
+
+	return vacsToReturn, nil
+}
+
 func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
 	vacancies, getErr := vacancyUsecase.vacancyRepo.GetAllVacancies(ctx)
 	if getErr != nil {
@@ -115,6 +167,16 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 			return nil, err
 		}
 		apiVacs[i].Skills = skills
+	}
+
+	apiVacs, err := vacancyUsecase.setFavouriteFlags(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
 	}
 
 	return apiVacs, nil
@@ -132,7 +194,18 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 		return nil, err
 	}
 	apiVac.Skills = skills
-	return apiVac, nil
+
+	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *apiVac)
+	if err != nil {
+		return nil, err
+	}
+
+	vacToReturn, err = vacancyUsecase.setLogoPath(ctx, vacToReturn...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &vacToReturn[0], nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Context, vacancyID int) (*domain.CompanyVacancy, error) {
@@ -153,16 +226,28 @@ func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Cont
 		return nil, err
 	}
 
+	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *vacancy)
+	if err != nil {
+		return nil, err
+	}
+
+	vacToReturn, err = vacancyUsecase.setLogoPath(ctx, vacToReturn...)
+	if err != nil {
+		return nil, err
+	}
+
 	compVac := &domain.CompanyVacancy{
 		CompanyName: companyName,
-		Vacancy:     *vacancy,
+		Vacancy:     vacToReturn[0],
 	}
 
 	return compVac, nil
 }
 
-func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID string, vacancy *domain.ApiVacancy) (int, error) {
-	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, sessionID)
+func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, vacancy *domain.ApiVacancy) (int, error) {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	userEmpID, validStatus := vacancyUsecase.validateEmployerAndGetEmpId(ctx, userID)
 	if validStatus != nil {
 		return 0, validStatus
 	}
@@ -182,8 +267,10 @@ func (vacancyUsecase *VacancyUsecase) AddVacancy(ctx context.Context, sessionID 
 }
 
 // TODO: add skills
-func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, sessionID string, vacancyID int, vacancy *domain.ApiVacancy) error {
-	empID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
+func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, vacancyID int, vacancy *domain.ApiVacancy) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	empID, validStatus := vacancyUsecase.validateEmployer(ctx, userID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -195,8 +282,10 @@ func (vacancyUsecase *VacancyUsecase) UpdateVacancy(ctx context.Context, session
 	return nil
 }
 
-func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, sessionID string, vacancyID int) error {
-	empID, validStatus := vacancyUsecase.validateEmployer(ctx, sessionID, vacancyID)
+func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, vacancyID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	empID, validStatus := vacancyUsecase.validateEmployer(ctx, userID, vacancyID)
 	if validStatus != nil {
 		return validStatus
 	}
@@ -208,11 +297,8 @@ func (vacancyUsecase *VacancyUsecase) DeleteVacancy(ctx context.Context, session
 	return nil
 }
 
-func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sessionID string) ([]domain.ApiVacancy, error) {
-	userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
-	if err != nil {
-		return nil, serverErrors.AUTH_REQUIRED
-	}
+func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context) ([]domain.ApiVacancy, error) {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	role, err := vacancyUsecase.userRepo.GetRoleById(ctx, userID)
 	if err != nil {
@@ -229,7 +315,19 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context, sess
 	}
 	// fmt.Printf("vacancies: %v\n", vacanciesList)
 
-	return vacancyUsecase.collectApiVacs(vacanciesList), nil
+	apiVacs := vacancyUsecase.collectApiVacs(vacanciesList)
+
+	apiVacs, err = vacancyUsecase.setFavouriteFlags(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return apiVacs, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
@@ -247,20 +345,29 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		Vacancies:   vacsToReturn,
 	}
 
+	info.Vacancies, err = vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
+	if err != nil {
+		return nil, err
+	}
+
+	info.Vacancies, err = vacancyUsecase.setLogoPath(ctx, info.Vacancies...)
+	if err != nil {
+		return nil, err
+	}
+
 	return info, nil
 }
 
 func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	ctx context.Context,
-	query string,
-	pageNumber, resultsPerPage int64,
+	options *searchEnginePB.SearchOptions,
 ) (domain.ApiMetaVacancy, error) {
-	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, query, pageNumber, resultsPerPage)
+	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, options)
 	if err != nil {
 		return domain.ApiMetaVacancy{
 			Filters:   nil,
 			Vacancies: domain.ApiVacancyCount{},
-		}, nil
+		}, err
 	}
 	vacancyIDs, count := vacanciesSearchResponse.Ids, vacanciesSearchResponse.Count
 
@@ -286,6 +393,22 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 		vacanciesToReturn[i].Skills = skills
 	}
 
+	vacanciesToReturn, err = vacancyUsecase.setFavouriteFlags(ctx, vacanciesToReturn...)
+	if err != nil {
+		return domain.ApiMetaVacancy{
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
+		}, err
+	}
+
+	vacanciesToReturn, err = vacancyUsecase.setLogoPath(ctx, vacanciesToReturn...)
+	if err != nil {
+		return domain.ApiMetaVacancy{
+			Filters:   nil,
+			Vacancies: domain.ApiVacancyCount{},
+		}, err
+	}
+
 	result := domain.ApiMetaVacancy{
 		Filters: vacanciesSearchResponse.Filters,
 		Vacancies: domain.ApiVacancyCount{
@@ -295,4 +418,58 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	}
 
 	return result, nil
+}
+
+func (vacancyUsecase *VacancyUsecase) AddToFavourite(ctx context.Context, vacancyID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	err := vacancyUsecase.vacancyRepo.AddToFavourite(ctx, userID, vacancyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (vacancyUsecase *VacancyUsecase) DeleteFromFavourite(ctx context.Context, vacancyID int) error {
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	err := vacancyUsecase.vacancyRepo.DeleteFromFavourite(ctx, userID, vacancyID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (vacancyUsecase *VacancyUsecase) GetFavourite(ctx context.Context) ([]domain.ApiVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	userID := contextUtils.GetUserIDFromCtx(ctx)
+
+	favVacs, err := vacancyUsecase.vacancyRepo.GetFavourite(ctx, userID)
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+			"user_id": userID,
+		}).
+			Error("error while getting favourite vacancies")
+		return nil, err
+	}
+
+	apiVacs := vacancyUsecase.collectApiVacs(favVacs)
+	for i := range apiVacs {
+		apiVacs[i].Favourite = true
+	}
+
+	apiVacs, err = vacancyUsecase.setLogoPath(ctx, apiVacs...)
+	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+			"user_id": userID,
+		}).
+			Error("error while getting favourite vacancies")
+		return nil, err
+	}
+
+	return apiVacs, nil
 }

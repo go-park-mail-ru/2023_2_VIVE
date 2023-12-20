@@ -11,6 +11,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,10 +22,13 @@ type IUserRepository interface {
 	GetUserIdByEmail(ctx context.Context, email string) (int, error)
 	GetRoleById(ctx context.Context, userID int) (domain.Role, error)
 	GetUserInfo(ctx context.Context, userID int) (*domain.DbUser, *int, *int, error)
+	GetUserIDByVacID(ctx context.Context, vacancyID int) (int64, error)
 	UpdateUserInfo(ctx context.Context, userID int, user *domain.UserUpdate) error
 	GetUserEmpId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
 	GetAvatarByUserID(ctx context.Context, userID int) (string, error)
+	GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error)
+	GetAvatarPathesByCVIDList(ctx context.Context, cvIDs ...int) (map[int]string, error)
 }
 
 type psqlUserRepository struct {
@@ -149,16 +153,25 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 	contextLogger.Info("checking user in postgres")
 	err := tx.QueryRow(`SELECT EXISTS (SELECT id FROM hnh_data.user_profile WHERE email = $1)`, user.Email).Scan(&exists)
 	if exists {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.ACCOUNT_ALREADY_EXISTS
 	} else if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return err
 	}
 
 	hashedPass, salt, err := hasher(user.Password)
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.INTERNAL_SERVER_ERROR
 	}
 
@@ -179,7 +192,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 			Scan(&userID)
 
 		if addErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return addErr
 		}
 
@@ -190,7 +206,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 
 		_, appErr := tx.Exec(`INSERT INTO hnh_data.applicant ("user_id") VALUES ($1)`, userID)
 		if appErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return appErr
 		}
 	} else if user.Type == domain.Employer {
@@ -203,7 +222,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 		// contextLogger.Info("adding organization for employer")
 		// orgID, addOrgErr := p.orgRepo.AddTxOrganization(ctx, tx, &employer)
 		// if addOrgErr != nil {
-		// 	tx.Rollback()
+		// 	rollbackErr := tx.Rollback()
+		// if rollbackErr != nil {
+		// 	return rollbackErr
+		// }
 		// 	return addOrgErr
 		// }
 
@@ -215,7 +237,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 			Scan(&userID)
 
 		if addErr != nil {
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return addErr
 		}
 
@@ -237,7 +262,10 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 				"error": empErr,
 			}).
 				Error("adding employer failed")
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return empErr
 		}
 		_, err = result.RowsAffected()
@@ -246,11 +274,17 @@ func (p *psqlUserRepository) AddUser(ctx context.Context, user *domain.ApiUser, 
 				"error": err,
 			}).
 				Error("adding employer failed")
-			tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				return rollbackErr
+			}
 			return err
 		}
 	} else {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return rollbackErr
+		}
 		return serverErrors.INVALID_ROLE
 	}
 
@@ -324,6 +358,38 @@ func (p *psqlUserRepository) GetUserInfo(ctx context.Context, userID int) (*doma
 	}
 
 	return user, appId, empID, nil
+}
+
+func (p *psqlUserRepository) GetUserIDByVacID(ctx context.Context, vacancyID int) (int64, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_id": vacancyID,
+	}).
+		Info("getting user's id by vacancy id from postgres")
+
+	query := `SELECT
+				up.id
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.employer e ON
+				e.user_id = up.id
+			JOIN hnh_data.vacancy v ON
+				v.employer_id = e.id
+			WHERE
+				v.id = $1`
+
+	var userID int64
+
+	// var appId, empID *int
+	err := p.userStorage.QueryRow(query, vacancyID).
+		Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrEntityNotFound
+	} else if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }
 
 func (p *psqlUserRepository) GetUserIdByEmail(ctx context.Context, email string) (int, error) {
@@ -487,4 +553,100 @@ func (p *psqlUserRepository) GetAvatarByUserID(ctx context.Context, userID int) 
 	}
 
 	return *path, nil
+}
+
+func (p *psqlUserRepository) GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"vacancy_ids": vacIDs,
+	}).
+		Info("getting companies' logo pathes by vacancy id list from postgres")
+
+	query := `SELECT
+				v.id, up.avatar_path
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.employer e ON
+				e.user_id = up.id
+			JOIN hnh_data.vacancy v ON
+				v.employer_id = e.id
+			WHERE
+				v.id = ANY($1)`
+
+	rows, err := p.userStorage.Query(query, pq.Array(vacIDs))
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]string{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vacIDToUserID := map[int]string{}
+
+	for rows.Next() {
+		var vacID int
+		var avaPath *string
+
+		err = rows.Scan(&vacID, &avaPath)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		if avaPath == nil {
+			vacIDToUserID[vacID] = ""
+		} else {
+			vacIDToUserID[vacID] = *avaPath
+		}
+	}
+
+	return vacIDToUserID, nil
+}
+
+func (p *psqlUserRepository) GetAvatarPathesByCVIDList(ctx context.Context, cvIDs ...int) (map[int]string, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"cv_ids": cvIDs,
+	}).
+		Info("getting companies' avatar pathes by cx id list from postgres")
+
+	query := `SELECT
+				res.id, up.avatar_path
+			FROM
+				hnh_data.user_profile up
+			JOIN hnh_data.applicant app ON
+				app.user_id = up.id
+			JOIN hnh_data.cv res ON
+				res.applicant_id = app.id
+			WHERE
+				res.id = ANY($1)`
+
+	rows, err := p.userStorage.Query(query, pq.Array(cvIDs))
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return map[int]string{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vacIDToUserID := map[int]string{}
+
+	for rows.Next() {
+		var cvID int
+		var avaPath *string
+
+		err = rows.Scan(&cvID, &avaPath)
+		if err != nil {
+			return nil, serverErrors.INTERNAL_SERVER_ERROR
+		}
+
+		if avaPath == nil {
+			vacIDToUserID[cvID] = ""
+		} else {
+			vacIDToUserID[cvID] = *avaPath
+		}
+	}
+
+	return vacIDToUserID, nil
 }

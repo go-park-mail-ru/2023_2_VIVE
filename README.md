@@ -1,3 +1,4 @@
+![CI/CD Pipline](https://github.com/go-park-mail-ru/2023_2_VIVE/actions/workflows/ci-cd.yml/badge.svg)
 # 2023_2_VIVE
 Проект Headhunter команды "VIVE"
 
@@ -22,11 +23,12 @@ https://app.swaggerhub.com/apis/VIVE_TEAM/HeadHunter/1.0.0#/
 
 ## Деплой Backend'а
 
-http://212.233.90.231:8081/
+http://84.23.53.171:8081/
 
 ## Деплой Frontend'а
 
-http://212.233.90.231:8085/
+http://84.23.53.171:8082/
+
 
 ## Figma
 

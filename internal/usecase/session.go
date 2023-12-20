@@ -2,9 +2,10 @@ package usecase
 
 import (
 	"HnH/internal/domain"
+	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
-	"HnH/internal/repository/redisRepo"
 	"HnH/pkg/authUtils"
+	"HnH/pkg/contextUtils"
 	"context"
 
 	"github.com/google/uuid"
@@ -12,16 +13,16 @@ import (
 
 type ISessionUsecase interface {
 	Login(ctx context.Context, user *domain.DbUser, expiryUnixSeconds int64) (string, error)
-	Logout(ctx context.Context, sessionID string) error
-	CheckLogin(ctx context.Context, sessionID string) error
+	Logout(ctx context.Context) error
+	CheckLogin(ctx context.Context) (int, error)
 }
 
 type SessionUsecase struct {
-	sessionRepo redisRepo.ISessionRepository
+	sessionRepo grpc.IAuthRepository
 	userRepo    psql.IUserRepository
 }
 
-func NewSessionUsecase(sessionRepository redisRepo.ISessionRepository, userRepository psql.IUserRepository) ISessionUsecase {
+func NewSessionUsecase(sessionRepository grpc.IAuthRepository, userRepository psql.IUserRepository) ISessionUsecase {
 	return &SessionUsecase{
 		sessionRepo: sessionRepository,
 		userRepo:    userRepository,
@@ -59,7 +60,9 @@ func (sessionUsecase *SessionUsecase) Login(ctx context.Context, user *domain.Db
 	return sessionID, nil
 }
 
-func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID string) error {
+func (sessionUsecase *SessionUsecase) Logout(ctx context.Context) error {
+	sessionID := contextUtils.GetSessionIDFromCtx(ctx)
+
 	deleteErr := sessionUsecase.sessionRepo.DeleteSession(ctx, sessionID)
 	if deleteErr != nil {
 		return deleteErr
@@ -68,11 +71,13 @@ func (sessionUsecase *SessionUsecase) Logout(ctx context.Context, sessionID stri
 	return nil
 }
 
-func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context, sessionID string) error {
-	sessionErr := sessionUsecase.sessionRepo.ValidateSession(ctx, sessionID)
+func (sessionUsecase *SessionUsecase) CheckLogin(ctx context.Context) (int, error) {
+	sessionID := contextUtils.GetSessionIDFromCtx(ctx)
+
+	userID, sessionErr := sessionUsecase.sessionRepo.GetUserIdBySession(ctx, sessionID)
 	if sessionErr != nil {
-		return sessionErr
+		return 0, sessionErr
 	}
 
-	return nil
+	return userID, nil
 }

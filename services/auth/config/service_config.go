@@ -1,5 +1,11 @@
 package config
 
+import "os"
+
+const (
+	LOGS_DIR = "logs/"
+)
+
 type AuthConfig struct {
 	ServiceName string
 	Host        string
@@ -9,7 +15,7 @@ type AuthConfig struct {
 
 var AuthServiceConfig = AuthConfig{
 	ServiceName: "auth service",
-	Host:        "212.233.90.231",
+	Host:        "hnh_auth",
 	Port:        8062,
 	LogFile:     "auth_service.log",
 }
@@ -23,9 +29,9 @@ type redisConfig struct {
 
 var AuthRedisConfig = redisConfig{
 	protocol:       "redis",
-	networkAddress: "212.233.90.231",
-	port:           "8008",
-	password:       "vive_password_redis",
+	networkAddress: "sessions_hnh",
+	port:           "6379",
+	password:       os.Getenv("REDDIS_PASSWORD"),
 }
 
 func (rConf redisConfig) GetConnectionURL() string {

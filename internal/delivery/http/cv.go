@@ -1,19 +1,21 @@
 package http
 
 import (
-	"HnH/internal/delivery/http/middleware"
+	"HnH/internal/appErrors"
 	"HnH/internal/domain"
 	"HnH/internal/usecase"
 	"HnH/pkg/contextUtils"
+	"HnH/pkg/middleware"
 	"HnH/pkg/responseTemplates"
 	"HnH/pkg/sanitizer"
+	"HnH/services/searchEngineService/searchEnginePB"
 
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/mailru/easyjson"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,6 +57,10 @@ func NewCVHandler(router *mux.Router, cvUCase usecase.ICVUsecase, sessionUCase u
 	router.Handle("/current_user/cvs/{cvID}",
 		middleware.AuthMiddleware(sessionUCase, http.HandlerFunc(handler.DeleteCVOfUser))).
 		Methods("DELETE")
+
+	router.Handle("/current_user/cvs/{cvID}/pdf",
+		http.HandlerFunc(handler.GetCVsPDF)).
+		Methods("GET")
 }
 
 func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.ApiCV) []domain.ApiCV {
@@ -88,30 +94,56 @@ func (cvHandler *CVHandler) sanitizeCVs(CVs ...domain.ApiCV) []domain.ApiCV {
 }
 
 func (cvHandler *CVHandler) GetCV(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVById(r.Context(), cvID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusForbidden)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedCV := cvHandler.sanitizeCVs(*cv)
 
-	responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+	if marshalAndSendErr != nil {
+		contextLogger.WithFields(
+			logrus.Fields{
+				"error_msg": marshalAndSendErr,
+				"data":      sanitizedCV[0],
+			},
+		).
+			Error("could not marshal and send data")
+	}
 }
 
 func (cvHandler *CVHandler) sanitizeMetaCVs(metaCVs domain.ApiMetaCV) domain.ApiMetaCV {
 	result := domain.ApiMetaCV{
-		Count: metaCVs.Count,
-		CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
+		Filters: metaCVs.Filters,
+		CVs: domain.ApiCVCount{
+			Count: metaCVs.CVs.Count,
+			CVs:   cvHandler.sanitizeCVs(metaCVs.CVs.CVs...),
+		},
+		// Count: metaCVs.Count,
+		// CVs:   cvHandler.sanitizeCVs(metaCVs.CVs...),
 	}
 	return result
 }
@@ -123,123 +155,205 @@ func (cvHandler *CVHandler) SearchCVs(w http.ResponseWriter, r *http.Request) {
 		"query": query.Encode(),
 	}).
 		Debug("got search request with query")
-	searchQuery := query.Get(SEARCH_QUERY_KEY)
 
-	pageNumStr := query.Get(PAGE_NUM_QUERY_KEY)
-	pageNum, convErr := strconv.ParseInt(pageNumStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
+	// options := searchEnginePB.SearchOptions{}
+	queryOptions := make(map[string]*searchEnginePB.SearchOptionValues)
+	for optionName, values := range query {
+		contextLogger.WithFields(logrus.Fields{
+			"option_name":   optionName,
+			"option_values": values,
+		}).
+			Debug("parsing options")
+		optionsValues := searchEnginePB.SearchOptionValues{
+			Values: values,
+		}
+		queryOptions[optionName] = &optionsValues
 	}
+	options := searchEnginePB.SearchOptions{Options: queryOptions}
 
-	resultsPerPageStr := query.Get(RESULTS_PER_PAGE_QUERY_KEY)
-	resultsPerPage, convErr := strconv.ParseInt(resultsPerPageStr, 10, 64)
-	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, ErrWrongQueryParam, http.StatusBadRequest)
-		return
-	}
-
-	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(
-		r.Context(),
-		searchQuery,
-		pageNum,
-		resultsPerPage,
-	)
+	metaCVs, getErr := cvHandler.cvUsecase.SearchCVs(r.Context(), &options)
 
 	if getErr != nil {
-		responseTemplates.SendErrorMessage(w, getErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(getErr)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedMetaVacancies := cvHandler.sanitizeMetaCVs(metaCVs)
 
-	responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
-
-	w.WriteHeader(http.StatusOK)
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, sanitizedMetaVacancies)
+	if marshalAndSendErr != nil {
+		contextLogger.WithFields(
+			logrus.Fields{
+				"error_msg": marshalAndSendErr,
+				"data":      sanitizedMetaVacancies,
+			},
+		).
+			Error("could not marshal and send data")
+	}
 }
 
 func (cvHandler *CVHandler) GetCVList(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
-	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context(), cookie.Value)
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	cvs, err := cvHandler.cvUsecase.GetCVList(r.Context())
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedCVs := cvHandler.sanitizeCVs(cvs...)
+	toSend := domain.ApiCVSlice(sanitizedCVs)
 
-	responseTemplates.MarshalAndSend(w, sanitizedCVs)
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, toSend)
+	if marshalAndSendErr != nil {
+		contextLogger.WithFields(
+			logrus.Fields{
+				"error_msg": marshalAndSendErr,
+				"data":      toSend,
+			},
+		).
+			Error("could not marshal and send data")
+	}
 }
 
 func (cvHandler *CVHandler) AddNewCV(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	defer r.Body.Close()
 
-	apiCV := new(domain.ApiCV)
-
-	readErr := json.NewDecoder(r.Body).Decode(apiCV)
-	if readErr != nil {
-		responseTemplates.SendErrorMessage(w, readErr, http.StatusBadRequest)
-		return
-	}
 	// fmt.Println(cv)
 	// bdCV := apiCV.ToDb()
 
-	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), cookie.Value, apiCV)
+	apiCV := new(domain.ApiCV)
+	err := easyjson.UnmarshalFromReader(r.Body, apiCV)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+			}).
+				Error("could not send error message")
+		}
+		return
+	}
+
+	newCVID, addErr := cvHandler.cvUsecase.AddNewCV(r.Context(), apiCV)
 	if addErr != nil {
-		responseTemplates.SendErrorMessage(w, addErr, http.StatusUnauthorized)
+		errToSend, code := appErrors.GetErrAndCodeToSend(addErr)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(fmt.Sprintf(`{"id":%d}`, newCVID)))
+	_, wErr := w.Write([]byte(fmt.Sprintf(`{"id":%d}`, newCVID)))
+	contextLogger.WithFields(logrus.Fields{
+		"err_msg": wErr,
+		"data":    fmt.Sprintf(`{"id":%d}`, newCVID),
+	}).
+		Error("could not send data")
 }
 
 func (cvHandler *CVHandler) GetCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
-	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cookie.Value, cvID)
+	cv, err := cvHandler.cvUsecase.GetCVOfUserById(r.Context(), cvID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	sanitizedCV := cvHandler.sanitizeCVs(*cv)
 
-	responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, sanitizedCV[0])
+	if marshalAndSendErr != nil {
+		contextLogger.WithFields(
+			logrus.Fields{
+				"error_msg": marshalAndSendErr,
+				"data":      sanitizedCV[0],
+			},
+		).
+			Error("could not marshal and send data")
+	}
 }
 
 func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
+
+	defer r.Body.Close()
 
 	cv := new(domain.ApiCV)
-
-	decodeErr := json.NewDecoder(r.Body).Decode(cv)
-	if decodeErr != nil {
-		responseTemplates.SendErrorMessage(w, decodeErr, http.StatusBadRequest)
+	err := easyjson.UnmarshalFromReader(r.Body, cv)
+	if err != nil {
+		sendErr := responseTemplates.SendErrorMessage(w, ErrWrongBodyParam, http.StatusBadRequest)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": sendErr,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
-	udpErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cookie.Value, cvID, cv)
-	if udpErr != nil {
-		responseTemplates.SendErrorMessage(w, udpErr, http.StatusBadRequest)
+	updErr := cvHandler.cvUsecase.UpdateCVOfUserById(r.Context(), cvID, cv)
+	if updErr != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(updErr)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -247,18 +361,30 @@ func (cvHandler *CVHandler) UpdateCVOfUser(w http.ResponseWriter, r *http.Reques
 }
 
 func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("session")
-
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	cvID, convErr := strconv.Atoi(vars["cvID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
-	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cookie.Value, cvID)
+	deleteErr := cvHandler.cvUsecase.DeleteCVOfUserById(r.Context(), cvID)
 	if deleteErr != nil {
-		responseTemplates.SendErrorMessage(w, deleteErr, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(deleteErr)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
@@ -266,20 +392,80 @@ func (cvHandler *CVHandler) DeleteCVOfUser(w http.ResponseWriter, r *http.Reques
 }
 
 func (cvHandler *CVHandler) GetApplicantInfo(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
 	vars := mux.Vars(r)
 	appID, convErr := strconv.Atoi(vars["applicantID"])
 	if convErr != nil {
-		responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	info, err := cvHandler.cvUsecase.GetApplicantInfo(r.Context(), appID)
 	if err != nil {
-		responseTemplates.SendErrorMessage(w, err, http.StatusBadRequest)
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
 		return
 	}
 
 	info.CVs = cvHandler.sanitizeCVs(info.CVs...)
 
-	responseTemplates.MarshalAndSend(w, info)
+	marshalAndSendErr := responseTemplates.MarshalAndSend(w, *info)
+	if marshalAndSendErr != nil {
+		contextLogger.WithFields(
+			logrus.Fields{
+				"error_msg": marshalAndSendErr,
+				"data":      info,
+			},
+		).
+			Error("could not marshal and send data")
+	}
+}
+
+func (cvHandler *CVHandler) GetCVsPDF(w http.ResponseWriter, r *http.Request) {
+	contextLogger := contextUtils.GetContextLogger(r.Context())
+	vars := mux.Vars(r)
+	cvID, convErr := strconv.Atoi(vars["cvID"])
+	if convErr != nil {
+		err := responseTemplates.SendErrorMessage(w, convErr, http.StatusBadRequest)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
+		return
+	}
+
+	pdf, err := cvHandler.cvUsecase.GenerateCVsPDF(r.Context(), cvID)
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		err := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg": err,
+			}).
+				Error("could not send error message")
+		}
+		return
+	}
+
+	pdfErr := responseTemplates.SendPDF(w, pdf, "file") // TODO: rename file
+	if pdfErr != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"error_msg": pdfErr,
+		}).
+			Error("could not send pdf")
+	}
 }

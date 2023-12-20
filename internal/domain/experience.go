@@ -32,14 +32,15 @@ func (apiExp *DbExperience) ToAPI() *ApiExperience {
 	}
 }
 
+//easyjson:json
 type ApiExperience struct {
 	ID               int     `json:"id"`
 	CvID             int     `json:"cv_id"`
-	OrganizationName string  `json:"name"`
-	JobPosition      string  `json:"job_position"`
-	Description      string  `json:"description"`
-	StartDate        string  `json:"start_date"`
-	EndDate          *string `json:"end_date,omitempty"`
+	OrganizationName string  `json:"name" pdf:"header"`
+	JobPosition      string  `json:"job_position" pdf:"content,-,Должность"`
+	Description      string  `json:"description" pdf:"content,-,Описание"`
+	StartDate        string  `json:"start_date" pdf:"content,-,Начало работы,mm.yyyy"`
+	EndDate          *string `json:"end_date,omitempty" pdf:"content,-,Конец работы,mm.yyyy"`
 }
 
 func (apiExp *ApiExperience) ToDb() *DbExperience {
