@@ -9,7 +9,6 @@ import (
 	"HnH/pkg/contextUtils"
 	"HnH/pkg/serverErrors"
 	"context"
-	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -219,9 +218,6 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 	if err != nil {
 		return err
 	}
-
-	contextLogger.Infof("file path: %s", filePath)
-	fmt.Println(filePath)
 
 	_, copyErr := io.Copy(f, uploadedData)
 	if copyErr != nil {
