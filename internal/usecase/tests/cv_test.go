@@ -655,13 +655,11 @@ func TestSearchCVSuccess(t *testing.T) {
 	cvRepo.EXPECT().GetCVById(ctxWithID, cvID).Return(dbCV, expList, eduList, nil)
 	skillRepo.EXPECT().GetSkillsByCvID(ctxWithID, cvID).Return([]string{"go", "git", "sql"}, nil)
 	userRepo.EXPECT().GetAvatarPathesByCVIDList(ctxWithID, cvID).Return(cvIDToLogo, nil)
-	cvRepo.EXPECT().DeleteOneOfUsersCV(ctxWithID, userID, cvID).Return(serverErrors.FORBIDDEN)
+	cvRepo.EXPECT().DeleteOneOfUsersCV(ctxWithID, userID, cvID).Return(nil)
 
 	_, err := cvUsecase.GenerateCVsPDF(ctxWithID, cvID)
-	if err == nil {
+	if err != nil {
 		fmt.Println("Error must be not nil")
 		t.Fail()
 	}
-
-	assert.Error(t, err, serverErrors.FORBIDDEN.Error())
 }*/

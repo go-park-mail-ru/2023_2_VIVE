@@ -731,7 +731,7 @@ func TestDeleteFromFavouriteFail(t *testing.T) {
 	assert.Error(t, err, serverErrors.FORBIDDEN.Error())
 }
 
-func TestGetFacouriteSuccess(t *testing.T) {
+func TestGetFavouriteSuccess(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 
 	userRepo := psqlmock.NewMockIUserRepository(mockCtrl)
