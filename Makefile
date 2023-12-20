@@ -3,11 +3,11 @@ include versions.env
 
 .PHONY: test
 test:
-	go test -coverpkg=./... -coverprofile=c.out ./...
+	go test -coverpkg=./... -coverprofile=c.out.tmp ./...
 
 .PHONY: cover
 cover: test
-	go tool cover -func=c.out
+	sed '/_easyjson.go\|pb.go/d' c.out.tmp > cover.out && rm c.out.tmp && go tool cover -func=cover.out
 
 .PHONY: create-migration
 create-migration:
