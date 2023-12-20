@@ -38,8 +38,12 @@ func GetRequestIDFromCtx(ctx context.Context) string {
 	return ctx.Value(REQUEST_ID_KEY).(string)
 }
 
-func GetSessionIDFromCtx(ctx context.Context) string {
-	return ctx.Value(SESSION_ID_KEY).(string)
+func GetSessionIDFromCtx(ctx context.Context) (string, error) {
+	res, ok :=ctx.Value(SESSION_ID_KEY).(string)
+	if !ok {
+		return "", ErrNoValueInCtx
+	}
+	return res, nil
 }
 
 func GetUserIDFromCtx(ctx context.Context) int {

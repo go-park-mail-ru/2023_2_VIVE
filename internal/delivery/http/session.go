@@ -102,9 +102,23 @@ func (sessionHandler *SessionHandler) Logout(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	sessionID, err := contextUtils.GetSessionIDFromCtx(r.Context())
+	if err != nil {
+		errToSend, code := appErrors.GetErrAndCodeToSend(err)
+		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
+		if sendErr != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"error_msg":     sendErr,
+				"error_to_send": errToSend,
+			}).
+				Error("could not send error message")
+		}
+		return 
+	}
+
 	cookie := &http.Cookie{
 		Name:     "session",
-		Value:    contextUtils.GetSessionIDFromCtx(r.Context()),
+		Value:    sessionID,
 		Expires:  time.Now().AddDate(0, 0, -1),
 		Path:     "/",
 		Secure:   false,

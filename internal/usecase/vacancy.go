@@ -10,6 +10,7 @@ import (
 	"HnH/pkg/serverErrors"
 	"HnH/services/searchEngineService/searchEnginePB"
 	"context"
+	"errors"
 
 	"github.com/sirupsen/logrus"
 )
@@ -35,6 +36,7 @@ type VacancyUsecase struct {
 	userRepo         psql.IUserRepository
 	searchEngineRepo grpc.ISearchEngineRepository
 	skillRepo        psql.ISkillRepository
+	statRepo         psql.IStatRepository
 }
 
 func NewVacancyUsecase(
@@ -43,6 +45,7 @@ func NewVacancyUsecase(
 	userRepository psql.IUserRepository,
 	searchEngineRepository grpc.ISearchEngineRepository,
 	skillRepository psql.ISkillRepository,
+	statRepo psql.IStatRepository,
 ) IVacancyUsecase {
 	return &VacancyUsecase{
 		vacancyRepo:      vacancyRepository,
@@ -50,6 +53,7 @@ func NewVacancyUsecase(
 		userRepo:         userRepository,
 		searchEngineRepo: searchEngineRepository,
 		skillRepo:        skillRepository,
+		statRepo:         statRepo,
 	}
 }
 
@@ -183,6 +187,21 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 }
 
 func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error) {
+	sesssionID, err := contextUtils.GetSessionIDFromCtx(ctx)
+	if err == nil {
+		userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sesssionID)
+		if err != nil {
+			return nil, err
+		}
+		applicantID, err := vacancyUsecase.userRepo.GetUserAppId(ctx, userID)
+		if !errors.Is(err, psql.ErrEntityNotFound) {
+			if err != nil {
+				return nil, err
+			} else {
+				vacancyUsecase.statRepo.AddVacancyView(ctx, vacancyID, applicantID)
+			}
+		}
+	}
 	vacancy, err := vacancyUsecase.vacancyRepo.GetVacancy(ctx, vacancyID)
 	if err != nil {
 		return nil, err
@@ -194,6 +213,18 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 		return nil, err
 	}
 	apiVac.Skills = skills
+
+	viewsCount, err := vacancyUsecase.statRepo.CountVacancyViews(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+	apiVac.ViewsCount = viewsCount
+
+	responsesCount, err := vacancyUsecase.statRepo.CountVacancyResponses(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+	apiVac.ResponsesCount = responsesCount
 
 	vacToReturn, err := vacancyUsecase.setFavouriteFlags(ctx, *apiVac)
 	if err != nil {
@@ -230,6 +261,18 @@ func (vacancyUsecase *VacancyUsecase) GetVacancyWithCompanyName(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
+
+	viewsCount, err := vacancyUsecase.statRepo.CountVacancyViews(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+	vacancy.ViewsCount = viewsCount
+
+	responsesCount, err := vacancyUsecase.statRepo.CountVacancyResponses(ctx, vacancyID)
+	if err != nil {
+		return nil, err
+	}
+	vacancy.ResponsesCount = responsesCount
 
 	vacToReturn, err = vacancyUsecase.setLogoPath(ctx, vacToReturn...)
 	if err != nil {
@@ -317,6 +360,20 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context) ([]d
 
 	apiVacs := vacancyUsecase.collectApiVacs(vacanciesList)
 
+	for i := range apiVacs {
+		viewsCount, err := vacancyUsecase.statRepo.CountVacancyViews(ctx, apiVacs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiVacs[i].ViewsCount = viewsCount
+
+		responsesCount, err := vacancyUsecase.statRepo.CountVacancyResponses(ctx, apiVacs[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		apiVacs[i].ResponsesCount = responsesCount
+	}
+
 	apiVacs, err = vacancyUsecase.setFavouriteFlags(ctx, apiVacs...)
 	if err != nil {
 		return nil, err
@@ -337,6 +394,20 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 	}
 
 	vacsToReturn := vacancyUsecase.collectApiVacs(empVacs)
+
+	for i := range vacsToReturn {
+		viewsCount, err := vacancyUsecase.statRepo.CountVacancyViews(ctx, vacsToReturn[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		vacsToReturn[i].ViewsCount = viewsCount
+
+		responsesCount, err := vacancyUsecase.statRepo.CountVacancyResponses(ctx, vacsToReturn[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		vacsToReturn[i].ResponsesCount = responsesCount
+	}
 
 	info := &domain.EmployerInfo{
 		FirstName:   first_name,
@@ -362,6 +433,8 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	ctx context.Context,
 	options *searchEnginePB.SearchOptions,
 ) (domain.ApiMetaVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
+
 	vacanciesSearchResponse, err := vacancyUsecase.searchEngineRepo.SearchVacancyIDs(ctx, options)
 	if err != nil {
 		return domain.ApiMetaVacancy{
@@ -383,6 +456,34 @@ func (vacancyUsecase *VacancyUsecase) SearchVacancies(
 	}
 
 	vacanciesToReturn := vacancyUsecase.collectApiVacs(vacancies)
+
+	for i := range vacanciesToReturn {
+		contextLogger.WithFields(logrus.Fields{
+			"i":                       i,
+			"vacanciesToReturn[i]":    vacanciesToReturn[i],
+			"vacanciesToReturn[i].ID": vacanciesToReturn[i].ID,
+		}).
+			Debug("about to count vacancy views")
+		viewsCount, err := vacancyUsecase.statRepo.CountVacancyViews(ctx, vacanciesToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaVacancy{}, err
+		}
+		vacanciesToReturn[i].ViewsCount = viewsCount
+		contextLogger.WithFields(logrus.Fields{
+			"views_count": viewsCount,
+		}).
+			Debug("got views count")
+
+		responsesCount, err := vacancyUsecase.statRepo.CountVacancyResponses(ctx, vacanciesToReturn[i].ID)
+		if err != nil {
+			return domain.ApiMetaVacancy{}, err
+		}
+		vacanciesToReturn[i].ResponsesCount = responsesCount
+		contextLogger.WithFields(logrus.Fields{
+			"response_count": responsesCount,
+		}).
+			Debug("got response count")
+	}
 
 	// TODO: optimize
 	for i := range vacanciesToReturn {

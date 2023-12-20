@@ -88,6 +88,8 @@ type ApiVacancy struct {
 	LogoURL          string         `json:"logo_url,omitempty"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
+	ViewsCount       int            `json:"views_count"`
+	ResponsesCount   int            `json:"responses_count"`
 }
 
 func (vac *ApiVacancy) ToDb() *DbVacancy {
