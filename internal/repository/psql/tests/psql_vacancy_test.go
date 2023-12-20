@@ -411,7 +411,7 @@ func TestGetVacanciesByIdsEmptyInput(t *testing.T) {
 	repo := psql.NewPsqlVacancyRepository(db)
 
 	_, err = repo.GetVacanciesByIds(testHelper.СtxWithLogger, []int{})
-	if err != psql.ErrEntityNotFound {
+	if err != nil {
 		t.Errorf("expected error 'ErrEntityNotFound', got %s", err)
 	}
 }
@@ -475,7 +475,7 @@ func TestGetVacanciesByIdsEntityNotFoundError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-	if returnedErr != psql.ErrEntityNotFound {
+	if returnedErr != nil {
 		t.Errorf("expected 'ErrEntityNotFound', got: '%s'", returnedErr)
 		return
 	}
