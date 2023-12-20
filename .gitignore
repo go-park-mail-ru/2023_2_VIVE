@@ -3,6 +3,7 @@
 !versions.env
 *.rdb
 *.out
+*.tmp
 *.jpeg
 *.jpg
 *.png

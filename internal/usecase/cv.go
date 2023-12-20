@@ -137,7 +137,10 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.Ap
 			if err != nil {
 				return nil, err
 			} else {
-				cvUsecase.statRepo.AddCvView(ctx, cvID, employerID)
+				err = cvUsecase.statRepo.AddCvView(ctx, cvID, employerID)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

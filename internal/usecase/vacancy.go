@@ -198,7 +198,10 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 			if err != nil {
 				return nil, err
 			} else {
-				vacancyUsecase.statRepo.AddVacancyView(ctx, vacancyID, applicantID)
+				err = vacancyUsecase.statRepo.AddVacancyView(ctx, vacancyID, applicantID)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
