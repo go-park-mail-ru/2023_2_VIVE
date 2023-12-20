@@ -101,6 +101,11 @@ func (repo *PsqlNotificationRepository) GetUsersNotifications(ctx context.Contex
 	// 	return nil, psql.ErrEntityNotFound
 	// }
 
+	contextLogger.WithFields(logrus.Fields{
+		"notifications": notificationsToReturn,
+	}).
+		Debug("result")
+
 	return notificationsToReturn, nil
 }
 

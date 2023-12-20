@@ -30,6 +30,8 @@ func (u *NotificationUsecase) convertNotifications(notif *notificationsPB.UserNo
 		toAppend := domain.NotificationMessage{}
 
 		toAppend.UserId = note.UserId
+		toAppend.VacancyId = note.VacancyId
+		toAppend.CvId = note.CvId
 		toAppend.Data = note.Data
 		toAppend.Message = note.Message
 		toAppend.CreatedAt = note.CreatedAt

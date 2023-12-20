@@ -241,9 +241,9 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 		}
 		vacanciesToReturn = append(vacanciesToReturn, vacancy)
 	}
-	if len(vacanciesToReturn) == 0 {
-		return nil, ErrEntityNotFound
-	}
+	// if len(vacanciesToReturn) == 0 {
+	// 	return nil, ErrEntityNotFound
+	// }
 	return vacanciesToReturn, nil
 }
 

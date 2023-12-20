@@ -65,6 +65,10 @@ func (h *NotificationHandler) GetUsersNotifications(w http.ResponseWriter, r *ht
 	}
 
 	userNotifications, err := h.notificationUsecase.GetUsersNotifications(r.Context(), userID)
+	contextLogger.WithFields(logrus.Fields{
+		"notifications": userNotifications,
+	}).
+		Debug("got result")
 	if err != nil {
 		errToSend, code := appErrors.GetErrAndCodeToSend(err)
 		sendErr := responseTemplates.SendErrorMessage(w, errToSend, code)
