@@ -181,7 +181,7 @@ func (repo *psqlVacancyRepository) GetVacanciesByIds(ctx context.Context, idList
 	}).
 		Info("getting vacancies by 'id_list' from postgres")
 	if len(idList) == 0 {
-		return nil, ErrEntityNotFound
+		return []domain.DbVacancy{}, nil
 	}
 
 	placeHolderValues := *queryUtils.IntToAnySlice(idList)
