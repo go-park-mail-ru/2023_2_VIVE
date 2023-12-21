@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
@@ -115,7 +114,7 @@ func (cvUsecase *CVUsecase) setAvatarPath(ctx context.Context, cvs ...domain.Api
 		if !found || path == "" {
 			cv.AvatarURL = ""
 		} else {
-			cv.AvatarURL = configs.SERVER_DOMAIN + "/image" + path
+			cv.AvatarURL = "/image" + path
 		}
 
 		cvsToReturn = append(cvsToReturn, cv)

@@ -26,6 +26,7 @@ type ApiUser struct {
 	PhoneNumber             *string `json:"phone_number,omitempty"`
 	Location                *string `json:"location,omitempty"`
 	Type                    Role    `json:"role,omitempty"`
+	AvatarURL               string  `json:"avatar_url"`
 	OrganizationName        string  `json:"organization_name,omitempty"`
 	OrganizationDescription string  `json:"organization_description,omitempty"`
 	// AvatarPath  *string `json:"avatar,omitempty"`

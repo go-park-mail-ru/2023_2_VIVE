@@ -116,6 +116,15 @@ func (userUsecase *UserUsecase) GetInfo(ctx context.Context) (*domain.ApiUser, e
 
 	apiUser := user.ToAPI(empID, appID)
 
+	avatarPath, err := userUsecase.userRepo.GetAvatarPathByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if avatarPath != "" {
+		apiUser.AvatarURL = avatarPath
+	}
+
 	return apiUser, nil
 }
 
@@ -147,7 +156,7 @@ func contains(slice []string, item string) bool {
 }
 
 func (userUsecase *UserUsecase) avatarExists(ctx context.Context, userID int) (bool, error) {
-	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+	path, err := userUsecase.userRepo.GetAvatarPathByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	} else if path == "" && err == nil {
@@ -191,7 +200,7 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 	}
 
 	if avaExists {
-		path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+		path, err := userUsecase.userRepo.GetAvatarPathByUserID(ctx, userID)
 		if err != nil {
 			return err
 		}
@@ -246,7 +255,7 @@ func (userUsecase *UserUsecase) GetUserAvatar(ctx context.Context) ([]byte, erro
 	userID := contextUtils.GetUserIDFromCtx(ctx)
 
 	contextLogger.Info("getting user's avatar")
-	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, userID)
+	path, err := userUsecase.userRepo.GetAvatarPathByUserID(ctx, userID)
 
 	if path == "" {
 		return nil, nil
@@ -263,7 +272,7 @@ func (userUsecase *UserUsecase) GetUserAvatar(ctx context.Context) ([]byte, erro
 }
 
 func (userUsecase *UserUsecase) GetImage(ctx context.Context, imageID int) ([]byte, error) {
-	path, err := userUsecase.userRepo.GetAvatarByUserID(ctx, imageID)
+	path, err := userUsecase.userRepo.GetAvatarPathByUserID(ctx, imageID)
 
 	if path == "" {
 		return nil, nil

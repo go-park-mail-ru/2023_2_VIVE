@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"HnH/configs"
 	"HnH/internal/domain"
 	"HnH/internal/repository/grpc"
 	"HnH/internal/repository/psql"
@@ -148,7 +147,7 @@ func (vacancyUsecase *VacancyUsecase) setLogoPath(ctx context.Context, vacs ...d
 		if !found || path == "" {
 			vac.LogoURL = ""
 		} else {
-			vac.LogoURL = configs.SERVER_DOMAIN + "/image" + path
+			vac.LogoURL = "/image" + path
 		}
 
 		vacsToReturn = append(vacsToReturn, vac)

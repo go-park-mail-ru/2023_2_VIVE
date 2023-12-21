@@ -27,7 +27,7 @@ type IUserRepository interface {
 	GetUserEmpId(ctx context.Context, userID int) (int, error)
 	GetUserAppId(ctx context.Context, userID int) (int, error)
 	UploadAvatarByUserID(ctx context.Context, userID int, path string) error
-	GetAvatarByUserID(ctx context.Context, userID int) (string, error)
+	GetAvatarPathByUserID(ctx context.Context, userID int) (string, error)
 	GetLogoPathesByVacancyIDList(ctx context.Context, vacIDs ...int) (map[int]string, error)
 	GetAvatarPathesByCVIDList(ctx context.Context, cvIDs ...int) (map[int]string, error)
 }
@@ -560,11 +560,13 @@ func (p *psqlUserRepository) UploadAvatarByUserID(ctx context.Context, userID in
 	return nil
 }
 
-func (p *psqlUserRepository) GetAvatarByUserID(ctx context.Context, userID int) (string, error) {
+func (p *psqlUserRepository) GetAvatarPathByUserID(ctx context.Context, userID int) (string, error) {
 	var path *string
 	contextLogger := contextUtils.GetContextLogger(ctx)
+	contextLogger.WithFields(logrus.Fields{
+		"user_id": userID,
+	}).Info("getting user's avatar path by user id from postgres")
 
-	contextLogger.Info("getting avatar by 'user_id'")
 	err := p.userStorage.QueryRow(`SELECT avatar_path FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&path)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", IncorrectUserID
@@ -630,7 +632,7 @@ func (p *psqlUserRepository) GetAvatarPathesByCVIDList(ctx context.Context, cvID
 	contextLogger.WithFields(logrus.Fields{
 		"cv_ids": cvIDs,
 	}).
-		Info("getting companies' avatar pathes by cx id list from postgres")
+		Info("getting companies' avatar pathes by cv id list from postgres")
 
 	query := `SELECT
 				res.id, up.avatar_path

@@ -1002,7 +1002,7 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain12(in *jlexer.Lexer, out *Notificati
 		in.Delim('[')
 		if *out == nil {
 			if !in.IsDelim(']') {
-				*out = make(NotificationMessageSlice, 0, 1)
+				*out = make(NotificationMessageSlice, 0, 0)
 			} else {
 				*out = NotificationMessageSlice{}
 			}
@@ -1080,6 +1080,10 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain13(in *jlexer.Lexer, out *Notificati
 		switch key {
 		case "user_id":
 			out.UserId = int64(in.Int64())
+		case "cv_id":
+			out.CvId = int64(in.Int64())
+		case "vacancy_id":
+			out.VacancyId = int64(in.Int64())
 		case "message":
 			out.Message = string(in.String())
 		case "data":
@@ -1105,6 +1109,26 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain13(out *jwriter.Writer, in Notificat
 		first = false
 		out.RawString(prefix[1:])
 		out.Int64(int64(in.UserId))
+	}
+	if in.CvId != 0 {
+		const prefix string = ",\"cv_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(in.CvId))
+	}
+	if in.VacancyId != 0 {
+		const prefix string = ",\"vacancy_id\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(in.VacancyId))
 	}
 	if in.Message != "" {
 		const prefix string = ",\"message\":"
@@ -1981,6 +2005,10 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain21(in *jlexer.Lexer, out *ApiVacancy
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.UpdatedAt).UnmarshalJSON(data))
 			}
+		case "views_count":
+			out.ViewsCount = int(in.Int())
+		case "responses_count":
+			out.ResponsesCount = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -2083,6 +2111,16 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain21(out *jwriter.Writer, in ApiVacanc
 		const prefix string = ",\"updated_at\":"
 		out.RawString(prefix)
 		out.Raw((in.UpdatedAt).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"views_count\":"
+		out.RawString(prefix)
+		out.Int(int(in.ViewsCount))
+	}
+	{
+		const prefix string = ",\"responses_count\":"
+		out.RawString(prefix)
+		out.Int(int(in.ResponsesCount))
 	}
 	out.RawByte('}')
 }
@@ -2191,6 +2229,8 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain22(in *jlexer.Lexer, out *ApiUser) {
 			}
 		case "role":
 			out.Type = Role(in.String())
+		case "avatar_url":
+			out.AvatarURL = string(in.String())
 		case "organization_name":
 			out.OrganizationName = string(in.String())
 		case "organization_description":
@@ -2279,6 +2319,11 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain22(out *jwriter.Writer, in ApiUser) 
 		const prefix string = ",\"role\":"
 		out.RawString(prefix)
 		out.String(string(in.Type))
+	}
+	{
+		const prefix string = ",\"avatar_url\":"
+		out.RawString(prefix)
+		out.String(string(in.AvatarURL))
 	}
 	if in.OrganizationName != "" {
 		const prefix string = ",\"organization_name\":"
@@ -3447,6 +3492,10 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain31(in *jlexer.Lexer, out *ApiCV) {
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.UpdatedAt).UnmarshalJSON(data))
 			}
+		case "views_count":
+			out.ViewsCount = int(in.Int())
+		case "responses_count":
+			out.ResponsesCount = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -3591,6 +3640,16 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain31(out *jwriter.Writer, in ApiCV) {
 		const prefix string = ",\"updated_at\":"
 		out.RawString(prefix)
 		out.Raw((in.UpdatedAt).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"views_count\":"
+		out.RawString(prefix)
+		out.Int(int(in.ViewsCount))
+	}
+	{
+		const prefix string = ",\"responses_count\":"
+		out.RawString(prefix)
+		out.Int(int(in.ResponsesCount))
 	}
 	out.RawByte('}')
 }
