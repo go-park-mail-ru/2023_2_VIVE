@@ -186,6 +186,7 @@ func (vacancyUsecase *VacancyUsecase) GetAllVacancies(ctx context.Context) ([]do
 }
 
 func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID int) (*domain.ApiVacancy, error) {
+	contextLogger := contextUtils.GetContextLogger(ctx)
 	sesssionID, err := contextUtils.GetSessionIDFromCtx(ctx)
 	if err == nil {
 		userID, err := vacancyUsecase.sessionRepo.GetUserIdBySession(ctx, sesssionID)
@@ -198,9 +199,10 @@ func (vacancyUsecase *VacancyUsecase) GetVacancy(ctx context.Context, vacancyID 
 				return nil, err
 			} else {
 				err = vacancyUsecase.statRepo.AddVacancyView(ctx, vacancyID, applicantID)
-				if err != nil {
+				if err != nil && !errors.Is(err, psql.ErrRecordAlredyExists) {
 					return nil, err
 				}
+				contextLogger.Info("adding view to vacancy successful")
 			}
 		}
 	}

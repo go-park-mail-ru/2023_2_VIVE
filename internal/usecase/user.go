@@ -122,7 +122,8 @@ func (userUsecase *UserUsecase) GetInfo(ctx context.Context) (*domain.ApiUser, e
 	}
 
 	if avatarPath != "" {
-		apiUser.AvatarURL = avatarPath
+		// apiUser.AvatarURL = avatarPath
+		apiUser.AvatarURL = "/image" + avatarPath
 	}
 
 	return apiUser, nil

@@ -4,6 +4,7 @@ import (
 	"HnH/pkg/contextUtils"
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
@@ -65,7 +66,7 @@ func (repo *psqlStatRepository) AddVacancyView(ctx context.Context, vacancyID, a
 	VALUES ($1, $2, now())`
 
 	result, err := repo.DB.Exec(query, vacancyID, applicantID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		contextLogger.WithFields(logrus.Fields{
 			"err": err,
 		}).
@@ -73,7 +74,16 @@ func (repo *psqlStatRepository) AddVacancyView(ctx context.Context, vacancyID, a
 		return ErrNotInserted
 	}
 	if err != nil {
+		contextLogger.WithFields(logrus.Fields{
+			"err_msg": err,
+		}).
+			Error("error while adding view to vacancy")
 		if pgErr, ok := err.(pgx.PgError); ok {
+			contextLogger.WithFields(logrus.Fields{
+				"pg_err": pgErr,
+				"code": pgErr.Code,
+			}).
+				Error("pgx error")
 			switch pgErr.Code {
 			case "23505":
 				contextLogger.WithFields(logrus.Fields{

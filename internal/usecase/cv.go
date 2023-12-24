@@ -137,7 +137,7 @@ func (cvUsecase *CVUsecase) GetCVById(ctx context.Context, cvID int) (*domain.Ap
 				return nil, err
 			} else {
 				err = cvUsecase.statRepo.AddCvView(ctx, cvID, employerID)
-				if err != nil {
+				if err != nil && !errors.Is(err, psql.ErrRecordAlredyExists) {
 					return nil, err
 				}
 			}
