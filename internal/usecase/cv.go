@@ -335,19 +335,17 @@ func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID in
 
 	cvsToReturn := cvUsecase.combineDbCVs(cvs, exp, edu)
 
-	info := &domain.ApplicantInfo{
-		FirstName: first_name,
-		LastName:  last_name,
-		Email:     email,
-		CVs:       cvsToReturn,
-	}
-
-	infoCVs, err := cvUsecase.setAvatarPath(ctx, info.CVs...)
+	infoCVs, err := cvUsecase.setAvatarPath(ctx, cvsToReturn...)
 	if err != nil {
 		return nil, err
 	}
 
-	info.CVs = infoCVs
+	info := &domain.ApplicantInfo{
+		FirstName: first_name,
+		LastName:  last_name,
+		Email:     email,
+		CVs:       infoCVs,
+	}
 
 	return info, nil
 }

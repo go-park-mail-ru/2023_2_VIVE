@@ -413,14 +413,7 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		vacsToReturn[i].ResponsesCount = responsesCount
 	}
 
-	info := &domain.EmployerInfo{
-		FirstName:   first_name,
-		LastName:    last_name,
-		CompanyName: compName,
-		Vacancies:   vacsToReturn,
-	}
-
-	cvsWithFlags, err := vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
+	cvsWithFlags, err := vacancyUsecase.setFavouriteFlags(ctx, vacsToReturn...)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +423,12 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		return nil, err
 	}
 
-	info.Vacancies = cvsWithLogosAndFlags
+	info := &domain.EmployerInfo{
+		FirstName:   first_name,
+		LastName:    last_name,
+		CompanyName: compName,
+		Vacancies:   cvsWithLogosAndFlags,
+	}
 
 	return info, nil
 }
