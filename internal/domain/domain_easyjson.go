@@ -1639,6 +1639,8 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain18(in *jlexer.Lexer, out *ApplicantI
 			out.FirstName = string(in.String())
 		case "last_name":
 			out.LastName = string(in.String())
+		case "email":
+			out.Email = string(in.String())
 		case "cvs":
 			if in.IsNull() {
 				in.Skip()
@@ -1685,6 +1687,11 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain18(out *jwriter.Writer, in Applicant
 		const prefix string = ",\"last_name\":"
 		out.RawString(prefix)
 		out.String(string(in.LastName))
+	}
+	{
+		const prefix string = ",\"email\":"
+		out.RawString(prefix)
+		out.String(string(in.Email))
 	}
 	if len(in.CVs) != 0 {
 		const prefix string = ",\"cvs\":"
