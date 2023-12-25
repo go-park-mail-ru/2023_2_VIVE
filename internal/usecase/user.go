@@ -185,7 +185,13 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 		return err
 	}
 
-	if contains(ext, ".jpeg") {
+	if contains(ext, ".webp") {
+		header.Filename = strconv.Itoa(userID) + ".webp"
+	} else {
+		return BadAvatarType
+	}
+
+	/*if contains(ext, ".jpeg") {
 		header.Filename = strconv.Itoa(userID) + ".jpeg"
 	} else if contains(ext, ".png") {
 		header.Filename = strconv.Itoa(userID) + ".png"
@@ -193,7 +199,7 @@ func (userUsecase *UserUsecase) UploadAvatar(ctx context.Context, uploadedData m
 		header.Filename = strconv.Itoa(userID) + ".gif"
 	} else {
 		return BadAvatarType
-	}
+	}*/
 
 	avaExists, err := userUsecase.avatarExists(ctx, userID)
 	if err != nil {
