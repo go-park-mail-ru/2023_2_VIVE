@@ -535,7 +535,7 @@ func TestGetCVsByUserIdErrEntityNotFound(t *testing.T) {
 	}
 }
 
-var testGetApplicantInfoSuccessCases = []struct {
+/*var testGetApplicantInfoSuccessCases = []struct {
 	isApplicant       bool
 	applicantID       int
 	expectedFirstName string
@@ -575,7 +575,7 @@ var testGetApplicantInfoSuccessCases = []struct {
 		expectedInsts:     nil,
 		expectedErr:       psql.ErrEntityNotFound,
 	},
-}
+}*/
 
 /*func TestGetApplicantInfoSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
