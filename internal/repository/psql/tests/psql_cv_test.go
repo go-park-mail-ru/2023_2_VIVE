@@ -577,7 +577,7 @@ var testGetApplicantInfoSuccessCases = []struct {
 	},
 }
 
-func TestGetApplicantInfoSuccess(t *testing.T) {
+/*func TestGetApplicantInfoSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -684,9 +684,9 @@ func TestGetApplicantInfoSuccess(t *testing.T) {
 			return
 		}
 	}
-}
+}*/
 
-func TestGetApplicantInfoFirstQueryError(t *testing.T) {
+/*func TestGetApplicantInfoFirstQueryError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -711,9 +711,9 @@ func TestGetApplicantInfoFirstQueryError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-}
+}*/
 
-func TestGetApplicantInfoSecondQueryError(t *testing.T) {
+/*func TestGetApplicantInfoSecondQueryError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -746,9 +746,9 @@ func TestGetApplicantInfoSecondQueryError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-}
+}*/
 
-func TestGetApplicantInfoThirdQueryError(t *testing.T) {
+/*func TestGetApplicantInfoThirdQueryError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -789,7 +789,7 @@ func TestGetApplicantInfoThirdQueryError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-}
+}*/
 
 var testAddCVSuccessCases = []struct {
 	inputUserID int

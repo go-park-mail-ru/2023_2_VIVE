@@ -328,7 +328,7 @@ func (cvUsecase *CVUsecase) GetCVOfUserById(ctx context.Context, cvID int) (*dom
 }
 
 func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID int) (*domain.ApplicantInfo, error) {
-	first_name, last_name, cvs, exp, edu, err := cvUsecase.cvRepo.GetApplicantInfo(ctx, applicantID)
+	first_name, last_name, email, cvs, exp, edu, err := cvUsecase.cvRepo.GetApplicantInfo(ctx, applicantID)
 	if err != nil {
 		return nil, err
 	}
@@ -338,6 +338,7 @@ func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID in
 	info := &domain.ApplicantInfo{
 		FirstName: first_name,
 		LastName:  last_name,
+		Email:     email,
 		CVs:       cvsToReturn,
 	}
 

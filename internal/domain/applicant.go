@@ -20,5 +20,6 @@ type DbApplicant struct {
 type ApplicantInfo struct {
 	FirstName string  `json:"first_name"`
 	LastName  string  `json:"last_name"`
+	Email     string  `json:"email"`
 	CVs       []ApiCV `json:"cvs,omitempty"`
 }
