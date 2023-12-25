@@ -430,8 +430,8 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		Vacancies:   cvsWithLogosAndFlags,
 	}
 
-	ctxLogger := contextUtils.GetContextLogger(ctx)
-	ctxLogger.WithField("pathes", cvsWithLogosAndFlags[0].LogoURL).Info("cv with logo path")
+	//ctxLogger := contextUtils.GetContextLogger(ctx)
+	//ctxLogger.WithField("pathes", cvsWithLogosAndFlags[0].LogoURL).Info("cv with logo path")
 
 	return info, nil
 }
