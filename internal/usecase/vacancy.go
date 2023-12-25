@@ -420,15 +420,17 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		Vacancies:   vacsToReturn,
 	}
 
-	info.Vacancies, err = vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
+	cvsWithFlags, err := vacancyUsecase.setFavouriteFlags(ctx, info.Vacancies...)
 	if err != nil {
 		return nil, err
 	}
 
-	info.Vacancies, err = vacancyUsecase.setLogoPath(ctx, info.Vacancies...)
+	cvsWithLogosAndFlags, err := vacancyUsecase.setLogoPath(ctx, cvsWithFlags...)
 	if err != nil {
 		return nil, err
 	}
+
+	info.Vacancies = cvsWithLogosAndFlags
 
 	return info, nil
 }

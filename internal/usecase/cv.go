@@ -341,10 +341,12 @@ func (cvUsecase *CVUsecase) GetApplicantInfo(ctx context.Context, applicantID in
 		CVs:       cvsToReturn,
 	}
 
-	info.CVs, err = cvUsecase.setAvatarPath(ctx, info.CVs...)
+	infoCVs, err := cvUsecase.setAvatarPath(ctx, info.CVs...)
 	if err != nil {
 		return nil, err
 	}
+
+	info.CVs = infoCVs
 
 	return info, nil
 }
