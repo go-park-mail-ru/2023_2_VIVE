@@ -396,6 +396,8 @@ func (repo *psqlCVRepository) GetApplicantInfo(ctx context.Context, applicantID 
 		return "", "", "", nil, nil, nil, err
 	}
 
+	email = strings.TrimSpace(email)
+
 	cvs, exp, edu, err := repo.GetCVsByUserId(ctx, userID)
 	if err != nil {
 		return "", "", "", nil, nil, nil, err
