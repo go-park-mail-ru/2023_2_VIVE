@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"strings"
 
+	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -178,14 +179,36 @@ func (repo *psqlSkillRepository) AddSkillsByCvID(ctx context.Context, cvID int, 
 
 		result, err := repo.DB.Exec(cvSkillQuery, cvID, skillID)
 		if err == sql.ErrNoRows {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg": err,
+			}).
+				Error("did not inserted data into hnh_data.cv_skill_assign")
 			return ErrNotInserted
 		}
 		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg": err,
+			}).
+				Error("could not insert data into hnh_data.cv_skill_assign")
+			if pgErr, ok := err.(pgx.PgError); ok {
+				switch pgErr.Code {
+				case "23505":
+					contextLogger.WithFields(logrus.Fields{
+						"err": pgErr,
+					}).
+						Error("could not duplicate data")
+					continue
+				}
+			}
 			return err
 		}
 
 		_, err = result.RowsAffected()
 		if err != nil {
+			contextLogger.WithFields(logrus.Fields{
+				"err_msg": err,
+			}).
+				Error("could not insert data into hnh_data.cv_skill_assign")
 			return err
 		}
 	}
