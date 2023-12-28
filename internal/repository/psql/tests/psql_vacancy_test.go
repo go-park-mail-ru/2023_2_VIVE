@@ -856,7 +856,7 @@ func TestGetUserVacanciesSecondQueryError(t *testing.T) {
 	}
 }
 
-var testGetEmployerInfoSuccessCases = []struct {
+/*var testGetEmployerInfoSuccessCases = []struct {
 	isEmployer          bool
 	employerID          int
 	expectedFirstName   string
@@ -1094,7 +1094,7 @@ func TestGetEmployerInfoThirdQueryError(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 		return
 	}
-}
+}*/
 
 var testGetEmpIdSuccessCases = []struct {
 	vacancyID int

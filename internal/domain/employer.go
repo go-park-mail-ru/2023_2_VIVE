@@ -11,5 +11,6 @@ type EmployerInfo struct {
 	FirstName   string       `json:"first_name"`
 	LastName    string       `json:"last_name"`
 	CompanyName string       `json:"organization_name"`
+	LogoURL     string       `json:"logo_url"`
 	Vacancies   []ApiVacancy `json:"vacancies,omitempty"`
 }

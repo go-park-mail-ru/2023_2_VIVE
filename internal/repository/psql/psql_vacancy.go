@@ -21,7 +21,7 @@ type IVacancyRepository interface {
 	GetVacancy(ctx context.Context, vacancyID int) (*domain.DbVacancy, error)
 	GetCompanyName(ctx context.Context, vacancyID int) (string, error)
 	GetUserVacancies(ctx context.Context, userID int) ([]domain.DbVacancy, error)
-	GetEmployerInfo(ctx context.Context, employerID int) (string, string, string, []domain.DbVacancy, error)
+	GetEmployerInfo(ctx context.Context, employerID int) (string, string, string, string, []domain.DbVacancy, error)
 	// GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error)
 	GetEmpId(ctx context.Context, vacancyID int) (int, error) //
 	AddVacancy(ctx context.Context, empID int, vacancy *domain.DbVacancy) (int, error)
@@ -412,7 +412,7 @@ func (repo *psqlVacancyRepository) isEmployer(logger *logrus.Entry, employerID i
 	return isEmployer, nil
 }
 
-func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employerID int) (string, string, string, []domain.DbVacancy, error) {
+func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employerID int) (string, string, string, string, []domain.DbVacancy, error) {
 	contextLogger := contextUtils.GetContextLogger(ctx)
 
 	contextLogger.WithFields(logrus.Fields{
@@ -422,11 +422,11 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 
 	isEmp, err := repo.isEmployer(contextLogger, employerID)
 	if err != nil {
-		return "", "", "", nil, err
+		return "", "", "", "", nil, err
 	}
 
 	if !isEmp {
-		return "", "", "", nil, ErrEntityNotFound
+		return "", "", "", "", nil, ErrEntityNotFound
 	}
 
 	var userID int
@@ -434,14 +434,15 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 
 	err = repo.DB.QueryRow(`SELECT user_id, organization_name FROM hnh_data.employer WHERE id = $1`, employerID).Scan(&userID, &compName)
 	if err != nil {
-		return "", "", "", nil, err
+		return "", "", "", "", nil, err
 	}
 
 	var firstName, lastName string
+	var path *string
 
-	err = repo.DB.QueryRow(`SELECT first_name, last_name FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&firstName, &lastName)
+	err = repo.DB.QueryRow(`SELECT first_name, last_name, avatar_path FROM hnh_data.user_profile WHERE id = $1`, userID).Scan(&firstName, &lastName, &path)
 	if err != nil {
-		return "", "", "", nil, err
+		return "", "", "", "", nil, err
 	}
 
 	// err = repo.DB.QueryRow(`SELECT "name" FROM hnh_data.organization WHERE id =
@@ -450,12 +451,19 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 	// 	return "", "", "", nil, err
 	// }
 
-	vacancies, err := repo.GetUserVacancies(ctx, userID)
-	if err != nil {
-		return "", "", "", nil, err
+	var pathToReturn string
+	if path == nil {
+		pathToReturn = ""
+	} else {
+		pathToReturn = *path
 	}
 
-	return firstName, lastName, compName, vacancies, nil
+	vacancies, err := repo.GetUserVacancies(ctx, userID)
+	if err != nil {
+		return "", "", "", "", nil, err
+	}
+
+	return firstName, lastName, compName, pathToReturn, vacancies, nil
 }
 
 // func (repo *psqlVacancyRepository) GetVacancyByUserID(userID int, vacancyID int) (*domain.Vacancy, error) {

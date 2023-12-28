@@ -392,7 +392,7 @@ func (vacancyUsecase *VacancyUsecase) GetUserVacancies(ctx context.Context) ([]d
 }
 
 func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, employerID int) (*domain.EmployerInfo, error) {
-	first_name, last_name, compName, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
+	first_name, last_name, compName, avaPath, empVacs, err := vacancyUsecase.vacancyRepo.GetEmployerInfo(ctx, employerID)
 	if err != nil {
 		return nil, err
 	}
@@ -427,6 +427,7 @@ func (vacancyUsecase *VacancyUsecase) GetEmployerInfo(ctx context.Context, emplo
 		FirstName:   first_name,
 		LastName:    last_name,
 		CompanyName: compName,
+		LogoURL:     avaPath,
 		Vacancies:   cvsWithLogosAndFlags,
 	}
 

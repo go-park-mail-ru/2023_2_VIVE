@@ -1284,6 +1284,8 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain15(in *jlexer.Lexer, out *EmployerIn
 			out.LastName = string(in.String())
 		case "organization_name":
 			out.CompanyName = string(in.String())
+		case "logo_url":
+			out.LogoURL = string(in.String())
 		case "vacancies":
 			if in.IsNull() {
 				in.Skip()
@@ -1335,6 +1337,11 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain15(out *jwriter.Writer, in EmployerI
 		const prefix string = ",\"organization_name\":"
 		out.RawString(prefix)
 		out.String(string(in.CompanyName))
+	}
+	{
+		const prefix string = ",\"logo_url\":"
+		out.RawString(prefix)
+		out.String(string(in.LogoURL))
 	}
 	if len(in.Vacancies) != 0 {
 		const prefix string = ",\"vacancies\":"
@@ -1641,6 +1648,8 @@ func easyjson3e1fa5ecDecodeHnHInternalDomain18(in *jlexer.Lexer, out *ApplicantI
 			out.LastName = string(in.String())
 		case "email":
 			out.Email = string(in.String())
+		case "avatar_url":
+			out.AvatarURL = string(in.String())
 		case "cvs":
 			if in.IsNull() {
 				in.Skip()
@@ -1692,6 +1701,11 @@ func easyjson3e1fa5ecEncodeHnHInternalDomain18(out *jwriter.Writer, in Applicant
 		const prefix string = ",\"email\":"
 		out.RawString(prefix)
 		out.String(string(in.Email))
+	}
+	{
+		const prefix string = ",\"avatar_url\":"
+		out.RawString(prefix)
+		out.String(string(in.AvatarURL))
 	}
 	if len(in.CVs) != 0 {
 		const prefix string = ",\"cvs\":"
