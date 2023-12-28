@@ -5,8 +5,11 @@ import (
 	"HnH/internal/usecase"
 	"HnH/pkg/authUtils"
 	"HnH/pkg/serverErrors"
-	"errors"
+	notifOpts "HnH/services/notifications/pkg/searchOptions"
+	notifErr "HnH/services/notifications/pkg/serviceErrors"
+	searchErr "HnH/services/searchEngineService/pkg/searchOptions"
 
+	"errors"
 	"net/http"
 )
 
@@ -52,6 +55,18 @@ var errToCode = map[error]int{
 	psql.ErrNoRowsDeleted:      http.StatusNotModified,
 	psql.IncorrectUserID:       http.StatusBadRequest,
 	psql.ErrRecordAlredyExists: http.StatusConflict,
+
+	notifOpts.ErrNoOption:         http.StatusBadRequest,
+	notifOpts.ErrWrongValueFormat: http.StatusBadRequest,
+
+	notifErr.ErrOpenConn:          http.StatusNotFound,
+	notifErr.ErrInvalidUserID:     http.StatusBadRequest,
+	notifErr.ErrConnAlreadyExists: http.StatusConflict,
+	notifErr.ErrNoConn:            http.StatusNotFound,
+	notifErr.ErrInvalidConnection: http.StatusInternalServerError,
+
+	searchErr.ErrNoOption:         http.StatusBadRequest,
+	searchErr.ErrWrongValueFormat: http.StatusBadRequest,
 }
 
 func GetErrAndCodeToSend(err error) (error, int) {
@@ -63,7 +78,7 @@ func GetErrAndCodeToSend(err error) (error, int) {
 
 	code, ok := errToCode[source]
 	if !ok {
-		return serverErrors.INTERNAL_SERVER_ERROR, http.StatusInternalServerError
+		return err, http.StatusBadRequest
 	}
 
 	return source, code
