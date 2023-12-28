@@ -455,7 +455,7 @@ func (repo *psqlVacancyRepository) GetEmployerInfo(ctx context.Context, employer
 	if path == nil {
 		pathToReturn = ""
 	} else {
-		pathToReturn = *path
+		pathToReturn = "/image" + *path
 	}
 
 	vacancies, err := repo.GetUserVacancies(ctx, userID)

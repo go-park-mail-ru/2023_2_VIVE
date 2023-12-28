@@ -401,7 +401,7 @@ func (repo *psqlCVRepository) GetApplicantInfo(ctx context.Context, applicantID 
 	if path == nil {
 		pathToReturn = ""
 	} else {
-		pathToReturn = *path
+		pathToReturn = "/image" + *path
 	}
 
 	email = strings.TrimSpace(email)
